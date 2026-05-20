@@ -37,20 +37,61 @@ pub struct Vector2 {
 }
 
 impl Vector2 {
+    /// Creates a new Vector2 are 0, 0.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// 
+    /// let v = Vector2::zero();
+    /// assert_eq!(v.x, 0.0);
+    /// assert_eq!(v.y, 0.0);
+    /// ```
     pub fn zero() -> Self {
         Self { x: 0.0, y: 0.0 }
     }
 
+    /// Returns the length of the vector.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// 
+    /// let v = Vector2 { x: 3.0, y: 4.0 };
+    /// let length = v.length();
+    /// assert_eq!(length, 5.0);
+    /// ```
     pub fn length(&self) -> f32 {
         (self.x * self.x + self.y * self.y).sqrt()
     }
 
+    /// Returns the distance between this vector and another vector.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// 
+    /// let v1 = Vector2 { x: 1.0, y: 2.0 };
+    /// let v2 = Vector2 { x: 4.0, y: 6.0 };
+    /// let distance = v1.distance(&v2);
+    /// assert_eq!(distance, 5.0);
+    /// ```
     pub fn distance(&self, other: &Self) -> f32 {
         let dx = self.x - other.x;
         let dy = self.y - other.y;
         (dx * dx + dy * dy).sqrt()
     }
 
+    /// Returns the normalized vector.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// 
+    /// let v = Vector2 { x: 3.0, y: 4.0 };
+    /// let normalized = v.normalize();
+    /// assert_eq!(normalized.length(), 1.0);
+    /// ```
     pub fn normalize(&self) -> Self {
         let length = self.length();
         Self {
@@ -59,12 +100,48 @@ impl Vector2 {
         }
     }
 
+    /// Returns the dot product of this vector and another vector.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// 
+    /// let v1 = Vector2 { x: 1.0, y: 2.0 };
+    /// let v2 = Vector2 { x: 3.0, y: 4.0 };
+    /// let dot = v1.dot(&v2);
+    /// assert_eq!(dot, 1.0 * 3.0 + 2.0 * 4.0);
+    /// ```
     pub fn dot(&self, other: &Self) -> f32 {
         self.x * other.x + self.y * other.y
     }
 
+    /// Returns the cross product of this vector and another vector.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// 
+    /// let v1 = Vector2 { x: 1.0, y: 2.0 };
+    /// let v2 = Vector2 { x: 3.0, y: 4.0 };
+    /// let cross = v1.cross(&v2);
+    /// assert_eq!(cross, 1.0 * 4.0 - 2.0 * 3.0);
+    /// ```
     pub fn cross(&self, other: &Self) -> f32 {
         self.x * other.y - self.y * other.x
+    }
+
+    /// Transforms this vector by a Transform
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::{Vector2, Transform};
+    /// 
+    /// ```
+    pub fn transform(&self, transform: &Transform) -> Self {
+        Self {
+            x: self.x * transform.cos - self.y * transform.sin + transform.pos_x,
+            y: self.x * transform.sin + self.y * transform.cos + transform.pos_y
+        }
     }
 }
 
@@ -151,6 +228,45 @@ impl Neg for Vector2 {
     }
 }
 
+/// A Transform struct used for transforming vertices
+pub struct Transform {
+    pos_x: f32,
+    pos_y: f32,
+    sin: f32,
+    cos: f32,
+}
+
+impl Transform {
+    /// Creates a new Transform
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::{Vector2, Transform};
+    /// 
+    /// let transform = Transform::new(Vector2 {x: 5.0, y: 2.0}, 45.0);
+    /// ```
+    pub fn new(position: Vector2, angle: f32) -> Self {
+        Self {
+            pos_x: position.x,
+            pos_y: position.y,
+            sin: angle.sin(),
+            cos: angle.cos(),
+        }
+    }
+
+    /// Creates a zero-ed Transform
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::{Vector2, Transform};
+    /// 
+    /// let transform = Transform::zero();
+    /// ```
+    pub fn zero() -> Self {
+        Self::new(Vector2 { x: 0.0, y: 0.0 }, 0.0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -170,5 +286,15 @@ mod tests {
         assert_eq!(v1.normalize(), Vector2 { x: 1.0 / (1.0_f32 * 1.0 + 2.0_f32 * 2.0).sqrt(), y: 2.0 / (1.0_f32 * 1.0 + 2.0_f32 * 2.0).sqrt() });
         assert_eq!(v1.dot(&v2), 1.0 * 3.0 + 2.0 * 4.0);
         assert_eq!(v1.cross(&v2), 1.0 * 4.0 - 2.0 * 3.0);
+    }
+
+    #[test]
+    fn test_transform() {
+        let transform = Transform::new(Vector2 { x: 1.0, y: 2.0 }, 45.0);
+        assert_eq!(transform.pos_x, 1.0);
+        assert_eq!(transform.pos_y, 2.0);
+        assert_eq!(transform.cos, 45_f32.cos());
+        assert_eq!(transform.sin, 45_f32.sin());
+
     }
 }

@@ -1,9 +1,17 @@
 use macroquad::prelude::*;
-use vyxen_physics2d::bodies::{Rigid, RigidType};
+use vyxen_physics2d::{bodies::{Rigid, RigidType}, collision::{Collision, intersect_circles, intersect_polygon_circle, intersect_polygons}};
 use vyxen_math::Vector2;
 
 fn to_world_coords(v: Vector2) -> Vec2 {
     vec2(v.x, v.y)
+}
+
+fn to_world_coords_multi(vec: &[Vector2]) -> Vec<Vec2> {
+    let mut res: Vec<Vec2> = vec![];
+    for v in vec {
+        res.push(to_world_coords(*v));
+    }
+    res
 }
 
 #[macroquad::main("Physics Viewer")]
@@ -14,7 +22,9 @@ async fn main() {
     let mut bodies: Vec<Rigid> = Vec::new();
 
     bodies.push(Rigid::new_circle(5.0, Vector2 { x: 10.0, y: 10.0 }, 1.0, false, 0.5));
-    bodies.push(Rigid::new_box(5.0, 5.0, Vector2 { x: -10.0, y: -10.0 }, 1.0, false, 0.5));
+    bodies.push(Rigid::new_circle(5.0, Vector2 { x: -10.0, y: -10.0 }, 1.0, false, 0.5));
+    bodies.push(Rigid::new_box(5.0, 5.0, Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5));
+    bodies.push(Rigid::new_box(5.0, 10.0, Vector2 { x: 10.0, y: -10.0 }, 1.0, false, 0.5));
 
     loop {
         let dt = get_frame_time();
@@ -70,6 +80,32 @@ async fn main() {
             bodies[0].move_by(velocity);
         }
 
+        let len = bodies.len();
+        for i in 0..len {
+            for j in (i + 1)..len {
+                let (left, right) = bodies.split_at_mut(j);
+                let body_a = &mut left[i];
+                let body_b = &mut right[0];
+
+                let collision = match (body_a.get_shape_type(), body_b.get_shape_type()) {
+                    (RigidType::Circle, RigidType::Circle) => intersect_circles(body_a.get_position(), body_a.get_radius(), body_b.get_position(), body_b.get_radius()),
+                    (RigidType::Box, RigidType::Box) => intersect_polygons(body_a.get_transformed_vertices(), body_b.get_transformed_vertices()),
+                    (RigidType::Box, RigidType::Circle) => intersect_polygon_circle(body_b.get_position(), body_b.get_radius(), body_a.get_transformed_vertices()).map(|c| Collision { normal: -c.normal, depth: c.depth }),
+                    (RigidType::Circle, RigidType::Box) => intersect_polygon_circle(body_a.get_position(), body_a.get_radius(), body_b.get_transformed_vertices()),
+                };
+
+                if let Some(collision) = collision {
+                    let (left, right) = bodies.split_at_mut(j);
+
+                    let body_a = &mut left[i];
+                    let body_b = &mut right[0];
+
+                    body_a.move_by(-collision.normal * collision.depth / 2.0);
+                    body_b.move_by(collision.normal * collision.depth / 2.0);
+                }
+            }
+        }
+
         set_camera(&camera);
 
         clear_background(BLACK);
@@ -77,14 +113,30 @@ async fn main() {
         draw_line(-100000.0, 0.0, 100000.0, 0.0, 1.0 / zoom, RED);
         draw_line(0.0, -100000.0, 0.0, 100000.0, 1.0 / zoom, GREEN);
 
-        for body in &bodies {
+        for i in 0..bodies.len() {
+            let body = bodies.get_mut(i).unwrap();
             let world_pos = to_world_coords(body.get_position());
             match body.get_shape_type() {
                 RigidType::Circle => {
                     draw_circle(world_pos.x, world_pos.y, body.get_radius(), BLUE);
                 }
                 RigidType::Box => {
-                    draw_rectangle(world_pos.x, world_pos.y, body.get_width(), body.get_height(), YELLOW);
+                    let vertices = to_world_coords_multi(body.get_transformed_vertices());
+                    if vertices.len() == 4 {
+                        draw_triangle(
+                            vertices[0],
+                            vertices[1],
+                            vertices[2],
+                            YELLOW
+                        );
+
+                        draw_triangle(
+                            vertices[0],
+                            vertices[2],
+                            vertices[3],
+                            YELLOW
+                        );
+                    }
                 }
             }
         }
