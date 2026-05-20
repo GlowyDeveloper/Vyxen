@@ -241,6 +241,8 @@ name = "testbed"
 version = "0.1.0"
 dependencies = [
  "macroquad",
+ "vyxen-math",
+ "vyxen-physics2d",
 ]
 
 [[package]]
@@ -264,6 +266,9 @@ version = "0.1.0"
 [[package]]
 name = "vyxen-physics2d"
 version = "0.1.0"
+dependencies = [
+ "vyxen-math",
+]
 
 [[package]]
 name = "winapi"
