@@ -8,5 +8,4 @@ rust-version.workspace = true
 
 [dependencies]
 macroquad = "0.4.14"
-vyxen-math = { path = "../crates/math" }
-vyxen-physics2d = { path = "../crates/physics2d" }
+vyxen = { path = "../crates/vyxen" }

@@ -1,6 +1,5 @@
 use macroquad::prelude::*;
-use vyxen_physics2d::{bodies::{Rigid, RigidType}, collision::{Collision, intersect_circles, intersect_polygon_circle, intersect_polygons}};
-use vyxen_math::Vector2;
+use vyxen::{World, math::Vector2, physics2d::bodies::{Rigid, RigidType}};
 
 fn to_world_coords(v: Vector2) -> Vec2 {
     vec2(v.x, v.y)
@@ -19,12 +18,9 @@ async fn main() {
     let mut camera_target = vec2(0.0, 0.0);
     let mut zoom = 1.0;
 
-    let mut bodies: Vec<Rigid> = Vec::new();
+    let mut world = World::new();
 
-    bodies.push(Rigid::new_circle(5.0, Vector2 { x: 10.0, y: 10.0 }, 1.0, false, 0.5));
-    bodies.push(Rigid::new_circle(5.0, Vector2 { x: -10.0, y: -10.0 }, 1.0, false, 0.5));
-    bodies.push(Rigid::new_box(5.0, 5.0, Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5));
-    bodies.push(Rigid::new_box(5.0, 10.0, Vector2 { x: 10.0, y: -10.0 }, 1.0, false, 0.5));
+    world.add_body(Rigid::new_box(30.0, 30.0, Vector2 { x: 0.0, y: 0.0 }, 1.0, true, 0.5));
 
     loop {
         let dt = get_frame_time();
@@ -65,46 +61,32 @@ async fn main() {
             ..Default::default()
         };
 
-        let mut dx = 0.0;
-        let mut dy = 0.0;
-        let speed = 16.0;
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let mouse_pos = mouse_position();
+            let world_pos = camera.screen_to_world(Vec2::new(mouse_pos.0, mouse_pos.1));
+            let world_pos = Vector2 { x: world_pos.x, y: world_pos.y };
+            
+            let radius = rand::gen_range(1.0, 5.0);
+            let density = rand::gen_range(1.0, 10.0);
+            let restitution = rand::gen_range(0.0, 1.0);
 
-        if is_key_down(KeyCode::Up) {dy += 1.0;}
-        if is_key_down(KeyCode::Down) {dy -= 1.0;}
-        if is_key_down(KeyCode::Left) {dx -= 1.0;}
-        if is_key_down(KeyCode::Right) {dx += 1.0;}
-
-        if dx != 0.0 || dy != 0.0 {
-            let movement = Vector2 { x: dx, y: dy }.normalize();
-            let velocity = movement * speed * dt;
-            bodies[0].move_by(velocity);
+            world.add_body(Rigid::new_circle(radius, world_pos, density, false, restitution));
         }
 
-        let len = bodies.len();
-        for i in 0..len {
-            for j in (i + 1)..len {
-                let (left, right) = bodies.split_at_mut(j);
-                let body_a = &mut left[i];
-                let body_b = &mut right[0];
+        if is_mouse_button_pressed(MouseButton::Right) {
+            let mouse_pos = mouse_position();
+            let world_pos = camera.screen_to_world(Vec2::new(mouse_pos.0, mouse_pos.1));
+            let world_pos = Vector2 { x: world_pos.x, y: world_pos.y };
 
-                let collision = match (body_a.get_shape_type(), body_b.get_shape_type()) {
-                    (RigidType::Circle, RigidType::Circle) => intersect_circles(body_a.get_position(), body_a.get_radius(), body_b.get_position(), body_b.get_radius()),
-                    (RigidType::Box, RigidType::Box) => intersect_polygons(body_a.get_transformed_vertices(), body_b.get_transformed_vertices()),
-                    (RigidType::Box, RigidType::Circle) => intersect_polygon_circle(body_b.get_position(), body_b.get_radius(), body_a.get_transformed_vertices()).map(|c| Collision { normal: -c.normal, depth: c.depth }),
-                    (RigidType::Circle, RigidType::Box) => intersect_polygon_circle(body_a.get_position(), body_a.get_radius(), body_b.get_transformed_vertices()),
-                };
+            let width = rand::gen_range(1.0, 5.0);
+            let height = rand::gen_range(1.0, 5.0);
+            let density = rand::gen_range(1.0, 10.0);
+            let restitution = rand::gen_range(0.0, 1.0);
 
-                if let Some(collision) = collision {
-                    let (left, right) = bodies.split_at_mut(j);
-
-                    let body_a = &mut left[i];
-                    let body_b = &mut right[0];
-
-                    body_a.move_by(-collision.normal * collision.depth / 2.0);
-                    body_b.move_by(collision.normal * collision.depth / 2.0);
-                }
-            }
+            world.add_body(Rigid::new_box(width, height, world_pos, density, false, restitution));
         }
+
+        world.step(dt, 10);
 
         set_camera(&camera);
 
@@ -113,12 +95,12 @@ async fn main() {
         draw_line(-100000.0, 0.0, 100000.0, 0.0, 1.0 / zoom, RED);
         draw_line(0.0, -100000.0, 0.0, 100000.0, 1.0 / zoom, GREEN);
 
-        for i in 0..bodies.len() {
-            let body = bodies.get_mut(i).unwrap();
+        for i in 0..world.get_bodies_len() {
+            let body = world.get_body_mut(i).unwrap();
             let world_pos = to_world_coords(body.get_position());
             match body.get_shape_type() {
                 RigidType::Circle => {
-                    draw_circle(world_pos.x, world_pos.y, body.get_radius(), BLUE);
+                    draw_circle(world_pos.x, world_pos.y, body.get_radius(), if body.is_static() { GRAY } else { BLUE });
                 }
                 RigidType::Box => {
                     let vertices = to_world_coords_multi(body.get_transformed_vertices());
@@ -127,14 +109,14 @@ async fn main() {
                             vertices[0],
                             vertices[1],
                             vertices[2],
-                            YELLOW
+                            if body.is_static() { GRAY } else { YELLOW }
                         );
 
                         draw_triangle(
                             vertices[0],
                             vertices[2],
                             vertices[3],
-                            YELLOW
+                            if body.is_static() { GRAY } else { YELLOW }
                         );
                     }
                 }

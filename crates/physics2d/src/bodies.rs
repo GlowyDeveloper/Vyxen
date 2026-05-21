@@ -29,8 +29,11 @@ pub struct Rigid {
     rotation: f32,
     rotational_velocity: f32,
 
+    force: Vector2,
+
     density: f32,
     mass: f32,
+    inverse_mass: f32,
     restitution: f32,
     area: f32,
 
@@ -100,6 +103,19 @@ impl Rigid {
     pub fn get_rotational_velocity(&self) -> f32 {
         self.rotational_velocity
     }
+    /// A getter for the force of the rigid body.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::Rigid;
+    /// 
+    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// assert_eq!(rigid.get_force(), Vector2::zero());
+    /// ```
+    pub fn get_force(&self) -> Vector2 {
+        self.force
+    }
     /// A getter for the density of the rigid body.
     /// 
     /// # Examples
@@ -128,6 +144,24 @@ impl Rigid {
     /// ```
     pub fn get_mass(&self) -> f32 {
         self.mass
+    }
+
+    /// A getter for the inverted mass of the rigid body.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::Rigid;
+    /// 
+    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let area = std::f32::consts::PI;
+    /// let expected_mass = area * 1.0; // area * density
+    /// let expected_inverted_mass = 1.0 / expected_mass;
+    /// 
+    /// assert_eq!(rigid.get_inverse_mass(), expected_inverted_mass);
+    /// ```
+    pub fn get_inverse_mass(&self) -> f32 {
+        self.inverse_mass
     }
     /// A getter for the restitution of the rigid body.
     /// 
@@ -236,6 +270,26 @@ impl Rigid {
     pub fn get_triangles(&mut self) -> &[i32; 6] {
         &self.triangles
     }
+
+    /// A setter for the linear velocity of the rigid body.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::Rigid;
+    /// 
+    /// let start_pos = Vector2 { x: 0.0, y: 0.0 };
+    /// 
+    /// let mut rigid = Rigid::new_box(1.0, 1.0, start_pos, 1.0, false, 0.5);
+    /// rigid.set_linear_velocity(Vector2 { x: 5.0, y: 0.0 });
+    /// rigid.step(1.0, Vector2 { x: 0.0, y: -9.81 });
+    /// 
+    /// assert!(rigid.get_position() != start_pos);
+    /// ```
+    pub fn set_linear_velocity(&mut self, velocity: Vector2) {
+        self.linear_velocity = velocity;
+    }
 }
 
 impl Rigid {
@@ -254,8 +308,10 @@ impl Rigid {
             linear_velocity: Vector2::zero(),
             rotation: 0.0,
             rotational_velocity: 0.0,
+            force: Vector2::zero(),
             density,
             mass,
+            inverse_mass: if is_static { 0.0 } else { 1.0 / mass },
             restitution,
             area,
             is_static,
@@ -422,6 +478,72 @@ impl Rigid {
     /// ```
     pub fn rotate_by(&mut self, amount: f32) {
         self.rotation += amount;
+        self.transform_required = true;
+    }
+
+    /// Processes a single physics frame of the body.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::Rigid;
+    /// 
+    /// let force = Vector2 { x: 5.0, y: 0.0 };
+    /// 
+    /// let mut rigid = Rigid::new_box(1.0, 1.0, Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5);
+    /// rigid.add_force(force);
+    /// 
+    /// assert_eq!(rigid.get_force(), force);
+    /// 
+    /// rigid.add_force(force);
+    /// 
+    /// assert_eq!(rigid.get_force(), force * 2.0);
+    /// ```
+    pub fn add_force(&mut self, force: Vector2) {
+        self.force = self.force + force;
+    }
+
+    /// Processes a single physics frame of the body.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::Rigid;
+    /// 
+    /// let force = Vector2 { x: 5.0, y: 0.0 };
+    /// 
+    /// let mut rigid = Rigid::new_box(1.0, 1.0, Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5);
+    /// rigid.set_force(force);
+    /// 
+    /// assert_eq!(rigid.get_force(), force);
+    /// ```
+    pub fn set_force(&mut self, force: Vector2) {
+        self.force = force;
+    }
+
+    /// Processes a single physics frame of the body.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::Rigid;
+    /// 
+    /// let start_pos = Vector2 { x: 0.0, y: 0.0 };
+    /// 
+    /// let mut rigid = Rigid::new_box(1.0, 1.0, start_pos, 1.0, false, 0.5);
+    /// rigid.set_linear_velocity(Vector2 { x: 5.0, y: 0.0 });
+    /// rigid.step(1.0, Vector2 { x: 0.0, y: -9.81 });
+    /// 
+    /// assert!(rigid.get_position() != start_pos);
+    /// ```
+    pub fn step(&mut self, dt: f32, gravity: Vector2) {
+        if self.is_static {
+            return;
+        }
+        self.linear_velocity = self.linear_velocity + gravity * dt;
+        self.position = self.position + self.linear_velocity * dt;
+        self.rotation += self.rotational_velocity * dt;
+        self.force = Vector2::zero();
         self.transform_required = true;
     }
 }
