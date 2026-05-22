@@ -1,10 +1,11 @@
+use vyxen_geometry::{Box, Circle, aabb::AABB};
 use vyxen_math::{Transform, Vector2};
 
 /// An enum representing the type of a rigid body.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RigidType {
-    Circle,
-    Box
+    Circle(Circle),
+    Box(Box)
 }
 
 /// A struct representing a rigid body in the physics simulation.
@@ -13,10 +14,11 @@ pub enum RigidType {
 /// ```rust
 /// use vyxen_math::Vector2;
 /// use vyxen_physics2d::bodies::{Rigid, RigidType};
+/// use vyxen_geometry::Circle;
 /// 
-/// let circle = Rigid::new_circle(1.0, Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5);
-/// assert_eq!(circle.get_shape_type(), RigidType::Circle);
-/// assert_eq!(circle.get_radius(), 1.0);
+/// let circle = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+/// assert!(circle.get_circle().is_some());
+/// assert_eq!(circle.get_circle().unwrap().radius, 1.0);
 /// assert_eq!(circle.get_position(), Vector2 { x: 0.0, y: 0.0 });
 /// assert_eq!(circle.get_density(), 1.0);
 /// assert_eq!(circle.is_static(), false);
@@ -39,15 +41,14 @@ pub struct Rigid {
 
     is_static: bool,
 
-    shape_type: RigidType,
-    radius: f32,
-    width: f32,
-    height: f32,
+    shape: RigidType,
+    aabb: AABB,
 
     vertices: [Vector2; 4],
     transformed_vertices: [Vector2; 4],
     triangles: [i32; 6],
     transform_required: bool,
+    aabb_required: bool,
 }
 
 impl Rigid {
@@ -57,8 +58,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// assert_eq!(rigid.get_position(), Vector2 { x: 2.0, y: 3.0 });
     /// ```
     pub fn get_position(&self) -> Vector2 {
@@ -70,8 +72,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// assert_eq!(rigid.get_linear_velocity(), Vector2 { x: 0.0, y: 0.0 });
     /// ```
     pub fn get_linear_velocity(&self) -> Vector2 {
@@ -83,8 +86,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// assert_eq!(rigid.get_rotation(), 0.0);
     /// ```
     pub fn get_rotation(&self) -> f32 {
@@ -96,8 +100,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// assert_eq!(rigid.get_rotational_velocity(), 0.0);
     /// ```
     pub fn get_rotational_velocity(&self) -> f32 {
@@ -109,8 +114,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// assert_eq!(rigid.get_force(), Vector2::zero());
     /// ```
     pub fn get_force(&self) -> Vector2 {
@@ -122,8 +128,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// assert_eq!(rigid.get_density(), 1.0);
     /// ```
     pub fn get_density(&self) -> f32 {
@@ -135,8 +142,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// let area = std::f32::consts::PI;
     /// let expected_mass = area * 1.0; // area * density
     /// 
@@ -152,8 +160,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// let area = std::f32::consts::PI;
     /// let expected_mass = area * 1.0; // area * density
     /// let expected_inverted_mass = 1.0 / expected_mass;
@@ -169,8 +178,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// assert_eq!(rigid.get_restitution(), 0.5);
     /// ```
     pub fn get_restitution(&self) -> f32 {
@@ -182,8 +192,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// assert_eq!(rigid.get_area(), std::f32::consts::PI);
     /// ```
     pub fn get_area(&self) -> f32 {
@@ -195,64 +206,67 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// assert_eq!(rigid.is_static(), false);
     /// ```
     pub fn is_static(&self) -> bool {
         self.is_static
     }
-    /// A getter for the shape type of the rigid body.
+    /// A getter for the shape of the rigid body.
     /// 
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::{Rigid, RigidType};
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
-    /// assert_eq!(rigid.get_shape_type(), RigidType::Circle);
+    /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// assert!(rigid.get_circle().is_some());
     /// ```
-    pub fn get_shape_type(&self) -> RigidType {
-        self.shape_type
+    pub fn get_shape(&self) -> RigidType {
+        self.shape
     }
-    /// A getter for the radius of the rigid body.
+    /// Returns `None` if the shape is a box, return `Some(Circle)` if the shape is a circle
     /// 
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
+    /// use vyxen_geometry::{Box, Circle};
     /// 
-    /// let rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
-    /// assert_eq!(rigid.get_radius(), 1.0);
+    /// let circle = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// assert!(circle.get_circle().is_some());
+    /// 
+    /// let bx = Rigid::new_box(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Box { width: 1.0, height: 1.0 });
+    /// assert!(bx.get_circle().is_none());
     /// ```
-    pub fn get_radius(&self) -> f32 {
-        self.radius
+    pub fn get_circle(&self) -> Option<Circle> {
+        match self.shape {
+            RigidType::Circle(c) => Some(c),
+            _ => None,
+        }
     }
-    /// A getter for the width of the rigid body.
+    /// Returns `None` if the shape is a circle, return `Some(Box)` if the shape is a box
     /// 
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
+    /// use vyxen_geometry::{Box, Circle};
     /// 
-    /// let rigid = Rigid::new_box(1.0, 2.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
-    /// assert_eq!(rigid.get_width(), 1.0);
+    /// let bx = Rigid::new_box(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Box { width: 1.0, height: 1.0 });
+    /// assert!(bx.get_box().is_some());
+    /// 
+    /// let circle = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// assert!(circle.get_box().is_none());
     /// ```
-    pub fn get_width(&self) -> f32 {
-        self.width
-    }
-    /// A getter for the height of the rigid body.
-    /// 
-    /// # Examples
-    /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// 
-    /// let rigid = Rigid::new_box(1.0, 2.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
-    /// assert_eq!(rigid.get_height(), 2.0);
-    /// ```
-    pub fn get_height(&self) -> f32 {
-        self.height
+    pub fn get_box(&self) -> Option<Box> {
+        match self.shape {
+            RigidType::Box(b) => Some(b),
+            _ => None,
+        }
     }
     /// A getter for the triangle indices of the rigid body.
     /// 
@@ -261,10 +275,11 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let triangles = [0, 1, 2, 0, 2, 3];
     /// 
-    /// let mut rigid = Rigid::new_box(1.0, 1.0, Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5);
+    /// let mut rigid = Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Box { width: 1.0, height: 1.0 });
     /// assert_eq!(rigid.get_triangles(), &triangles);
     /// ```
     pub fn get_triangles(&mut self) -> &[i32; 6] {
@@ -278,10 +293,11 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let start_pos = Vector2 { x: 0.0, y: 0.0 };
     /// 
-    /// let mut rigid = Rigid::new_box(1.0, 1.0, start_pos, 1.0, false, 0.5);
+    /// let mut rigid = Rigid::new_box(start_pos, 1.0, false, 0.5, Box { width: 1.0, height: 1.0 });
     /// rigid.set_linear_velocity(Vector2 { x: 5.0, y: 0.0 });
     /// rigid.step(1.0, Vector2 { x: 0.0, y: -9.81 });
     /// 
@@ -293,14 +309,14 @@ impl Rigid {
 }
 
 impl Rigid {
-    fn new(position: Vector2, density: f32, mass: f32, restitution: f32, area: f32, is_static: bool, shape_type: RigidType, radius: f32, width: f32, height: f32) -> Self {
-        let vertices = match shape_type {
-            RigidType::Circle => [Vector2::zero(); 4],
-            RigidType::Box => Self::create_box_vertices(width, height),
+    fn new(position: Vector2, density: f32, mass: f32, restitution: f32, area: f32, is_static: bool, shape: RigidType) -> Self {
+        let vertices = match shape {
+            RigidType::Circle(_) => [Vector2::zero(); 4],
+            RigidType::Box(b) => Self::create_box_vertices(b.width, b.height),
         };
-        let triangles = match shape_type {
-            RigidType::Circle => [0; 6],
-            RigidType::Box => [0, 1, 2, 0, 2, 3],
+        let triangles = match shape {
+            RigidType::Circle(_) => [0; 6],
+            RigidType::Box(_) => [0, 1, 2, 0, 2, 3],
         };
 
         Rigid {
@@ -315,14 +331,13 @@ impl Rigid {
             restitution,
             area,
             is_static,
-            shape_type,
-            radius,
-            width,
-            height,
+            shape,
             vertices,
             transformed_vertices: vertices,
             triangles,
             transform_required: true,
+            aabb: AABB::new_from_uncalculated(std::f32::MAX, std::f32::MAX, std::f32::MIN, std::f32::MIN),
+            aabb_required: true,
         }
     }
 
@@ -332,6 +347,7 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
     /// let radius = 1.0;
     /// let position = Vector2 { x: 2.0, y: 3.0 };
@@ -339,10 +355,10 @@ impl Rigid {
     /// let is_static = false;
     /// let restitution = 0.5;
     /// 
-    /// let rigid = Rigid::new_circle(radius, position, density, is_static, restitution);
+    /// let rigid = Rigid::new_circle(position, density, is_static, restitution, Circle { radius });
     /// ```
-    pub fn new_circle(radius: f32, position: Vector2, density: f32, is_static: bool, restitution: f32) -> Self {
-        let area = std::f32::consts::PI * radius * radius;
+    pub fn new_circle(position: Vector2, density: f32, is_static: bool, restitution: f32, circle: Circle) -> Self {
+        let area = std::f32::consts::PI * circle.radius * circle.radius;
 
         Rigid::new(
             position,
@@ -351,10 +367,7 @@ impl Rigid {
             restitution.clamp(0.0, 1.0),
             area,
             is_static,
-            RigidType::Circle,
-            radius,
-            0.0,
-            0.0,
+            RigidType::Circle(circle),
         )
     }
 
@@ -364,6 +377,7 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let width = 1.0;
     /// let height = 2.0;
@@ -372,10 +386,10 @@ impl Rigid {
     /// let is_static = false;
     /// let restitution = 0.5;
     /// 
-    /// let rigid = Rigid::new_box(width, height, position, density, is_static, restitution);
+    /// let rigid = Rigid::new_box(position, density, is_static, restitution, Box { width, height });
     /// ```
-    pub fn new_box(width: f32, height: f32, position: Vector2, density: f32, is_static: bool, restitution: f32) -> Self {
-        let area = width * height;
+    pub fn new_box(position: Vector2, density: f32, is_static: bool, restitution: f32, box_shape: Box) -> Self {
+        let area = box_shape.width * box_shape.height;
 
         Rigid::new(
             position,
@@ -384,10 +398,7 @@ impl Rigid {
             restitution.clamp(0.0, 1.0),
             area,
             is_static,
-            RigidType::Box,
-            0.0,
-            width,
-            height,
+            RigidType::Box(box_shape),
         )
     }
 
@@ -411,8 +422,9 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
     ///
-    /// let mut rigid = Rigid::new_box(2.0, 2.0, Vector2 { x: 1.0, y: 1.0 }, 1.0, false, 0.5);
+    /// let mut rigid = Rigid::new_box(Vector2 { x: 1.0, y: 1.0 }, 1.0, false, 0.5, Box { width: 2.0, height: 2.0 });
     /// let vertices = rigid.get_transformed_vertices();
     ///
     /// assert_eq!(vertices[0], Vector2 { x: 0.0, y: 2.0 });
@@ -439,14 +451,16 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let mut rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let mut rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// rigid.move_by(Vector2 { x: 1.0, y: 1.0 });
     /// assert_eq!(rigid.get_position(), Vector2 { x: 3.0, y: 4.0 });
     /// ```
     pub fn move_by(&mut self, amount: Vector2) {
         self.position = self.position + amount;
         self.transform_required = true;
+        self.aabb_required = true;
     }
 
     /// Moves the rigid body to a given position.
@@ -455,14 +469,16 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
-    /// let mut rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let mut rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
     /// rigid.move_to(Vector2 { x: 3.0, y: 4.0 });
     /// assert_eq!(rigid.get_position(), Vector2 { x: 3.0, y: 4.0 });
     /// ```
     pub fn move_to(&mut self, position: Vector2) {
         self.position = position;
         self.transform_required = true;
+        self.aabb_required = true;
     }
 
     /// Rotates the rigid body by a given amount
@@ -471,14 +487,16 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
-    /// let mut rigid = Rigid::new_box(1.0, 1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+    /// let mut rigid = Rigid::new_box(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Box { width: 1.0, height: 1.0 });
     /// rigid.rotate_by(45.0);
     /// assert_eq!(rigid.get_rotation(), 45.0);
     /// ```
     pub fn rotate_by(&mut self, amount: f32) {
         self.rotation += amount;
         self.transform_required = true;
+        self.aabb_required = true;
     }
 
     /// Processes a single physics frame of the body.
@@ -487,10 +505,11 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let force = Vector2 { x: 5.0, y: 0.0 };
     /// 
-    /// let mut rigid = Rigid::new_box(1.0, 1.0, Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5);
+    /// let mut rigid = Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Box { width: 1.0, height: 1.0 });
     /// rigid.add_force(force);
     /// 
     /// assert_eq!(rigid.get_force(), force);
@@ -509,10 +528,11 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let force = Vector2 { x: 5.0, y: 0.0 };
     /// 
-    /// let mut rigid = Rigid::new_box(1.0, 1.0, Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5);
+    /// let mut rigid = Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Box { width: 1.0, height: 1.0 });
     /// rigid.set_force(force);
     /// 
     /// assert_eq!(rigid.get_force(), force);
@@ -527,10 +547,11 @@ impl Rigid {
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let start_pos = Vector2 { x: 0.0, y: 0.0 };
     /// 
-    /// let mut rigid = Rigid::new_box(1.0, 1.0, start_pos, 1.0, false, 0.5);
+    /// let mut rigid = Rigid::new_box(start_pos, 1.0, false, 0.5, Box { width: 1.0, height: 1.0 });
     /// rigid.set_linear_velocity(Vector2 { x: 5.0, y: 0.0 });
     /// rigid.step(1.0, Vector2 { x: 0.0, y: -9.81 });
     /// 
@@ -545,6 +566,51 @@ impl Rigid {
         self.rotation += self.rotational_velocity * dt;
         self.force = Vector2::zero();
         self.transform_required = true;
+        self.aabb_required = true;
+    }
+
+    pub fn get_aabb(&mut self) -> AABB {
+        if self.aabb_required {
+            match self.shape {
+                RigidType::Circle(c) => {
+                    self.aabb = AABB::new_from_uncalculated(
+                        self.position.x - c.radius,
+                        self.position.y - c.radius,
+                        self.position.x + c.radius,
+                        self.position.y + c.radius,
+                    );
+                }
+                RigidType::Box(_) => {
+                    let vertices = self.get_transformed_vertices();
+                    let mut min_x = std::f32::MAX;
+                    let mut max_x = std::f32::MIN;
+                    let mut min_y = std::f32::MAX;
+                    let mut max_y = std::f32::MIN;
+
+                    for i in 0..vertices.len() {
+                        let vertex = vertices[i];
+                        if vertex.x < min_x {
+                            min_x = vertex.x;
+                        }
+                        if vertex.x > max_x {
+                            max_x = vertex.x;
+                        }
+                        if vertex.y < min_y {
+                            min_y = vertex.y;
+                        }
+                        if vertex.y > max_y {
+                            max_y = vertex.y;
+                        }
+                    }
+
+                    self.aabb = AABB::new_from_uncalculated(min_x, min_y, max_x, max_y);
+                }
+            } 
+
+            self.aabb_required = false;
+        }
+
+        self.aabb
     }
 }
 
@@ -555,27 +621,45 @@ mod tests {
 
     #[test]
     fn test_move_by() {
-        let mut rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+        let mut rigid = Rigid::new_circle(
+            Vector2 { x: 2.0, y: 3.0 },
+            1.0,
+            false,
+            0.5,
+            Circle { radius: 1.0 },
+        );
+
         rigid.move_by(Vector2 { x: 1.0, y: 1.0 });
+
         assert_eq!(rigid.get_position(), Vector2 { x: 3.0, y: 4.0 });
     }
 
     #[test]
     fn test_move_to() {
-        let mut rigid = Rigid::new_circle(1.0, Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5);
+        let mut rigid = Rigid::new_circle(
+            Vector2 { x: 2.0, y: 3.0 },
+            1.0,
+            false,
+            0.5,
+            Circle { radius: 1.0 },
+        );
+
         rigid.move_to(Vector2 { x: 3.0, y: 4.0 });
+
         assert_eq!(rigid.get_position(), Vector2 { x: 3.0, y: 4.0 });
     }
 
     #[test]
     fn test_rotate_by() {
         let mut rigid = Rigid::new_box(
-            1.0,
-            1.0,
             Vector2::zero(),
             1.0,
             false,
             0.5,
+            Box {
+                width: 1.0,
+                height: 1.0,
+            },
         );
 
         rigid.rotate_by(90.0);
@@ -586,15 +670,18 @@ mod tests {
     #[test]
     fn test_new_circle_properties() {
         let rigid = Rigid::new_circle(
-            2.0,
             Vector2 { x: 1.0, y: 2.0 },
             3.0,
             true,
             0.8,
+            Circle { radius: 2.0 },
         );
 
-        assert_eq!(rigid.get_shape_type(), RigidType::Circle);
-        assert_eq!(rigid.get_radius(), 2.0);
+        assert_eq!(
+            rigid.get_shape(),
+            RigidType::Circle(Circle { radius: 2.0 })
+        );
+
         assert_eq!(rigid.get_position(), Vector2 { x: 1.0, y: 2.0 });
         assert_eq!(rigid.get_density(), 3.0);
         assert_eq!(rigid.is_static(), true);
@@ -604,17 +691,24 @@ mod tests {
     #[test]
     fn test_new_box_properties() {
         let rigid = Rigid::new_box(
-            4.0,
-            2.0,
             Vector2 { x: 5.0, y: 6.0 },
             1.5,
             false,
             0.3,
+            Box {
+                width: 4.0,
+                height: 2.0,
+            },
         );
 
-        assert_eq!(rigid.get_shape_type(), RigidType::Box);
-        assert_eq!(rigid.get_width(), 4.0);
-        assert_eq!(rigid.get_height(), 2.0);
+        assert_eq!(
+            rigid.get_shape(),
+            RigidType::Box(Box {
+                width: 4.0,
+                height: 2.0,
+            })
+        );
+
         assert_eq!(rigid.get_position(), Vector2 { x: 5.0, y: 6.0 });
         assert_eq!(rigid.get_density(), 1.5);
         assert_eq!(rigid.is_static(), false);
@@ -624,11 +718,11 @@ mod tests {
     #[test]
     fn test_circle_area_and_mass() {
         let rigid = Rigid::new_circle(
-            1.0,
             Vector2::zero(),
             2.0,
             false,
             0.5,
+            Circle { radius: 1.0 },
         );
 
         let expected_area = std::f32::consts::PI;
@@ -641,12 +735,14 @@ mod tests {
     #[test]
     fn test_box_area_and_mass() {
         let rigid = Rigid::new_box(
-            4.0,
-            2.0,
             Vector2::zero(),
             3.0,
             false,
             0.5,
+            Box {
+                width: 4.0,
+                height: 2.0,
+            },
         );
 
         assert_eq!(rigid.get_area(), 8.0);
@@ -656,12 +752,14 @@ mod tests {
     #[test]
     fn test_get_transformed_vertices_without_rotation() {
         let mut rigid = Rigid::new_box(
-            2.0,
-            2.0,
             Vector2 { x: 1.0, y: 1.0 },
             1.0,
             false,
             0.5,
+            Box {
+                width: 2.0,
+                height: 2.0,
+            },
         );
 
         let vertices = rigid.get_transformed_vertices();
@@ -675,11 +773,11 @@ mod tests {
     #[test]
     fn test_restitution_clamped() {
         let rigid = Rigid::new_circle(
-            1.0,
             Vector2::zero(),
             1.0,
             false,
             5.0,
+            Circle { radius: 1.0 },
         );
 
         assert_eq!(rigid.get_restitution(), 1.0);
@@ -688,11 +786,11 @@ mod tests {
     #[test]
     fn test_negative_restitution_clamped() {
         let rigid = Rigid::new_circle(
-            1.0,
             Vector2::zero(),
             1.0,
             false,
             -5.0,
+            Circle { radius: 1.0 },
         );
 
         assert_eq!(rigid.get_restitution(), 0.0);

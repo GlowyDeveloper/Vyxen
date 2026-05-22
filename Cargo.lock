@@ -262,6 +262,9 @@ dependencies = [
 [[package]]
 name = "vyxen-geometry"
 version = "0.1.0"
+dependencies = [
+ "vyxen-math",
+]
 
 [[package]]
 name = "vyxen-math"
@@ -271,6 +274,7 @@ version = "0.1.0"
 name = "vyxen-physics2d"
 version = "0.1.0"
 dependencies = [
+ "vyxen-geometry",
  "vyxen-math",
 ]
 

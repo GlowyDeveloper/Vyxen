@@ -1,3 +1,4 @@
+use vyxen_geometry::aabb::AABB;
 use vyxen_math::Vector2;
 
 /// Information about a collision between two rigid bodies.
@@ -51,6 +52,36 @@ pub fn intersect_circles(center_a: Vector2, radius_a: f32, center_b: Vector2, ra
     let depth = radius_sum - distance;
 
     return Some(Collision { normal, depth });
+}
+
+/// Checks **if** two `AABB`s intersect eachother
+/// 
+/// # Examples
+/// ```rust
+/// use vyxen_math::Vector2;
+/// use vyxen_geometry::aabb::AABB;
+/// use vyxen_physics2d::collision::intersect_aabb;
+///
+/// let a = AABB::new(
+///     Vector2 { x: 0.0, y: 0.0 },
+///     Vector2 { x: 1.0, y: 1.0 },
+/// );
+/// 
+/// let b = AABB::new(
+///     Vector2 { x: 0.5, y: 0.5 },
+///     Vector2 { x: 1.5, y: 1.5 },
+/// );
+/// 
+/// assert!(intersect_aabb(a, b));
+/// ```
+pub fn intersect_aabb(aabb_a: AABB, aabb_b: AABB) -> bool {
+    if aabb_a.get_max().x <= aabb_b.get_min().x ||
+        aabb_b.get_max().x <= aabb_a.get_min().x ||
+        aabb_a.get_max().y <= aabb_b.get_min().y ||
+        aabb_b.get_max().y <= aabb_a.get_min().y {
+        return false;
+    }
+    return true;
 }
 
 /// Checks for collision between two convex polygons and returns the collision information if they are colliding.

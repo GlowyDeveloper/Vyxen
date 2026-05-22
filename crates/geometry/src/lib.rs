@@ -1,14 +1,14 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+pub mod aabb;
+
+/// A simple circle struct
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Circle {
+    pub radius: f32
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+/// A simple box struct
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Box {
+    pub height: f32,
+    pub width: f32
 }
