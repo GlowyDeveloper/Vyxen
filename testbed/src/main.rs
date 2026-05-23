@@ -100,7 +100,6 @@ async fn main() {
             }
         }
         for body in bodies_to_remove {
-            println!("Removing body at position ({}, {})", body.get_position().x, body.get_position().y);
             world.remove_body(&body);
         }
 
@@ -137,6 +136,11 @@ async fn main() {
                     }
                 }
             }
+        }
+
+        for contact in &world.contact_points {
+            let world_pos = to_world_coords(*contact);
+            draw_rectangle_lines(world_pos.x - (0.5 / zoom), world_pos.y - (0.5 / zoom), 1.0 / zoom, 1.0 / zoom, 0.5 / zoom, ORANGE);
         }
 
         next_frame().await;

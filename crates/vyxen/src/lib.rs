@@ -1,5 +1,5 @@
 use vyxen_math::Vector2;
-use vyxen_physics2d::{bodies::{Rigid, RigidType}, collision::{Collision, intersect_aabb, intersect_circles, intersect_polygon_circle, intersect_polygons}};
+use vyxen_physics2d::{bodies::{Rigid, RigidType}, collision::{Collision, Manifold, find_contact_points, intersect_aabb, intersect_circles, intersect_polygon_circle, intersect_polygons}};
 
 pub use vyxen_math as math;
 pub use vyxen_geometry as geometry;
@@ -24,8 +24,13 @@ pub use vyxen_physics2d as physics2d;
 /// let len = world.get_bodies_len();
 /// assert_eq!(len, 0);
 /// ```
+#[derive(Debug, Clone, PartialEq)]
 pub struct World {
     bodies: Vec<Rigid>,
+    contacts: Vec<Manifold>,
+    /// A Vector of points where bodies collide.
+    /// Only meant for debugging, may be removed later.
+    pub contact_points: Vec<Vector2>,
     gravity: Vector2,
 }
 
@@ -52,6 +57,8 @@ impl World {
     pub fn new() -> Self {
         Self {
             bodies: Vec::new(),
+            contacts: Vec::new(),
+            contact_points: Vec::new(),
             gravity: Vector2 { x: 0.0, y: -9.81 }
         }
     }
@@ -207,12 +214,16 @@ impl World {
     /// world.step(0.1, 10);
     /// ```
     pub fn step(&mut self, dt: f32, iterations: usize) {
+        self.contact_points.clear();
+
         for _ in 0..iterations {
             let len = self.bodies.len();
             for i in 0..len {
                 let body = &mut self.bodies[i];
                 body.step(dt / iterations as f32, self.gravity);
             }
+
+            self.contacts.clear();
 
             for i in 0..len {
                 let (left, right) = self.bodies.split_at_mut(i+1);
@@ -241,8 +252,22 @@ impl World {
                             body_b.move_by(collision.normal * collision.depth / 2.0);
                         }
 
-                        Self::resolve_collision(body_a, body_b, collision);
+                        let (contact_a, contact_b) = find_contact_points(body_a, body_b);
+                        let contact = Manifold::new(i, j, collision.normal, collision.depth, contact_a, contact_b);
+                        self.contacts.push(contact);
                     }
+                }
+            }
+
+            for i in 0..self.contacts.len() {
+                let manifold = self.contacts[i];
+                self.resolve_collision(manifold);
+
+                if manifold.get_contact_1().is_some() {
+                    self.contact_points.push(manifold.get_contact_1().unwrap());
+                }
+                if manifold.get_contact_2().is_some() {
+                    self.contact_points.push(manifold.get_contact_2().unwrap());
                 }
             }
         }
@@ -274,43 +299,24 @@ impl World {
         }
     }
 
-    /// Resolves two collisions
-    /// 
-    /// # Examples
-    /// ```rust
-    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, World, geometry::Circle};
-    /// 
-    /// let mut world = World::new();
-    /// 
-    /// let start_pos1 = Vector2 { x: 0.0, y: 0.0 };
-    /// let start_pos2 = Vector2 { x: 0.5, y: 0.5 };
-    /// 
-    /// let mut body1 = Rigid::new_circle(start_pos1, 1.0, false, 0.5, Circle { radius: 1.0 });
-    /// let mut body2 = Rigid::new_circle(start_pos2, 1.0, false, 0.5, Circle { radius: 1.0 });
-    /// 
-    /// world.add_body(body1);
-    /// world.add_body(body2);
-    /// 
-    /// let collision = World::collide(&mut body1, &mut body2);
-    /// assert!(collision.is_some());
-    /// 
-    /// World::resolve_collision(&mut body1, &mut body2, collision.unwrap());
-    /// 
-    /// assert_eq!(body1.get_position(), start_pos1);
-    /// assert_eq!(body2.get_position(), start_pos2);
-    /// ```
-    pub fn resolve_collision(body_a: &mut Rigid, body_b: &mut Rigid, collision: Collision) {
+    fn resolve_collision(&mut self, contact: Manifold) {
+        let (left, right) = self.bodies.split_at_mut(contact.get_body_b_index());
+        let body_a = &mut left[contact.get_body_a_index()];
+        let body_b = &mut right[0];
+        let normal = contact.get_normal();
+        let _depth = contact.get_depth();
+
         let relative_velocity = body_b.get_linear_velocity() - body_a.get_linear_velocity();
 
-        if relative_velocity.dot(&collision.normal) > 0.0 {
+        if relative_velocity.dot(&normal) > 0.0 {
             return;
         }
 
         let e = body_a.get_restitution().min(body_b.get_restitution());
-        let mut j = -(1.0 + e) * relative_velocity.dot(&collision.normal);
+        let mut j = -(1.0 + e) * relative_velocity.dot(&normal);
         j /= body_a.get_inverse_mass() + body_b.get_inverse_mass();
 
-        let impulse = collision.normal * j;
+        let impulse = normal * j;
 
         body_a.set_linear_velocity(body_a.get_linear_velocity() - impulse * body_a.get_inverse_mass());
         body_b.set_linear_velocity(body_b.get_linear_velocity() + impulse * body_b.get_inverse_mass());

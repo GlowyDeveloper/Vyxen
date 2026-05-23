@@ -1,23 +1,187 @@
 use vyxen_geometry::aabb::AABB;
-use vyxen_math::Vector2;
+use vyxen_math::{Vector2, is_nearly_equal};
+
+use crate::bodies::{Rigid, RigidType};
 
 /// Information about a collision between two rigid bodies.
 ///  - `normal` is the direction of the collision
 ///  - `depth` is how much the two bodies are penetrating each other.
-/// 
-/// # Examples
-/// ```rust
-/// use vyxen_math::Vector2;
-/// use vyxen_physics2d::collision::Collision;
-/// 
-/// let collision = Collision {
-///   normal: Vector2 { x: 1.0, y: 0.0 },
-///   depth: 1.0,
-/// };
-/// ```
 pub struct Collision {
     pub normal: Vector2,
     pub depth: f32,
+}
+
+/// A collision manifold
+/// Used to store data about a collision
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Manifold {
+    body_a_index: usize,
+    body_b_index: usize,
+    normal: Vector2,
+    depth: f32,
+    contact_1: Option<Vector2>,
+    contact_2: Option<Vector2>
+}
+
+impl Manifold {
+    /// Creates a new collision manifold
+    pub fn new(body_a_index: usize, body_b_index: usize, normal: Vector2, depth: f32, contact_1: Option<Vector2>, contact_2: Option<Vector2>) -> Self {
+        Manifold { body_a_index, body_b_index, normal, depth, contact_1, contact_2 }
+    }
+
+    /// Gets the index of body a
+    pub fn get_body_a_index(&self) -> usize {
+        self.body_a_index
+    }
+    /// Gets the index of body b
+    pub fn get_body_b_index(&self) -> usize {
+        self.body_b_index
+    }
+    /// Gets the normal of the collision
+    pub fn get_normal(&self) -> Vector2 {
+        self.normal
+    }
+    /// Gets the depth of the collision
+    pub fn get_depth(&self) -> f32 {
+        self.depth
+    }
+    /// Gets the first `Vector2` contact point of the collision
+    pub fn get_contact_1(&self) -> Option<Vector2> {
+        self.contact_1
+    }
+    /// Gets the second `Vector2` contact point of the collision
+    pub fn get_contact_2(&self) -> Option<Vector2> {
+        self.contact_2
+    }
+}
+
+/// Finds the contact points bodies
+/// 
+/// # Examples
+/// 
+/// ```rust
+/// use vyxen_math::Vector2;
+/// use vyxen_physics2d::{bodies::Rigid, collision::find_contact_points};
+/// use vyxen_geometry::Circle;
+/// 
+/// let mut rigid_1 = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+/// let mut rigid_2 = Rigid::new_circle(Vector2 { x: 2.0, y: 4.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+/// 
+/// let (point_1, point_2) = find_contact_points(&mut rigid_1, &mut rigid_2);
+/// assert!(point_1.is_some());
+/// assert!(point_2.is_none()); // Circles can only have 1 contact point.
+/// ```
+pub fn find_contact_points(body_a: &mut Rigid, body_b: &mut Rigid) -> (Option<Vector2>, Option<Vector2>) {
+    match (body_a.get_shape(), body_b.get_shape()) {
+        (RigidType::Circle(c1), RigidType::Circle(_)) => {
+            let contact = find_contact_point_circle_to_circle(body_a.get_position(), c1.radius, body_b.get_position());
+            return (Some(contact), None)
+        },
+        (RigidType::Box(_), RigidType::Box(_)) => {
+            return find_contact_points_polygon_to_polygon(body_a.get_transformed_vertices(), body_b.get_transformed_vertices());
+        },
+        (RigidType::Box(_), RigidType::Circle(_)) => {
+            let contact = find_contact_point_circle_to_polygon(body_b.get_position(), body_a.get_transformed_vertices());
+            return (Some(contact), None);
+        },
+        (RigidType::Circle(_), RigidType::Box(_)) => {
+            let contact = find_contact_point_circle_to_polygon(body_a.get_position(), body_b.get_transformed_vertices());
+            return (Some(contact), None);
+        },
+    }
+}
+
+fn find_contact_points_polygon_to_polygon(vertices_a: &[Vector2], vertices_b: &[Vector2]) -> (Option<Vector2>, Option<Vector2>) {
+    let mut contact_1: Option<Vector2> = None;
+    let mut contact_2: Option<Vector2> = None;
+    
+    let mut min_distance_squared = std::f32::MAX;
+
+    for i in 0..vertices_a.len() {
+        let p = vertices_a[i];
+        
+        for j in 0..vertices_b.len() {
+            let va = vertices_b[j];
+            let vb = vertices_b[(j + 1) % vertices_b.len()];
+
+            let (distance_squared, contact) = point_segement_distance(p, va, vb);
+
+            if is_nearly_equal(distance_squared, min_distance_squared) {
+                if !contact.is_nearly_equal(&contact_1.unwrap_or(Vector2::zero())) {
+                    contact_2 = Some(contact);
+                }
+            } else if distance_squared < min_distance_squared {
+                min_distance_squared = distance_squared;
+                contact_1 = Some(contact);
+            }
+        }
+    }
+
+    for i in 0..vertices_b.len() {
+        let p = vertices_b[i];
+        
+        for j in 0..vertices_a.len() {
+            let va = vertices_a[j];
+            let vb = vertices_a[(j + 1) % vertices_a.len()];
+
+            let (distance_squared, contact) = point_segement_distance(p, va, vb);
+
+            if is_nearly_equal(distance_squared, min_distance_squared) {
+                if !contact.is_nearly_equal(&contact_1.unwrap_or(Vector2::zero())) {
+                    contact_2 = Some(contact);
+                }
+            } else if distance_squared < min_distance_squared {
+                min_distance_squared = distance_squared;
+                contact_1 = Some(contact);
+            }
+        }
+    }
+
+    (contact_1, contact_2)
+}
+
+fn find_contact_point_circle_to_polygon(circle_center: Vector2, vertices: &[Vector2]) -> Vector2 {
+    let mut min_distance_squared = std::f32::MAX;
+    let mut contact_point = Vector2::zero();
+    
+    for i in 0..vertices.len() {
+        let va = vertices[i];
+        let vb = vertices[(i + 1) % vertices.len()];
+
+        let (distance_squared, contact) = point_segement_distance(circle_center, va, vb);
+
+        if distance_squared < min_distance_squared {
+            min_distance_squared = distance_squared;
+            contact_point = contact;
+        }
+    }
+
+    contact_point
+}
+
+fn find_contact_point_circle_to_circle(center_a: Vector2, radius_a: f32, center_b: Vector2) -> Vector2 {
+    let ab = center_b - center_a;
+    let dir = ab.normalize();
+    center_a + dir * radius_a
+}
+
+fn point_segement_distance(p: Vector2, a: Vector2, b: Vector2) -> (f32, Vector2) {
+    let ab = b - a;
+    let ap = p - a;
+
+    let proj = ap.dot(&ab);
+    let ab_len_squared = ab.length_squared();
+    let d = proj / ab_len_squared;
+
+    let contact = if d <= 0.0 {
+        a
+    } else if d >= 1.0 {
+        b
+    } else {
+        a + ab * d
+    }; 
+
+    return (p.distance_squared(&contact), contact);
 }
 
 /// Checks for collision between two circles and returns the collision information if they are colliding.
