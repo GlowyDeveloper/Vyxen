@@ -13,7 +13,7 @@ pub use vyxen_physics2d as physics2d;
 /// 
 /// let mut world = World::new();
 /// 
-/// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
+/// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
 /// world.add_body(body);
 /// 
 /// let len = world.get_bodies_len();
@@ -40,7 +40,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body);
     /// 
     /// let len = world.get_bodies_len();
@@ -67,7 +67,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body);
     /// 
     /// let len = world.get_bodies_len();
@@ -85,7 +85,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body);
     /// 
     /// let len = world.get_bodies_len();
@@ -112,7 +112,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body1);
     /// 
     /// let body2 = world.get_body(0);
@@ -134,7 +134,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body1);
     /// 
     /// let mut body2 = world.get_body_mut(0);
@@ -154,7 +154,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body);
     /// 
     /// let len = world.get_bodies_len();
@@ -204,7 +204,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body);
     /// 
     /// world.step(0.1, 10);
@@ -285,8 +285,8 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let mut body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
-    /// let mut body2 = Rigid::new_circle(Vector2 { x: 0.5, y: 0.5 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// let mut body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let mut body2 = Rigid::new_circle(Vector2 { x: 0.5, y: 0.5 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// 
     /// world.add_body(body1);
     /// world.add_body(body2);
@@ -313,12 +313,17 @@ impl World {
         let contact_2 = contact.get_contact_2();
         let contact_count = if contact_2.is_none() { 1 } else { 2 };
 
+        let sf = (body_a.get_static_friction() + body_b.get_static_friction()) / 2.0;
+        let df = (body_a.get_dynamic_friction() + body_b.get_dynamic_friction()) / 2.0;
+
         let mut impulse_vec: Vec<Vector2> = vec![Vector2::zero(), Vector2::zero()];
+        let mut friction_impulse_vec: Vec<Vector2> = vec![Vector2::zero(), Vector2::zero()];
 
         let e = body_a.get_restitution().min(body_b.get_restitution());
 
         let mut ra: Vec<Vector2> = vec![Vector2::zero(), Vector2::zero()];
         let mut rb: Vec<Vector2> = vec![Vector2::zero(), Vector2::zero()];
+        let mut js: Vec<f32> = vec![0.0, 0.0];
 
         for i in 0..contact_count {
             let contact = if i == 0 { contact_1 } else { contact_2 };
@@ -354,12 +359,65 @@ impl World {
             j /= denomenator;
             j /= contact_count as f32;
 
+            js[i] = j;
+
             let impulse = normal * j;
             impulse_vec[i] = impulse
         }
 
         for i in 0..contact_count {
             let impulse = impulse_vec[i];
+            body_a.set_linear_velocity(body_a.get_linear_velocity() + -impulse * body_a.get_inverse_mass());
+            body_a.set_rotational_velocity(body_a.get_rotational_velocity() + -ra[i].cross(&impulse) * body_a.get_inverse_inertia());
+            body_b.set_linear_velocity(body_b.get_linear_velocity() + impulse * body_b.get_inverse_mass());
+            body_b.set_rotational_velocity(body_b.get_rotational_velocity() + rb[i].cross(&impulse) * body_b.get_inverse_inertia());
+        }
+
+        for i in 0..contact_count {
+            let contact = if i == 0 { contact_1 } else { contact_2 };
+            if contact.is_none() {
+                continue;
+            }
+
+            ra[i] = contact.unwrap() - body_a.get_position();
+            rb[i] = contact.unwrap() - body_b.get_position();
+
+            let ra_prep = Vector2 { x: -ra[i].y, y: ra[i].x };
+            let rb_prep = Vector2 { x: -rb[i].y, y: rb[i].x };
+
+            let rotation_velocity_body_a = ra_prep * body_a.get_rotational_velocity();
+            let rotation_velocity_body_b = rb_prep * body_b.get_rotational_velocity();
+
+            let relative_velocity = (body_b.get_linear_velocity() + rotation_velocity_body_b) - (body_a.get_linear_velocity() + rotation_velocity_body_a);
+
+            let tangent = relative_velocity - normal * relative_velocity.dot(&normal);
+            if tangent.is_nearly_equal(&Vector2::zero()) {
+                continue;
+            }
+            let tangent_normalized = tangent.normalize();
+
+            let ra_prep_dot_t = ra_prep.dot(&tangent_normalized);
+            let rb_prep_dot_t = rb_prep.dot(&tangent_normalized);
+
+            let denomenator = body_a.get_inverse_mass() + body_b.get_inverse_mass() +
+                (ra_prep_dot_t * ra_prep_dot_t) * body_a.get_inverse_inertia() +
+                (rb_prep_dot_t * rb_prep_dot_t) * body_b.get_inverse_inertia();
+
+            let mut jt = -relative_velocity.dot(&tangent_normalized);
+            jt /= denomenator;
+            jt /= contact_count as f32;
+
+            let impulse = if jt.abs() <= js[i] * sf {
+                tangent_normalized * jt
+            } else {
+                tangent_normalized * -js[i] * df
+            };
+
+            friction_impulse_vec[i] = impulse
+        }
+
+        for i in 0..contact_count {
+            let impulse = friction_impulse_vec[i];
             body_a.set_linear_velocity(body_a.get_linear_velocity() + -impulse * body_a.get_inverse_mass());
             body_a.set_rotational_velocity(body_a.get_rotational_velocity() + -ra[i].cross(&impulse) * body_a.get_inverse_inertia());
             body_b.set_linear_velocity(body_b.get_linear_velocity() + impulse * body_b.get_inverse_mass());

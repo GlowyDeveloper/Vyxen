@@ -64,8 +64,8 @@ impl Manifold {
 /// use vyxen_physics2d::{bodies::Rigid, collision::find_contact_points};
 /// use vyxen_geometry::Circle;
 /// 
-/// let mut rigid_1 = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle::new(1.0));
-/// let mut rigid_2 = Rigid::new_circle(Vector2 { x: 2.0, y: 4.0 }, 1.0, false, 0.5, Circle::new(1.0));
+/// let mut rigid_1 = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+/// let mut rigid_2 = Rigid::new_circle(Vector2 { x: 2.0, y: 4.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
 /// 
 /// let (point_1, point_2) = find_contact_points(&mut rigid_1, &mut rigid_2);
 /// assert!(point_1.is_some());

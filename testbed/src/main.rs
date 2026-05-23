@@ -20,13 +20,13 @@ async fn main() {
 
     let mut world = World::new();
 
-    world.add_body(Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, true, 0.5, Box::new(100.0, 5.0)));
+    world.add_body(Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, true, 0.5, Box::new(100.0, 5.0), 0.6, 0.4));
 
-    let mut slope_1 = Rigid::new_box(Vector2 { x: -10.0, y: 10.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0));
+    let mut slope_1 = Rigid::new_box(Vector2 { x: -10.0, y: 10.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4);
     slope_1.rotate_by(210.0);
     world.add_body(slope_1);
 
-    let mut slope_2 = Rigid::new_box(Vector2 { x: 10.0, y: 20.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0));
+    let mut slope_2 = Rigid::new_box(Vector2 { x: 10.0, y: 20.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4);
     slope_2.rotate_by(-210.0);
     world.add_body(slope_2);
 
@@ -78,7 +78,10 @@ async fn main() {
             let density = rand::gen_range(1.0, 10.0);
             let restitution = rand::gen_range(0.0, 1.0);
 
-            world.add_body(Rigid::new_circle(world_pos, density, false, restitution, VyxenCircle::new(radius)));
+            let static_friction = rand::gen_range(0.0, 1.0);
+            let dynamic_friction = rand::gen_range(0.0, 1.0);
+
+            world.add_body(Rigid::new_circle(world_pos, density, false, restitution, VyxenCircle::new(radius), static_friction, dynamic_friction));
         }
 
         if is_mouse_button_pressed(MouseButton::Right) {
@@ -91,7 +94,10 @@ async fn main() {
             let density = rand::gen_range(1.0, 10.0);
             let restitution = rand::gen_range(0.0, 1.0);
 
-            world.add_body(Rigid::new_box(world_pos, density, false, restitution, Box::new(width, height)));
+            let static_friction = rand::gen_range(0.0, 1.0);
+            let dynamic_friction = rand::gen_range(0.0, 1.0);
+
+            world.add_body(Rigid::new_box(world_pos, density, false, restitution, Box::new(width, height), static_friction, dynamic_friction));
         }
 
         world.step(dt, 10);
