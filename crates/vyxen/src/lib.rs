@@ -13,7 +13,7 @@ pub use vyxen_physics2d as physics2d;
 /// 
 /// let mut world = World::new();
 /// 
-/// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+/// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
 /// world.add_body(body);
 /// 
 /// let len = world.get_bodies_len();
@@ -43,7 +43,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
     /// world.add_body(body);
     /// 
     /// let len = world.get_bodies_len();
@@ -71,7 +71,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
     /// world.add_body(body);
     /// 
     /// let len = world.get_bodies_len();
@@ -89,7 +89,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
     /// world.add_body(body);
     /// 
     /// let len = world.get_bodies_len();
@@ -116,7 +116,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
     /// world.add_body(body1);
     /// 
     /// let body2 = world.get_body(0);
@@ -138,7 +138,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
     /// world.add_body(body1);
     /// 
     /// let mut body2 = world.get_body_mut(0);
@@ -158,7 +158,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
     /// world.add_body(body);
     /// 
     /// let len = world.get_bodies_len();
@@ -208,7 +208,7 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
     /// world.add_body(body);
     /// 
     /// world.step(0.1, 10);
@@ -281,8 +281,8 @@ impl World {
     /// 
     /// let mut world = World::new();
     /// 
-    /// let mut body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
-    /// let mut body2 = Rigid::new_circle(Vector2 { x: 0.5, y: 0.5 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+    /// let mut body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// let mut body2 = Rigid::new_circle(Vector2 { x: 0.5, y: 0.5 }, 1.0, false, 0.5, Circle::new(1.0));
     /// 
     /// world.add_body(body1);
     /// world.add_body(body2);
@@ -292,10 +292,10 @@ impl World {
     /// ```
     pub fn collide(body_a: &mut Rigid, body_b: &mut Rigid) -> Option<Collision> {
         match (body_a.get_shape(), body_b.get_shape()) {
-            (RigidType::Circle(c1), RigidType::Circle(c2)) => intersect_circles(body_a.get_position(), c1.radius, body_b.get_position(), c2.radius),
-            (RigidType::Box(_), RigidType::Box(_)) => intersect_polygons(body_a.get_transformed_vertices(), body_b.get_transformed_vertices()),
-            (RigidType::Box(_), RigidType::Circle(c)) => intersect_polygon_circle(body_b.get_position(), c.radius, body_a.get_transformed_vertices()).map(|c| Collision { normal: -c.normal, depth: c.depth }),
-            (RigidType::Circle(c), RigidType::Box(_)) => intersect_polygon_circle(body_a.get_position(), c.radius, body_b.get_transformed_vertices()),
+            (RigidType::Circle(c1), RigidType::Circle(c2)) => intersect_circles(body_a.get_position(), c1.get_radius(), body_b.get_position(), c2.get_radius()),
+            (RigidType::Box(_), RigidType::Box(_)) => intersect_polygons(&body_a.get_transformed_vertices(), &body_b.get_transformed_vertices()),
+            (RigidType::Box(_), RigidType::Circle(c)) => intersect_polygon_circle(body_b.get_position(), c.get_radius(), &body_a.get_transformed_vertices()).map(|c| Collision { normal: -c.normal, depth: c.depth }),
+            (RigidType::Circle(c), RigidType::Box(_)) => intersect_polygon_circle(body_a.get_position(), c.get_radius(), &body_b.get_transformed_vertices()),
         }
     }
 

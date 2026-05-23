@@ -64,8 +64,8 @@ impl Manifold {
 /// use vyxen_physics2d::{bodies::Rigid, collision::find_contact_points};
 /// use vyxen_geometry::Circle;
 /// 
-/// let mut rigid_1 = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
-/// let mut rigid_2 = Rigid::new_circle(Vector2 { x: 2.0, y: 4.0 }, 1.0, false, 0.5, Circle { radius: 1.0 });
+/// let mut rigid_1 = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle::new(1.0));
+/// let mut rigid_2 = Rigid::new_circle(Vector2 { x: 2.0, y: 4.0 }, 1.0, false, 0.5, Circle::new(1.0));
 /// 
 /// let (point_1, point_2) = find_contact_points(&mut rigid_1, &mut rigid_2);
 /// assert!(point_1.is_some());
@@ -74,18 +74,18 @@ impl Manifold {
 pub fn find_contact_points(body_a: &mut Rigid, body_b: &mut Rigid) -> (Option<Vector2>, Option<Vector2>) {
     match (body_a.get_shape(), body_b.get_shape()) {
         (RigidType::Circle(c1), RigidType::Circle(_)) => {
-            let contact = find_contact_point_circle_to_circle(body_a.get_position(), c1.radius, body_b.get_position());
+            let contact = find_contact_point_circle_to_circle(body_a.get_position(), c1.get_radius(), body_b.get_position());
             return (Some(contact), None)
         },
         (RigidType::Box(_), RigidType::Box(_)) => {
-            return find_contact_points_polygon_to_polygon(body_a.get_transformed_vertices(), body_b.get_transformed_vertices());
+            return find_contact_points_polygon_to_polygon(&body_a.get_transformed_vertices(), &body_b.get_transformed_vertices());
         },
         (RigidType::Box(_), RigidType::Circle(_)) => {
-            let contact = find_contact_point_circle_to_polygon(body_b.get_position(), body_a.get_transformed_vertices());
+            let contact = find_contact_point_circle_to_polygon(body_b.get_position(), &body_a.get_transformed_vertices());
             return (Some(contact), None);
         },
         (RigidType::Circle(_), RigidType::Box(_)) => {
-            let contact = find_contact_point_circle_to_polygon(body_a.get_position(), body_b.get_transformed_vertices());
+            let contact = find_contact_point_circle_to_polygon(body_a.get_position(), &body_b.get_transformed_vertices());
             return (Some(contact), None);
         },
     }

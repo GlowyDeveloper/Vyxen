@@ -15,12 +15,20 @@ fn to_world_coords_multi(vec: &[Vector2]) -> Vec<Vec2> {
 
 #[macroquad::main("Physics Viewer")]
 async fn main() {
-    let mut camera_target = vec2(0.0, 0.0);
-    let mut zoom = 1.0;
+    let mut camera_target = vec2(0.0, 10.0);
+    let mut zoom = 2.0;
 
     let mut world = World::new();
 
-    world.add_body(Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, true, 0.5, Box { width: 100.0, height: 10.0 }));
+    world.add_body(Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, true, 0.5, Box::new(5.0, 100.0)));
+
+    let mut slope_1 = Rigid::new_box(Vector2 { x: -10.0, y: 10.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0));
+    slope_1.rotate_by(210.0);
+    world.add_body(slope_1);
+
+    let mut slope_2 = Rigid::new_box(Vector2 { x: 10.0, y: 20.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0));
+    slope_2.rotate_by(-210.0);
+    world.add_body(slope_2);
 
     loop {
         let dt = get_frame_time();
@@ -70,7 +78,7 @@ async fn main() {
             let density = rand::gen_range(1.0, 10.0);
             let restitution = rand::gen_range(0.0, 1.0);
 
-            world.add_body(Rigid::new_circle(world_pos, density, false, restitution, VyxenCircle { radius }));
+            world.add_body(Rigid::new_circle(world_pos, density, false, restitution, VyxenCircle::new(radius)));
         }
 
         if is_mouse_button_pressed(MouseButton::Right) {
@@ -83,7 +91,7 @@ async fn main() {
             let density = rand::gen_range(1.0, 10.0);
             let restitution = rand::gen_range(0.0, 1.0);
 
-            world.add_body(Rigid::new_box(world_pos, density, false, restitution, Box { width, height }));
+            world.add_body(Rigid::new_box(world_pos, density, false, restitution, Box::new(width, height)));
         }
 
         world.step(dt, 10);
@@ -115,10 +123,10 @@ async fn main() {
             let world_pos = to_world_coords(body.get_position());
             match body.get_shape() {
                 RigidType::Circle(c) => {
-                    draw_circle(world_pos.x, world_pos.y, c.radius, if body.is_static() { GRAY } else { BLUE });
+                    draw_circle(world_pos.x, world_pos.y, c.get_radius(), if body.is_static() { GRAY } else { BLUE });
                 }
                 RigidType::Box(_) => {
-                    let vertices = to_world_coords_multi(body.get_transformed_vertices());
+                    let vertices = to_world_coords_multi(&body.get_transformed_vertices());
                     if vertices.len() == 4 {
                         draw_triangle(
                             vertices[0],
