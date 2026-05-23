@@ -27,10 +27,7 @@ pub use vyxen_physics2d as physics2d;
 #[derive(Debug, Clone, PartialEq)]
 pub struct World {
     bodies: Vec<Rigid>,
-    contacts: Vec<Manifold>,
-    /// A Vector of points where bodies collide.
-    /// Only meant for debugging, may be removed later.
-    pub contact_points: Vec<Vector2>,
+    contact_pairs: Vec<(usize, usize)>,
     gravity: Vector2,
 }
 
@@ -57,8 +54,7 @@ impl World {
     pub fn new() -> Self {
         Self {
             bodies: Vec::new(),
-            contacts: Vec::new(),
-            contact_points: Vec::new(),
+            contact_pairs: Vec::new(),
             gravity: Vector2 { x: 0.0, y: -9.81 }
         }
     }
@@ -214,62 +210,70 @@ impl World {
     /// world.step(0.1, 10);
     /// ```
     pub fn step(&mut self, dt: f32, iterations: usize) {
-        self.contact_points.clear();
-
         for _ in 0..iterations {
-            let len = self.bodies.len();
-            for i in 0..len {
-                let body = &mut self.bodies[i];
-                body.step(dt / iterations as f32, self.gravity);
-            }
+            self.step_bodies(dt, iterations);
+            self.contact_pairs.clear();
+            self.broad_phase();
+            self.narrow_phase();
+        }
+    }
 
-            self.contacts.clear();
+    fn step_bodies(&mut self, dt: f32, iterations: usize) {
+        for i in 0..self.bodies.len() {
+            let body = &mut self.bodies[i];
+            body.step(dt / iterations as f32, self.gravity);
+        }
+    }
 
-            for i in 0..len {
-                let (left, right) = self.bodies.split_at_mut(i+1);
-                let body_a = &mut left[i];
-                let body_a_aabb = body_a.get_aabb();
+    fn broad_phase(&mut self) {
+        let len = self.bodies.len();
+        for i in 0..len {
+            let (left, right) = self.bodies.split_at_mut(i+1);
+            let body_a = &mut left[i];
+            let body_a_aabb = body_a.get_aabb();
 
-                for j in i + 1..len {
-                    let body_b = &mut right[j-i-1];
-                    let body_b_aabb = body_b.get_aabb();
+            for j in i + 1..len {
+                let body_b = &mut right[j-i-1];
+                let body_b_aabb = body_b.get_aabb();
 
-                    if body_a.is_static() && body_b.is_static() {
-                        continue;
-                    }
-
-                    if !intersect_aabb(body_a_aabb, body_b_aabb) {
-                        continue;
-                    }
-
-                    if let Some(collision) = Self::collide(body_a, body_b) {
-                        if body_a.is_static() {
-                            body_b.move_by(collision.normal * collision.depth);
-                        } else if body_b.is_static() {
-                            body_a.move_by(-collision.normal * collision.depth);
-                        } else {
-                            body_a.move_by(-collision.normal * collision.depth / 2.0);
-                            body_b.move_by(collision.normal * collision.depth / 2.0);
-                        }
-
-                        let (contact_a, contact_b) = find_contact_points(body_a, body_b);
-                        let contact = Manifold::new(i, j, collision.normal, collision.depth, contact_a, contact_b);
-                        self.contacts.push(contact);
-                    }
+                if body_a.is_static() && body_b.is_static() {
+                    continue;
                 }
-            }
 
-            for i in 0..self.contacts.len() {
-                let manifold = self.contacts[i];
-                self.resolve_collision(manifold);
+                if !intersect_aabb(body_a_aabb, body_b_aabb) {
+                    continue;
+                }
 
-                if manifold.get_contact_1().is_some() {
-                    self.contact_points.push(manifold.get_contact_1().unwrap());
-                }
-                if manifold.get_contact_2().is_some() {
-                    self.contact_points.push(manifold.get_contact_2().unwrap());
-                }
+                self.contact_pairs.push((i, j));
             }
+        }
+    }
+
+    fn narrow_phase(&mut self) {
+        for i in 0..self.contact_pairs.len() {
+            let (j, k) = self.contact_pairs[i];
+            let (left, right) = self.bodies.split_at_mut(k);
+            let body_a = &mut left[j];
+            let body_b = &mut right[0];
+
+            if let Some(collision) = Self::collide(body_a, body_b) {
+                Self::seperate_bodies(body_a, body_b, collision.normal * collision.depth);
+
+                let (contact_a, contact_b) = find_contact_points(body_a, body_b);
+                let contact = Manifold::new(i, j, collision.normal, collision.depth, contact_a, contact_b);
+                self.resolve_collision(contact);
+            }
+        }
+    }
+
+    fn seperate_bodies(body_a: &mut Rigid, body_b: &mut Rigid, mtv: Vector2) {
+        if body_a.is_static() {
+            body_b.move_by(mtv);
+        } else if body_b.is_static() {
+            body_a.move_by(-mtv);
+        } else {
+            body_a.move_by(-mtv / 2.0);
+            body_b.move_by(mtv / 2.0);
         }
     }
 

@@ -23,11 +23,11 @@ async fn main() {
     world.add_body(Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, true, 0.5, Box::new(5.0, 100.0)));
 
     let mut slope_1 = Rigid::new_box(Vector2 { x: -10.0, y: 10.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0));
-    slope_1.rotate_by(210.0);
+    slope_1.rotate_by(30.0);
     world.add_body(slope_1);
 
     let mut slope_2 = Rigid::new_box(Vector2 { x: 10.0, y: 20.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0));
-    slope_2.rotate_by(-210.0);
+    slope_2.rotate_by(-30.0);
     world.add_body(slope_2);
 
     loop {
@@ -144,11 +144,6 @@ async fn main() {
                     }
                 }
             }
-        }
-
-        for contact in &world.contact_points {
-            let world_pos = to_world_coords(*contact);
-            draw_rectangle_lines(world_pos.x - (0.5 / zoom), world_pos.y - (0.5 / zoom), 1.0 / zoom, 1.0 / zoom, 0.5 / zoom, ORANGE);
         }
 
         next_frame().await;

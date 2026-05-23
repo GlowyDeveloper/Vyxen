@@ -503,6 +503,30 @@ impl Rigid {
         }
     }
 
+    /// Rotates the rigid body to a given amount.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
+    /// 
+    /// let mut rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle::new(1.0));
+    /// rigid.rotate_to(45.0);
+    /// assert_eq!(rigid.get_rotation(), 45.0);
+    /// rigid.rotate_to(21.0);
+    /// assert_eq!(rigid.get_rotation(), 21.0);
+    /// ```
+    pub fn rotate_to(&mut self, amount: f32) {
+        self.rotation = amount;
+        self.aabb_required = true;
+
+        match &mut self.get_shape() {
+            RigidType::Box(b) => b.set_transform_required(true),
+            _ => {}
+        }
+    }
+
     /// Processes a single physics frame of the body.
     /// 
     /// # Examples

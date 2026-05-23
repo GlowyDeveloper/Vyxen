@@ -198,7 +198,7 @@ impl Vector2 {
     /// assert!(v1.is_nearly_equal(&v2));
     /// ```
     pub fn is_nearly_equal(&self, other: &Self) -> bool {
-        is_nearly_equal(self.x, other.x) && is_nearly_equal(self.y, other.y)
+        self.distance(other) < 0.0005
     }
 }
 
