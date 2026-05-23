@@ -324,6 +324,24 @@ impl Rigid {
     pub fn set_linear_velocity(&mut self, velocity: Vector2) {
         self.linear_velocity = velocity;
     }
+    /// A setter for the rotational velocity of the rigid body.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
+    /// 
+    /// let mut rigid = Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Box::new(1.0, 1.0));
+    /// rigid.set_rotational_velocity(5.0);
+    /// rigid.step(1.0, Vector2 { x: 0.0, y: -9.81 });
+    /// 
+    /// assert!(rigid.get_rotation() != 0.0);
+    /// ```
+    pub fn set_rotational_velocity(&mut self, amount: f32) {
+        self.rotational_velocity = amount;
+    }
 }
 
 impl Rigid {

@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use vyxen::{World, geometry::{Box, Circle as VyxenCircle}, math::Vector2, physics2d::bodies::{Rigid, RigidType}};
+use vyxen::{World, geometry::{Box, Circle as VyxenCircle}, math::{Transform, Vector2}, physics2d::bodies::{Rigid, RigidType}};
 
 fn to_world_coords(v: Vector2) -> Vec2 {
     vec2(v.x, v.y)
@@ -20,14 +20,14 @@ async fn main() {
 
     let mut world = World::new();
 
-    world.add_body(Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, true, 0.5, Box::new(5.0, 100.0)));
+    world.add_body(Rigid::new_box(Vector2 { x: 0.0, y: 0.0 }, 1.0, true, 0.5, Box::new(100.0, 5.0)));
 
     let mut slope_1 = Rigid::new_box(Vector2 { x: -10.0, y: 10.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0));
-    slope_1.rotate_by(30.0);
+    slope_1.rotate_by(210.0);
     world.add_body(slope_1);
 
     let mut slope_2 = Rigid::new_box(Vector2 { x: 10.0, y: 20.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0));
-    slope_2.rotate_by(-30.0);
+    slope_2.rotate_by(-210.0);
     world.add_body(slope_2);
 
     loop {
@@ -124,6 +124,14 @@ async fn main() {
             match body.get_shape() {
                 RigidType::Circle(c) => {
                     draw_circle(world_pos.x, world_pos.y, c.get_radius(), if body.is_static() { GRAY } else { BLUE });
+
+                    let va = Vector2::zero();
+                    let vb = Vector2 { x: c.get_radius(), y: 0.0 };
+                    let transform = Transform::new(body.get_position(), body.get_rotation());
+                    let tva = va.transform(&transform);
+                    let tvb = vb.transform(&transform);
+
+                    draw_line(tva.x, tva.y, tvb.x, tvb.y, 0.1, WHITE);
                 }
                 RigidType::Box(_) => {
                     let vertices = to_world_coords_multi(&body.get_transformed_vertices());

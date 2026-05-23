@@ -260,7 +260,7 @@ impl World {
                 Self::seperate_bodies(body_a, body_b, collision.normal * collision.depth);
 
                 let (contact_a, contact_b) = find_contact_points(body_a, body_b);
-                let contact = Manifold::new(i, j, collision.normal, collision.depth, contact_a, contact_b);
+                let contact = Manifold::new(j, k, collision.normal, collision.depth, contact_a, contact_b);
                 self.resolve_collision(contact);
             }
         }
@@ -309,20 +309,61 @@ impl World {
         let body_b = &mut right[0];
         let normal = contact.get_normal();
         let _depth = contact.get_depth();
+        let contact_1 = contact.get_contact_1();
+        let contact_2 = contact.get_contact_2();
+        let contact_count = if contact_2.is_none() { 1 } else { 2 };
 
-        let relative_velocity = body_b.get_linear_velocity() - body_a.get_linear_velocity();
-
-        if relative_velocity.dot(&normal) > 0.0 {
-            return;
-        }
+        let mut impulse_vec: Vec<Vector2> = vec![Vector2::zero(), Vector2::zero()];
 
         let e = body_a.get_restitution().min(body_b.get_restitution());
-        let mut j = -(1.0 + e) * relative_velocity.dot(&normal);
-        j /= body_a.get_inverse_mass() + body_b.get_inverse_mass();
 
-        let impulse = normal * j;
+        let mut ra: Vec<Vector2> = vec![Vector2::zero(), Vector2::zero()];
+        let mut rb: Vec<Vector2> = vec![Vector2::zero(), Vector2::zero()];
 
-        body_a.set_linear_velocity(body_a.get_linear_velocity() - impulse * body_a.get_inverse_mass());
-        body_b.set_linear_velocity(body_b.get_linear_velocity() + impulse * body_b.get_inverse_mass());
+        for i in 0..contact_count {
+            let contact = if i == 0 { contact_1 } else { contact_2 };
+            if contact.is_none() {
+                continue;
+            }
+
+            ra[i] = contact.unwrap() - body_a.get_position();
+            rb[i] = contact.unwrap() - body_b.get_position();
+
+            let ra_prep = Vector2 { x: -ra[i].y, y: ra[i].x };
+            let rb_prep = Vector2 { x: -rb[i].y, y: rb[i].x };
+
+            let rotation_velocity_body_a = ra_prep * body_a.get_rotational_velocity();
+            let rotation_velocity_body_b = rb_prep * body_b.get_rotational_velocity();
+
+            let relative_velocity = (body_b.get_linear_velocity() + rotation_velocity_body_b) - (body_a.get_linear_velocity() + rotation_velocity_body_a);
+
+            let velocity_magnitude = relative_velocity.dot(&normal);
+
+            if velocity_magnitude > 0.0 {
+                continue;
+            }
+
+            let ra_prep_dot_n = ra_prep.dot(&normal);
+            let rb_prep_dot_n = rb_prep.dot(&normal);
+
+            let denomenator = body_a.get_inverse_mass() + body_b.get_inverse_mass() +
+                (ra_prep_dot_n * ra_prep_dot_n) * body_a.get_inverse_inertia() +
+                (rb_prep_dot_n * rb_prep_dot_n) * body_b.get_inverse_inertia();
+
+            let mut j = -(1.0 + e) * velocity_magnitude;
+            j /= denomenator;
+            j /= contact_count as f32;
+
+            let impulse = normal * j;
+            impulse_vec[i] = impulse
+        }
+
+        for i in 0..contact_count {
+            let impulse = impulse_vec[i];
+            body_a.set_linear_velocity(body_a.get_linear_velocity() + -impulse * body_a.get_inverse_mass());
+            body_a.set_rotational_velocity(body_a.get_rotational_velocity() + -ra[i].cross(&impulse) * body_a.get_inverse_inertia());
+            body_b.set_linear_velocity(body_b.get_linear_velocity() + impulse * body_b.get_inverse_mass());
+            body_b.set_rotational_velocity(body_b.get_rotational_velocity() + rb[i].cross(&impulse) * body_b.get_inverse_inertia());
+        }
     }
 }
