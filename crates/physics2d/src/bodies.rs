@@ -1,11 +1,12 @@
-use vyxen_geometry::{Box, Circle, aabb::AABB};
+use vyxen_geometry::{Box, Circle, Polygon, aabb::AABB};
 use vyxen_math::Vector2;
 
 /// An enum representing the type of a rigid body.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum RigidType {
     Circle(Circle),
-    Box(Box)
+    Box(Box),
+    Polygon(Polygon)
 }
 
 /// A struct representing a rigid body in the physics simulation.
@@ -26,7 +27,7 @@ pub enum RigidType {
 /// assert_eq!(circle.get_static_friction(), 0.6);
 /// assert_eq!(circle.get_dynamic_friction(), 0.4);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Rigid {
     position: Vector2,
     linear_velocity: Vector2,
@@ -257,6 +258,8 @@ impl Rigid {
     }
     /// A getter for the shape of the rigid body.
     /// 
+    /// If you want the mutable version, refer to `get_shape_mut()`
+    /// 
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
@@ -264,12 +267,32 @@ impl Rigid {
     /// use vyxen_geometry::Circle;
     /// 
     /// let rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// assert!(rigid.get_circle().is_some());
+    /// let shape = rigid.get_shape();
+    /// let expected = RigidType::Circle(Circle::new(1.0));
+    /// assert!(shape == &expected);
     /// ```
-    pub fn get_shape(&self) -> RigidType {
-        self.shape
+    pub fn get_shape(&self) -> &RigidType {
+        &self.shape
     }
-    /// Returns `None` if the shape is a box, return `Some(Circle)` if the shape is a circle
+    /// A getter for the shape of the rigid body.
+    /// 
+    /// If you want the mutable version, refer to `get_shape_mut()`
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
+    /// use vyxen_geometry::Circle;
+    /// 
+    /// let mut rigid = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let mut shape = rigid.get_shape_mut();
+    /// let mut expected = RigidType::Circle(Circle::new(1.0));
+    /// assert!(shape == &mut expected);
+    /// ```
+    pub fn get_shape_mut(&mut self) -> &mut RigidType {
+        &mut self.shape
+    }
+    /// Returns `None` if the shape is a box or polygon, return `Some(Circle)` if the shape is a circle
     /// 
     /// # Examples
     /// ```rust
@@ -289,7 +312,7 @@ impl Rigid {
             _ => None,
         }
     }
-    /// Returns `None` if the shape is a circle, return `Some(Box)` if the shape is a box
+    /// Returns `None` if the shape is a circle or polygon, return `Some(Box)` if the shape is a box
     /// 
     /// # Examples
     /// ```rust
@@ -306,6 +329,30 @@ impl Rigid {
     pub fn get_box(&self) -> Option<Box> {
         match self.shape {
             RigidType::Box(b) => Some(b),
+            _ => None,
+        }
+    }
+    /// Returns `None` if the shape is a circle or box, return `Some(Polygon)` if the shape is a polygon
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
+    /// use vyxen_geometry::{Polygon, Circle};
+    /// 
+    /// let v1 = Vector2 { x: 0.0, y: 2.0 };
+    /// let v2 = Vector2 { x: 2.0, y: 0.0 };
+    /// let v3 = Vector2 { x: -2.0, y: 2.0 };
+    /// 
+    /// let polygon = Rigid::new_polygon(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Polygon::new(vec![v1, v2, v3], Vector2 { x: 0.0, y: 0.0 }), 0.6, 0.4);
+    /// assert!(polygon.get_polygon().is_some());
+    /// 
+    /// let circle = Rigid::new_circle(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// assert!(circle.get_polygon().is_none());
+    /// ```
+    pub fn get_polygon(&self) -> Option<Polygon> {
+        match &self.shape {
+            RigidType::Polygon(p) => Some(p.clone()),
             _ => None,
         }
     }
@@ -379,9 +426,10 @@ impl Rigid {
 
 impl Rigid {
     fn new(position: Vector2, density: f32, mass: f32, restitution: f32, area: f32, is_static: bool, shape: RigidType, static_friction: f32, dynamic_friction: f32) -> Self {
-        let inertia = match shape {
+        let inertia = match &shape {
             RigidType::Circle(c) => c.rotational_inertia(mass),
             RigidType::Box(b) => b.rotational_inertia(mass),
+            RigidType::Polygon(p) => p.rotational_inertia(mass)
         };
 
         Rigid {
@@ -460,7 +508,7 @@ impl Rigid {
     /// let rigid = Rigid::new_box(position, density, is_static, restitution, Box::new(width, height), static_friction, dynamic_friction);
     /// ```
     pub fn new_box(position: Vector2, density: f32, is_static: bool, restitution: f32, box_shape: Box, static_friction: f32, dynamic_friction: f32) -> Self {
-        let area = box_shape.width * box_shape.height;
+        let area = box_shape.get_width() * box_shape.get_height();
 
         Rigid::new(
             position,
@@ -475,27 +523,56 @@ impl Rigid {
         )
     }
 
-    /// Transformes the vertices of a box type body.
+    /// A constructor for a rectangular rigid body.
     /// 
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::Box;
-    ///
-    /// let mut rigid = Rigid::new_box(Vector2 { x: 1.0, y: 1.0 }, 1.0, false, 0.5, Box::new(2.0, 2.0), 0.6, 0.4);
-    /// let vertices = rigid.get_transformed_vertices();
-    ///
-    /// assert_eq!(vertices[0], Vector2 { x: 0.0, y: 2.0 });
-    /// assert_eq!(vertices[1], Vector2 { x: 2.0, y: 2.0 });
-    /// assert_eq!(vertices[2], Vector2 { x: 2.0, y: 0.0 });
-    /// assert_eq!(vertices[3], Vector2 { x: 0.0, y: 0.0 });
+    /// use vyxen_geometry::Polygon;
+    /// 
+    /// let width = 1.0;
+    /// let height = 2.0;
+    /// let position = Vector2 { x: 0.0, y: 0.0 };
+    /// let density = 1.0;
+    /// let is_static = false;
+    /// let restitution = 0.5;
+    /// let static_friction = 0.6;
+    /// let dynamic_friction = 0.4;
+    /// 
+    /// let v1 = Vector2 { x: 0.0, y: 2.0 };
+    /// let v2 = Vector2 { x: 2.0, y: 0.0 };
+    /// let v3 = Vector2 { x: -2.0, y: 2.0 };
+    /// 
+    /// let rigid = Rigid::new_polygon(position, density, is_static, restitution, Polygon::new(vec![v1, v2, v3], position), static_friction, dynamic_friction);
     /// ```
-    pub fn get_transformed_vertices(&mut self) -> [Vector2; 4] {
-        match &mut self.get_shape() {
-            RigidType::Box(b) => *b.get_transformed_vertices(self.position, self.rotation),
-            _ => [Vector2::zero(); 4]
+    pub fn new_polygon(position: Vector2, density: f32, is_static: bool, restitution: f32, polygon_shape: Polygon, static_friction: f32, dynamic_friction: f32) -> Self {
+        let vertices: &Vec<Vector2> = polygon_shape.get_vertices();
+
+        let mut products_1 = 0.0_f32;
+        let mut products_2 = 0.0_f32;
+
+        for i in 0..vertices.len() {
+            let current = vertices[i];
+            let next = vertices[(i + 1) % vertices.len()];
+
+            products_1 += current.x * next.y;
+            products_2 += current.y * next.x;
         }
+
+        let area = (products_1 - products_2).abs() * 0.5;
+
+        Rigid::new(
+            position,
+            density,
+            area * density,
+            restitution.clamp(0.0, 1.0),
+            area,
+            is_static,
+            RigidType::Polygon(polygon_shape),
+            static_friction,
+            dynamic_friction
+        )
     }
 
     /// Moves the rigid body by a given amount.
@@ -514,8 +591,9 @@ impl Rigid {
         self.position = self.position + amount;
         self.aabb_required = true;
 
-        match &mut self.get_shape() {
+        match self.get_shape_mut() {
             RigidType::Box(b) => b.set_transform_required(true),
+            RigidType::Polygon(p) => p.set_transform_required(true),
             _ => {}
         }
     }
@@ -536,8 +614,9 @@ impl Rigid {
         self.position = position;
         self.aabb_required = true;
 
-        match &mut self.get_shape() {
+        match self.get_shape_mut() {
             RigidType::Box(b) => b.set_transform_required(true),
+            RigidType::Polygon(p) => p.set_transform_required(true),
             _ => {}
         }
     }
@@ -558,8 +637,9 @@ impl Rigid {
         self.rotation += amount;
         self.aabb_required = true;
 
-        match &mut self.get_shape() {
+        match self.get_shape_mut() {
             RigidType::Box(b) => b.set_transform_required(true),
+            RigidType::Polygon(p) => p.set_transform_required(true),
             _ => {}
         }
     }
@@ -582,8 +662,9 @@ impl Rigid {
         self.rotation = amount;
         self.aabb_required = true;
 
-        match &mut self.get_shape() {
+        match self.get_shape_mut() {
             RigidType::Box(b) => b.set_transform_required(true),
+            RigidType::Polygon(p) => p.set_transform_required(true),
             _ => {}
         }
     }
@@ -656,25 +737,71 @@ impl Rigid {
         self.force = Vector2::zero();
         self.aabb_required = true;
 
-        match &mut self.get_shape() {
+        match self.get_shape_mut() {
             RigidType::Box(b) => b.set_transform_required(true),
+            RigidType::Polygon(p) => p.set_transform_required(true),
             _ => {}
         }
     }
 
+    /// Gets the AABB for a rigid body.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Box;
+    /// 
+    /// let start_pos = Vector2 { x: 0.0, y: 0.0 };
+    /// 
+    /// let mut rigid = Rigid::new_box(start_pos, 1.0, false, 0.5, Box::new(1.0, 1.0), 0.6, 0.4);
+    /// let aabb = rigid.get_aabb();
+    /// 
+    /// assert_eq!(aabb.get_max(), Vector2 { x: 0.5, y: 0.5 });
+    /// assert_eq!(aabb.get_min(), Vector2 { x: -0.5, y: -0.5 });
+    /// ```
     pub fn get_aabb(&mut self) -> AABB {
         if self.aabb_required {
-            match self.shape {
+            let pos = self.position;
+            let rot = self.rotation;
+
+            match self.get_shape_mut() {
                 RigidType::Circle(c) => {
                     self.aabb = AABB::new_from_uncalculated(
-                        self.position.x - c.get_radius(),
-                        self.position.y - c.get_radius(),
-                        self.position.x + c.get_radius(),
-                        self.position.y + c.get_radius(),
+                        pos.x - c.get_radius(),
+                        pos.y - c.get_radius(),
+                        pos.x + c.get_radius(),
+                        pos.y + c.get_radius(),
                     );
                 }
-                RigidType::Box(_) => {
-                    let vertices = self.get_transformed_vertices();
+                RigidType::Box(b) => {
+                    let vertices = b.get_transformed_vertices(pos, rot);
+                    let mut min_x = std::f32::MAX;
+                    let mut max_x = std::f32::MIN;
+                    let mut min_y = std::f32::MAX;
+                    let mut max_y = std::f32::MIN;
+
+                    for i in 0..vertices.len() {
+                        let vertex = vertices[i];
+                        if vertex.x < min_x {
+                            min_x = vertex.x;
+                        }
+                        if vertex.x > max_x {
+                            max_x = vertex.x;
+                        }
+                        if vertex.y < min_y {
+                            min_y = vertex.y;
+                        }
+                        if vertex.y > max_y {
+                            max_y = vertex.y;
+                        }
+                    }
+
+                    self.aabb = AABB::new_from_uncalculated(min_x, min_y, max_x, max_y);
+                }
+                RigidType::Polygon(p) => {
+                    let vertices = p.get_transformed_vertices(pos, rot);
                     let mut min_x = std::f32::MAX;
                     let mut max_x = std::f32::MIN;
                     let mut min_y = std::f32::MAX;
@@ -776,7 +903,7 @@ mod tests {
         );
 
         assert_eq!(
-            rigid.get_shape(),
+            *(rigid.get_shape()),
             RigidType::Circle(Circle::new(2.0))
         );
 
@@ -799,7 +926,7 @@ mod tests {
         );
 
         assert_eq!(
-            rigid.get_shape(),
+            *(rigid.get_shape()),
             RigidType::Box(Box::new(4.0, 2.0))
         );
 
@@ -846,7 +973,7 @@ mod tests {
 
     #[test]
     fn test_get_transformed_vertices_without_rotation() {
-        let mut rigid = Rigid::new_box(
+        let rigid = Rigid::new_box(
             Vector2 { x: 1.0, y: 1.0 },
             1.0,
             false,
@@ -856,7 +983,8 @@ mod tests {
             0.4,
         );
 
-        let vertices = rigid.get_transformed_vertices();
+        let mut bx = rigid.get_box().unwrap();
+        let vertices = bx.get_transformed_vertices(rigid.position, rigid.rotation);
 
         assert_eq!(vertices[0], Vector2 { x: 0.0, y: 2.0 });
         assert_eq!(vertices[1], Vector2 { x: 2.0, y: 2.0 });

@@ -14,7 +14,7 @@ pub use vyxen_physics2d as physics2d;
 /// let mut world = World::new();
 /// 
 /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-/// world.add_body(body);
+/// world.add_body(body.clone());
 /// 
 /// let len = world.get_bodies_len();
 /// assert_eq!(len, 1);
@@ -41,7 +41,7 @@ impl World {
     /// let mut world = World::new();
     /// 
     /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// world.add_body(body);
+    /// world.add_body(body.clone());
     /// 
     /// let len = world.get_bodies_len();
     /// assert_eq!(len, 1);
@@ -68,7 +68,7 @@ impl World {
     /// let mut world = World::new();
     /// 
     /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// world.add_body(body);
+    /// world.add_body(body.clone());
     /// 
     /// let len = world.get_bodies_len();
     /// assert_eq!(len, 1);
@@ -86,7 +86,7 @@ impl World {
     /// let mut world = World::new();
     /// 
     /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// world.add_body(body);
+    /// world.add_body(body.clone());
     /// 
     /// let len = world.get_bodies_len();
     /// assert_eq!(len, 1);
@@ -113,7 +113,7 @@ impl World {
     /// let mut world = World::new();
     /// 
     /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// world.add_body(body1);
+    /// world.add_body(body1.clone());
     /// 
     /// let body2 = world.get_body(0);
     /// 
@@ -135,7 +135,7 @@ impl World {
     /// let mut world = World::new();
     /// 
     /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// world.add_body(body1);
+    /// world.add_body(body1.clone());
     /// 
     /// let mut body2 = world.get_body_mut(0);
     /// 
@@ -288,18 +288,22 @@ impl World {
     /// let mut body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let mut body2 = Rigid::new_circle(Vector2 { x: 0.5, y: 0.5 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// 
-    /// world.add_body(body1);
-    /// world.add_body(body2);
-    /// 
     /// let collision = World::collide(&mut body1, &mut body2);
     /// assert!(collision.is_some());
     /// ```
     pub fn collide(body_a: &mut Rigid, body_b: &mut Rigid) -> Option<Collision> {
-        match (body_a.get_shape(), body_b.get_shape()) {
-            (RigidType::Circle(c1), RigidType::Circle(c2)) => intersect_circles(body_a.get_position(), c1.get_radius(), body_b.get_position(), c2.get_radius()),
-            (RigidType::Box(_), RigidType::Box(_)) => intersect_polygons(&body_a.get_transformed_vertices(), &body_b.get_transformed_vertices()),
-            (RigidType::Box(_), RigidType::Circle(c)) => intersect_polygon_circle(body_b.get_position(), c.get_radius(), &body_a.get_transformed_vertices()).map(|c| Collision { normal: -c.normal, depth: c.depth }),
-            (RigidType::Circle(c), RigidType::Box(_)) => intersect_polygon_circle(body_a.get_position(), c.get_radius(), &body_b.get_transformed_vertices()),
+        let pos_a = body_a.get_position();
+        let rot_a = body_a.get_rotation();
+
+        let pos_b = body_b.get_position();
+        let rot_b = body_b.get_rotation();
+
+        match (body_a.get_shape_mut(), body_b.get_shape_mut()) {
+            (RigidType::Circle(c1), RigidType::Circle(c2)) => intersect_circles(pos_a, c1.get_radius(), pos_b, c2.get_radius()),
+            (RigidType::Box(b1), RigidType::Box(b2)) => intersect_polygons(b1.get_transformed_vertices(pos_a, rot_a), b2.get_transformed_vertices(pos_b, rot_b)),
+            (RigidType::Box(b), RigidType::Circle(c)) => intersect_polygon_circle(pos_b, c.get_radius(), b.get_transformed_vertices(pos_a, rot_a)).map(|c| Collision { normal: -c.normal, depth: c.depth }),
+            (RigidType::Circle(c), RigidType::Box(b)) => intersect_polygon_circle(pos_a, c.get_radius(), b.get_transformed_vertices(pos_b, rot_b)),
+            _ => None
         }
     }
 

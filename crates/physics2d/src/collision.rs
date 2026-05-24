@@ -72,22 +72,29 @@ impl Manifold {
 /// assert!(point_2.is_none()); // Circles can only have 1 contact point.
 /// ```
 pub fn find_contact_points(body_a: &mut Rigid, body_b: &mut Rigid) -> (Option<Vector2>, Option<Vector2>) {
-    match (body_a.get_shape(), body_b.get_shape()) {
+    let pos_a = body_a.get_position();
+    let rot_a = body_a.get_rotation();
+
+    let pos_b = body_b.get_position();
+    let rot_b = body_b.get_rotation();
+
+    match (body_a.get_shape_mut(), body_b.get_shape_mut()) {
         (RigidType::Circle(c1), RigidType::Circle(_)) => {
-            let contact = find_contact_point_circle_to_circle(body_a.get_position(), c1.get_radius(), body_b.get_position());
+            let contact = find_contact_point_circle_to_circle(pos_a, c1.get_radius(), pos_b);
             return (Some(contact), None)
         },
-        (RigidType::Box(_), RigidType::Box(_)) => {
-            return find_contact_points_polygon_to_polygon(&body_a.get_transformed_vertices(), &body_b.get_transformed_vertices());
+        (RigidType::Box(b1), RigidType::Box(b2)) => {
+            return find_contact_points_polygon_to_polygon(b1.get_transformed_vertices(pos_a, rot_a), b2.get_transformed_vertices(pos_b, rot_b));
         },
-        (RigidType::Box(_), RigidType::Circle(_)) => {
-            let contact = find_contact_point_circle_to_polygon(body_b.get_position(), &body_a.get_transformed_vertices());
+        (RigidType::Box(b), RigidType::Circle(_)) => {
+            let contact = find_contact_point_circle_to_polygon(pos_b, b.get_transformed_vertices(pos_a, rot_a));
             return (Some(contact), None);
         },
-        (RigidType::Circle(_), RigidType::Box(_)) => {
-            let contact = find_contact_point_circle_to_polygon(body_a.get_position(), &body_b.get_transformed_vertices());
+        (RigidType::Circle(_), RigidType::Box(b)) => {
+            let contact = find_contact_point_circle_to_polygon(pos_a, b.get_transformed_vertices(pos_b, rot_b));
             return (Some(contact), None);
         },
+        _ => {return (None, None)}
     }
 }
 

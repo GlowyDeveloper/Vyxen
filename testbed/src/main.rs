@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use vyxen::{World, geometry::{Box, Circle as VyxenCircle}, math::{Transform, Vector2}, physics2d::bodies::{Rigid, RigidType}};
+use vyxen::{World, geometry::{Box, Circle as VyxenCircle, Polygon}, math::{Transform, Vector2}, physics2d::bodies::{Rigid, RigidType}};
 
 fn to_world_coords(v: Vector2) -> Vec2 {
     vec2(v.x, v.y)
@@ -100,6 +100,40 @@ async fn main() {
             world.add_body(Rigid::new_box(world_pos, density, false, restitution, Box::new(width, height), static_friction, dynamic_friction));
         }
 
+        if is_mouse_button_pressed(MouseButton::Middle) {
+            let mouse_pos = mouse_position();
+            let world_pos = camera.screen_to_world(Vec2::new(mouse_pos.0, mouse_pos.1));
+            let world_pos = Vector2 { x: world_pos.x, y: world_pos.y };
+
+            let density = rand::gen_range(1.0, 10.0);
+            let restitution = rand::gen_range(0.0, 1.0);
+
+            let static_friction = rand::gen_range(0.0, 1.0);
+            let dynamic_friction = rand::gen_range(0.0, 1.0);
+
+            let mut vertices = vec![];
+            let amount = rand::gen_range(3, 10);
+            for i in 0..amount {
+                let draw_convex_only = true;
+                if draw_convex_only == true {
+                    let angle = (i as f32 / amount as f32) * std::f32::consts::TAU;
+                    let radius = rand::gen_range(1.0, 5.0);
+
+                    vertices.push(Vector2 {
+                        x: angle.cos() * radius,
+                        y: angle.sin() * radius,
+                    });
+                } else {
+                    let x = rand::gen_range(-5.0, 5.0);
+                    let y = rand::gen_range(-5.0, 5.0);
+
+                    vertices.push(Vector2 { x: x, y: y });
+                }
+            }
+
+            world.add_body(Rigid::new_polygon(world_pos, density, false, restitution, Polygon::new_from_relative_vertices(vertices), static_friction, dynamic_friction));
+        }
+
         world.step(dt, 10);
 
         let bottom_left = camera.screen_to_world(vec2(0.0, screen_height()));
@@ -126,10 +160,14 @@ async fn main() {
 
         for i in 0..world.get_bodies_len() {
             let body = world.get_body_mut(i).unwrap();
-            let world_pos = to_world_coords(body.get_position());
-            match body.get_shape() {
+            let pos = body.get_position();
+            let rot = body.get_rotation();
+            let is_static = body.is_static();
+            let world_pos = to_world_coords(pos);
+            
+            match body.get_shape_mut() {
                 RigidType::Circle(c) => {
-                    draw_circle(world_pos.x, world_pos.y, c.get_radius(), if body.is_static() { GRAY } else { BLUE });
+                    draw_circle(world_pos.x, world_pos.y, c.get_radius(), if is_static { GRAY } else { BLUE });
 
                     let va = Vector2::zero();
                     let vb = Vector2 { x: c.get_radius(), y: 0.0 };
@@ -139,24 +177,40 @@ async fn main() {
 
                     draw_line(tva.x, tva.y, tvb.x, tvb.y, 0.1, WHITE);
                 }
-                RigidType::Box(_) => {
-                    let vertices = to_world_coords_multi(&body.get_transformed_vertices());
+                RigidType::Box(b) => {
+                    let vertices = to_world_coords_multi(b.get_transformed_vertices(pos, rot));
                     if vertices.len() == 4 {
                         draw_triangle(
                             vertices[0],
                             vertices[1],
                             vertices[2],
-                            if body.is_static() { GRAY } else { YELLOW }
+                            if is_static { GRAY } else { YELLOW }
                         );
 
                         draw_triangle(
                             vertices[0],
                             vertices[2],
                             vertices[3],
-                            if body.is_static() { GRAY } else { YELLOW }
+                            if is_static { GRAY } else { YELLOW }
                         );
                     }
                 }
+                    RigidType::Polygon(p) => {
+                        let vertices = to_world_coords_multi(
+                            p.get_transformed_vertices(pos, rot)
+                        );
+
+                        if vertices.len() >= 3 {
+                            for i in 1..vertices.len() - 1 {
+                                draw_triangle(
+                                    vertices[0],
+                                    vertices[i],
+                                    vertices[i + 1],
+                                    if is_static { GRAY } else { PURPLE }
+                                );
+                            }
+                        }
+                    }
             }
         }
 
