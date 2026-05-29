@@ -44,4 +44,33 @@ impl AABB {
     pub fn get_max(&self) -> Vector2 {
         self.max
     }
+
+    /// Checks **if** two `AABB`s intersect eachother
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_geometry::aabb::AABB;
+    ///
+    /// let a = AABB::new(
+    ///     Vector2 { x: 0.0, y: 0.0 },
+    ///     Vector2 { x: 1.0, y: 1.0 },
+    /// );
+    /// 
+    /// let b = AABB::new(
+    ///     Vector2 { x: 0.5, y: 0.5 },
+    ///     Vector2 { x: 1.5, y: 1.5 },
+    /// );
+    /// 
+    /// assert!(AABB::intersect_aabb(a, b));
+    /// ```
+    pub fn intersect_aabb(aabb_a: AABB, aabb_b: AABB) -> bool {
+        if aabb_a.get_max().x <= aabb_b.get_min().x ||
+            aabb_b.get_max().x <= aabb_a.get_min().x ||
+            aabb_a.get_max().y <= aabb_b.get_min().y ||
+            aabb_b.get_max().y <= aabb_a.get_min().y {
+            return false;
+        }
+        return true;
+    }
 }

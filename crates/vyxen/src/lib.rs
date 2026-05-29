@@ -1,19 +1,28 @@
+use vyxen_geometry::aabb::AABB;
 use vyxen_math::Vector2;
-use vyxen_physics2d::{bodies::{Rigid, RigidType}, collision::{Collision, Manifold, find_contact_points, intersect_aabb, intersect_circles, intersect_polygon_circle, intersect_polygons}};
+use vyxen_physics2d::{bodies::Rigid, collision::{Collision, ContactPoints, Manifold}};
 
-pub use vyxen_math as math;
-pub use vyxen_geometry as geometry;
-pub use vyxen_physics2d as physics2d;
+pub mod math {
+    pub use vyxen_math::*;
+}
+
+pub mod geometry {
+    pub use vyxen_geometry::*;
+}
+
+pub mod physics2d {
+    pub use vyxen_physics2d::*;
+}
 
 /// World struct used throughout the engine
 /// 
 /// # Examples
 /// ```rust
-/// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::Circle, World};
+/// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::shapes::Circle, World};
 /// 
 /// let mut world = World::new();
 /// 
-/// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+/// let body = Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
 /// world.add_body(body.clone());
 /// 
 /// let len = world.get_bodies_len();
@@ -36,11 +45,11 @@ impl World {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::Circle, World};
+    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::shapes::Circle, World};
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let body = Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body.clone());
     /// 
     /// let len = world.get_bodies_len();
@@ -63,11 +72,11 @@ impl World {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::Circle, World};
+    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::shapes::Circle, World};
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let body = Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body.clone());
     /// 
     /// let len = world.get_bodies_len();
@@ -81,11 +90,11 @@ impl World {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::Circle, World};
+    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::shapes::Circle, World};
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let body = Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body.clone());
     /// 
     /// let len = world.get_bodies_len();
@@ -108,11 +117,11 @@ impl World {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::Circle, World};
+    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::shapes::Circle, World};
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let body1 = Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body1.clone());
     /// 
     /// let body2 = world.get_body(0);
@@ -130,11 +139,11 @@ impl World {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::Circle, World};
+    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::shapes::Circle, World};
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let body1 = Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body1.clone());
     /// 
     /// let mut body2 = world.get_body_mut(0);
@@ -150,11 +159,11 @@ impl World {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::Circle, World};
+    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::shapes::Circle, World};
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let body = Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body);
     /// 
     /// let len = world.get_bodies_len();
@@ -200,11 +209,11 @@ impl World {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::Circle, World};
+    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, geometry::shapes::Circle, World};
     /// 
     /// let mut world = World::new();
     /// 
-    /// let body = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let body = Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// world.add_body(body);
     /// 
     /// world.step(0.1, 10);
@@ -240,7 +249,7 @@ impl World {
                     continue;
                 }
 
-                if !intersect_aabb(body_a_aabb, body_b_aabb) {
+                if !AABB::intersect_aabb(body_a_aabb, body_b_aabb) {
                     continue;
                 }
 
@@ -252,59 +261,53 @@ impl World {
     fn narrow_phase(&mut self) {
         for i in 0..self.contact_pairs.len() {
             let (j, k) = self.contact_pairs[i];
-            let (left, right) = self.bodies.split_at_mut(k);
-            let body_a = &mut left[j];
-            let body_b = &mut right[0];
 
-            if let Some(collision) = Self::collide(body_a, body_b) {
-                Self::seperate_bodies(body_a, body_b, collision.normal * collision.depth);
+            for manifold in self.generate_manifolds(j, k) {
+                self.resolve_collision(manifold);
 
-                let (contact_a, contact_b) = find_contact_points(body_a, body_b);
-                let contact = Manifold::new(j, k, collision.normal, collision.depth, contact_a, contact_b);
-                self.resolve_collision(contact);
+                let (left, right) = self.bodies.split_at_mut(k);
+                let body_a = &mut left[j];
+                let body_b = &mut right[0];
+
+                Self::seperate_bodies(body_a, body_b, manifold.get_depth(), manifold.get_normal());
             }
         }
     }
 
-    fn seperate_bodies(body_a: &mut Rigid, body_b: &mut Rigid, mtv: Vector2) {
+    fn seperate_bodies(body_a: &mut Rigid, body_b: &mut Rigid, depth: f32, normal: Vector2) {
+        const PERCENT: f32 = 0.8;
+        const SLOP: f32 = 0.01;
+
+        let correction_mag = (depth - SLOP).max(0.0) * PERCENT;
+        let correction = normal * correction_mag;
+        let total_inv_mass = body_b.get_inverse_mass() + body_a.get_inverse_mass();
+
         if body_a.is_static() {
-            body_b.move_by(mtv);
+            body_b.move_by(correction * body_b.get_inverse_mass() / total_inv_mass);
         } else if body_b.is_static() {
-            body_a.move_by(-mtv);
+            body_a.move_by(-correction * body_a.get_inverse_mass() / total_inv_mass);
         } else {
-            body_a.move_by(-mtv / 2.0);
-            body_b.move_by(mtv / 2.0);
+            body_a.move_by(-correction * body_a.get_inverse_mass() / total_inv_mass);
+            body_b.move_by(correction * body_b.get_inverse_mass() / total_inv_mass);
         }
     }
 
-    /// Checks if 2 bodies collide
-    /// 
-    /// # Examples
-    /// ```rust
-    /// use vyxen::{math::Vector2, physics2d::bodies::Rigid, World, geometry::Circle};
-    /// 
-    /// let mut world = World::new();
-    /// 
-    /// let mut body1 = Rigid::new_circle(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// let mut body2 = Rigid::new_circle(Vector2 { x: 0.5, y: 0.5 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// 
-    /// let collision = World::collide(&mut body1, &mut body2);
-    /// assert!(collision.is_some());
-    /// ```
-    pub fn collide(body_a: &mut Rigid, body_b: &mut Rigid) -> Option<Collision> {
-        let pos_a = body_a.get_position();
-        let rot_a = body_a.get_rotation();
+    fn generate_manifolds(&mut self, body_a_index: usize, body_b_index: usize) -> Vec<Manifold> {
+        let (left, right) = self.bodies.split_at_mut(body_b_index);
+        let body_a = &mut left[body_a_index];
+        let body_b = &mut right[0];
 
-        let pos_b = body_b.get_position();
-        let rot_b = body_b.get_rotation();
+        let collisions = Collision::collide(body_a, body_b);
 
-        match (body_a.get_shape_mut(), body_b.get_shape_mut()) {
-            (RigidType::Circle(c1), RigidType::Circle(c2)) => intersect_circles(pos_a, c1.get_radius(), pos_b, c2.get_radius()),
-            (RigidType::Box(b1), RigidType::Box(b2)) => intersect_polygons(b1.get_transformed_vertices(pos_a, rot_a), b2.get_transformed_vertices(pos_b, rot_b)),
-            (RigidType::Box(b), RigidType::Circle(c)) => intersect_polygon_circle(pos_b, c.get_radius(), b.get_transformed_vertices(pos_a, rot_a)).map(|c| Collision { normal: -c.normal, depth: c.depth }),
-            (RigidType::Circle(c), RigidType::Box(b)) => intersect_polygon_circle(pos_a, c.get_radius(), b.get_transformed_vertices(pos_b, rot_b)),
-            _ => None
+        let mut manifolds = Vec::new();
+
+        for collision in collisions {
+            let contacts = ContactPoints::find_contact_points(body_a, body_b);
+
+            manifolds.push(Manifold::new(body_a_index, body_b_index, collision.normal, collision.depth, contacts.contact_1, contacts.contact_2));
         }
+
+        manifolds
     }
 
     fn resolve_collision(&mut self, contact: Manifold) {
