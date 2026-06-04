@@ -179,7 +179,7 @@ impl Polygon {
             let p0 = self.vertices[i];
             let p1 = self.vertices[(i + 1) % self.vertices.len()];
 
-            let cross = p0.x * p1.y - p1.x * p0.y;
+            let cross = p0.cross(&p1);
 
             area2 += cross;
 

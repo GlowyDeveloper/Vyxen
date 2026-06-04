@@ -436,55 +436,6 @@ impl ContactPoints {
         }
     }
 
-    /*fn find_contact_points_polygon_to_polygon(vertices_a: &[Vector2], vertices_b: &[Vector2]) -> ContactPoints {
-        let mut contact_1: Option<Vector2> = None;
-        let mut contact_2: Option<Vector2> = None;
-        
-        let mut min_distance_squared = std::f32::MAX;
-
-        for i in 0..vertices_a.len() {
-            let p = vertices_a[i];
-            
-            for j in 0..vertices_b.len() {
-                let va = vertices_b[j];
-                let vb = vertices_b[(j + 1) % vertices_b.len()];
-
-                let (distance_squared, contact) = Self::point_segment_distance(p, va, vb);
-
-                if is_nearly_equal(distance_squared, min_distance_squared) {
-                    if !contact.is_nearly_equal(&contact_1.unwrap_or(Vector2::zero())) {
-                        contact_2 = Some(contact);
-                    }
-                } else if distance_squared < min_distance_squared {
-                    min_distance_squared = distance_squared;
-                    contact_1 = Some(contact);
-                }
-            }
-        }
-
-        for i in 0..vertices_b.len() {
-            let p = vertices_b[i];
-            
-            for j in 0..vertices_a.len() {
-                let va = vertices_a[j];
-                let vb = vertices_a[(j + 1) % vertices_a.len()];
-
-                let (distance_squared, contact) = Self::point_segment_distance(p, va, vb);
-
-                if is_nearly_equal(distance_squared, min_distance_squared) {
-                    if !contact.is_nearly_equal(&contact_1.unwrap_or(Vector2::zero())) {
-                        contact_2 = Some(contact);
-                    }
-                } else if distance_squared < min_distance_squared {
-                    min_distance_squared = distance_squared;
-                    contact_1 = Some(contact);
-                }
-            }
-        }
-
-        ContactPoints{contact_1, contact_2}
-    }*/
-
     fn find_contact_points_polygon_to_polygon(vertices_a: &[Vector2], vertices_b: &[Vector2]) -> ContactPoints {
         let mut contact_1: Option<Vector2> = None;
         let mut contact_2: Option<Vector2> = None;
@@ -492,6 +443,7 @@ impl ContactPoints {
 
         for i in 0..vertices_a.len() {
             let p = vertices_a[i];
+
             for j in 0..vertices_b.len() {
                 let va = vertices_b[j];
                 let vb = vertices_b[(j + 1) % vertices_b.len()];

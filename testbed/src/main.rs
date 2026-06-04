@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use vyxen::{World, geometry::shapes::{Polygon, Box, Circle as VyxenCircle}, math::{Transform, Vector2}, physics2d::bodies::{Rigid, RigidType}};
+use vyxen::{World, geometry::shapes::{Box, Circle as VyxenCircle, Polygon}, math::{Transform, Vector2, Random}, physics2d::bodies::{Rigid, RigidType}};
 
 fn to_world_coords(v: Vector2) -> Vec2 {
     vec2(v.x, v.y)
@@ -29,6 +29,10 @@ async fn main() {
     let mut slope_2 = Rigid::new(Vector2 { x: 10.0, y: 20.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4);
     slope_2.rotate_by(-210.0);
     world.add_body(slope_2);
+
+    for _ in 0..100 {
+        println!("{}", Random::from_time().next_u32());
+    }
 
     loop {
         let dt = get_frame_time();
@@ -114,21 +118,13 @@ async fn main() {
             let mut vertices = vec![];
             let amount = rand::gen_range(3, 10);
             for i in 0..amount {
-                let draw_convex_only = true;
-                if draw_convex_only == true {
-                    let angle = (i as f32 / amount as f32) * std::f32::consts::TAU;
-                    let radius = rand::gen_range(1.0, 5.0);
+                let angle = (i as f32 / amount as f32) * std::f32::consts::TAU;
+                let radius = rand::gen_range(1.0, 5.0);
 
-                    vertices.push(Vector2 {
-                        x: angle.cos() * radius,
-                        y: angle.sin() * radius,
-                    });
-                } else {
-                    let x = rand::gen_range(-5.0, 5.0);
-                    let y = rand::gen_range(-5.0, 5.0);
-
-                    vertices.push(Vector2 { x: x, y: y });
-                }
+                vertices.push(Vector2 {
+                    x: angle.cos() * radius,
+                    y: angle.sin() * radius,
+                });
             }
 
             world.add_body(Rigid::new(world_pos, density, false, restitution, Polygon::new_from_relative_vertices(&vertices), static_friction, dynamic_friction));

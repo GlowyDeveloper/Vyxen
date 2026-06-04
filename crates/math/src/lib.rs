@@ -1,6 +1,6 @@
 //! A math library made for Vyxen.
 
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::{ops::{Add, Div, Mul, Neg, Range, Sub}, time::{SystemTime, UNIX_EPOCH}};
 
 /// A 2D vector with x and y components.
 /// 
@@ -337,6 +337,248 @@ impl Transform {
 /// ```
 pub fn is_nearly_equal(a: f32, b: f32) -> bool {
     (a-b).abs() < 0.0005
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Random {
+    state: u64,
+}
+
+impl Random {
+    /// Creates a new Random with a given seed.
+    /// 
+    /// # Note
+    /// 
+    /// If the seed is 0, it will be generated from the current time.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::new(12345);
+    /// 
+    /// let value1 = rng.next_u32();
+    /// let value2 = rng.next_u32();
+    /// ```
+    pub fn new(seed: u64) -> Self {
+        if seed == 0 {
+            Self::from_time()
+        } else {
+            Self { state: seed }
+        }
+    }
+
+    /// Creates a new Random from the current time.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.next_u32();
+    /// let value2 = rng.next_u32();
+    /// ```
+    pub fn from_time() -> Self {
+        let seed = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u64;
+
+        Self { state: seed }
+    }
+
+    /// Returns the current seed of the Random.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::new(12345);
+    /// let seed = rng.seed();
+    /// assert_eq!(seed, 12345);
+    /// ```
+    pub fn seed(&self) -> u64 {
+        self.state
+    }
+
+    /// Resets the Random with a new seed.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::new(12345);
+    /// let seed = rng.seed();
+    /// assert_eq!(seed, 12345);
+    /// 
+    /// rng.reseed(67890);
+    /// 
+    /// let new_seed = rng.seed();
+    /// assert_eq!(new_seed, 67890);
+    /// ```
+    pub fn reseed(&mut self, seed: u64) {
+        self.state = seed;
+    }
+
+    /// Generates a random u64.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.next_u64();
+    /// let value2 = rng.next_u64();
+    /// ```
+    pub fn next_u64(&mut self) -> u64 {
+        self.state = self.state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+
+        let mut x = self.state;
+
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+
+        x
+    }
+
+    /// Generates a random u32.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.next_u32();
+    /// let value2 = rng.next_u32();
+    /// ```
+    pub fn next_u32(&mut self) -> u32 {
+        self.next_u64() as u32
+    }
+
+    /// Generates a random f32.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.next_f32();
+    /// let value2 = rng.next_f32();
+    /// ```
+    pub fn next_f32(&mut self) -> f32 {
+        self.next_u32() as f32 / u32::MAX as f32
+    }
+
+    /// Generates a random f64.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.next_f64();
+    /// let value2 = rng.next_f64();
+    /// ```
+    pub fn next_f64(&mut self) -> f64 {
+        self.next_u64() as f64 / u64::MAX as f64
+    }
+
+    /// Generates a random bool.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.next_bool();
+    /// let value2 = rng.next_bool();
+    /// ```
+    pub fn next_bool(&mut self) -> bool {
+        (self.next_u64() & 1) == 0
+    }
+
+    /// Generates a random u32 in the given range.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.range_u32(0..10);
+    /// let value2 = rng.range_u32(0..100);
+    /// ```
+    pub fn range_u32(&mut self, range: Range<u32>) -> u32 {
+        let width = range.end - range.start;
+
+        range.start + ((self.next_u64() % width as u64) as u32)
+    }
+
+    /// Generates a random u64 in the given range.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.range_u64(0..10);
+    /// let value2 = rng.range_u64(0..100);
+    /// ```
+    pub fn range_u64(&mut self, range: Range<u64>) -> u64 {
+        let width = range.end - range.start;
+
+        range.start + (self.next_u64() % width)
+    }
+
+    /// Generates a random f32 in the given range.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.range_f32(0.0..10.0);
+    /// let value2 = rng.range_f32(0.0..100.0);
+    /// ```
+    pub fn range_f32(&mut self, range: Range<f32>) -> f32 {
+        let width = range.end - range.start;
+
+        range.start + self.next_f32() * width
+    }
+
+    /// Generates a random f64 in the given range.
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Random;
+    /// 
+    /// let mut rng = Random::from_time();
+    /// 
+    /// let value1 = rng.range_f64(0.0..10.0);
+    /// let value2 = rng.range_f64(0.0..100.0);
+    /// ```
+    pub fn range_f64(&mut self, range: Range<f64>) -> f64 {
+        let width = range.end - range.start;
+
+        range.start + self.next_f64() * width
+    }
+}
+
+impl Default for Random {
+    fn default() -> Self {
+        Self::from_time()
+    }
 }
 
 #[cfg(test)]
