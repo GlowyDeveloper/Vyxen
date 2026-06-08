@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use vyxen::{World, geometry::shapes::{Box, Circle as VyxenCircle, Polygon}, math::{Transform, Vector2, Random}, physics2d::bodies::{Rigid, RigidType}};
+use vyxen::{Collider, Node, World, geometry::shapes::{Box, Circle as VyxenCircle, Polygon}, math::{Transform, Vector2}, physics2d::bodies::{Rigid, RigidType}};
 
 fn to_world_coords(v: Vector2) -> Vec2 {
     vec2(v.x, v.y)
@@ -13,25 +13,42 @@ fn to_world_coords_multi(vec: &[Vector2]) -> Vec<Vec2> {
     res
 }
 
-#[macroquad::main("Physics Viewer")]
+#[macroquad::main("Testbed")]
 async fn main() {
     let mut camera_target = vec2(0.0, 10.0);
     let mut zoom = 2.0;
 
     let mut world = World::new();
 
-    world.add_body(Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, true, 0.5, Box::new(100.0, 5.0), 0.6, 0.4));
+    let mut ground_node = Node::new("Ground".to_string());
+    ground_node.set_is_static(true);
+    ground_node.move_to(Vector2 { x: 0.0, y: 0.0 });
+    ground_node.add_component(Rigid::new(1.0, true, 0.5, Box::new(100.0, 5.0), 0.6, 0.4));
+    ground_node.add_component(Collider::new(Box::new(100.0, 5.0)));
+    world.add_node(ground_node);
 
-    let mut slope_1 = Rigid::new(Vector2 { x: -10.0, y: 10.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4);
-    slope_1.rotate_by(210.0);
-    world.add_body(slope_1);
+    let mut slope_1_node = Node::new("Slope1".to_string());
+    slope_1_node.set_is_static(true);
+    slope_1_node.move_to(Vector2 { x: -10.0, y: 10.0 });
+    slope_1_node.rotate_by(-0.3);
+    slope_1_node.add_component(Rigid::new(1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4));
+    slope_1_node.add_component(Collider::new(Box::new(20.0, 2.0)));
+    world.add_node(slope_1_node);
 
-    let mut slope_2 = Rigid::new(Vector2 { x: 10.0, y: 20.0 }, 1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4);
-    slope_2.rotate_by(-210.0);
-    world.add_body(slope_2);
+    let mut slope_2_node = Node::new("Slope2".to_string());
+    slope_2_node.set_is_static(true);
+    slope_2_node.move_to(Vector2 { x: 10.0, y: 20.0 });
+    slope_2_node.rotate_by(0.3);
+    slope_2_node.add_component(Rigid::new(1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4));
+    slope_2_node.add_component(Collider::new(Box::new(20.0, 2.0)));
+    world.add_node(slope_2_node);
 
-    for _ in 0..100 {
-        println!("{}", Random::from_time().next_u32());
+    for i in 0..100 {
+        let mut node = Node::new("Circle".to_string());
+        node.move_to(Vector2 { x: i as f32 * 0.75, y: 10.0 });
+        node.add_component(Rigid::new(1.0, false, 1.0, VyxenCircle::new(1.0), 0.6, 0.4));
+        node.add_component(Collider::new(VyxenCircle::new(1.0)));
+        world.add_node(node);
     }
 
     loop {
@@ -77,7 +94,7 @@ async fn main() {
             let mouse_pos = mouse_position();
             let world_pos = camera.screen_to_world(Vec2::new(mouse_pos.0, mouse_pos.1));
             let world_pos = Vector2 { x: world_pos.x, y: world_pos.y };
-            
+
             let radius = rand::gen_range(1.0, 5.0);
             let density = rand::gen_range(1.0, 10.0);
             let restitution = rand::gen_range(0.0, 1.0);
@@ -85,7 +102,11 @@ async fn main() {
             let static_friction = rand::gen_range(0.0, 1.0);
             let dynamic_friction = rand::gen_range(0.0, 1.0);
 
-            world.add_body(Rigid::new(world_pos, density, false, restitution, VyxenCircle::new(radius), static_friction, dynamic_friction));
+            let mut node = Node::new("Circle".to_string());
+            node.move_to(world_pos);
+            node.add_component(Rigid::new(density, false, restitution, VyxenCircle::new(radius), static_friction, dynamic_friction));
+            node.add_component(Collider::new(VyxenCircle::new(radius)));
+            world.add_node(node);
         }
 
         if is_mouse_button_pressed(MouseButton::Right) {
@@ -101,7 +122,11 @@ async fn main() {
             let static_friction = rand::gen_range(0.0, 1.0);
             let dynamic_friction = rand::gen_range(0.0, 1.0);
 
-            world.add_body(Rigid::new(world_pos, density, false, restitution, Box::new(width, height), static_friction, dynamic_friction));
+            let mut node = Node::new("Box".to_string());
+            node.move_to(world_pos);
+            node.add_component(Rigid::new(density, false, restitution, Box::new(width, height), static_friction, dynamic_friction));
+            node.add_component(Collider::new(Box::new(width, height)));
+            world.add_node(node);
         }
 
         if is_mouse_button_pressed(MouseButton::Middle) {
@@ -127,25 +152,14 @@ async fn main() {
                 });
             }
 
-            world.add_body(Rigid::new(world_pos, density, false, restitution, Polygon::new_from_relative_vertices(&vertices), static_friction, dynamic_friction));
+            let mut node = Node::new("Polygon".to_string());
+            node.move_to(world_pos);
+            node.add_component(Rigid::new(density, false, restitution, Polygon::new_from_relative_vertices(&vertices), static_friction, dynamic_friction));
+            node.add_component(Collider::new(Polygon::new_from_relative_vertices(&vertices)));
+            world.add_node(node);
         }
 
-        world.step(dt, 10);
-
-        let bottom_left = camera.screen_to_world(vec2(0.0, screen_height()));
-
-        let mut bodies_to_remove: Vec<Rigid> = vec![];
-        for i in 0..world.get_bodies_len() {
-            let body = world.get_body_mut(i).unwrap();
-            let aabb = body.get_aabb();
-
-            if aabb.get_max().y < bottom_left.y {
-                bodies_to_remove.push(body.clone());
-            }
-        }
-        for body in bodies_to_remove {
-            world.remove_body(&body);
-        }
+        world.step(dt);
 
         set_camera(&camera);
 
@@ -154,75 +168,89 @@ async fn main() {
         draw_line(-100000.0, 0.0, 100000.0, 0.0, 1.0 / zoom, RED);
         draw_line(0.0, -100000.0, 0.0, 100000.0, 1.0 / zoom, GREEN);
 
-        for i in 0..world.get_bodies_len() {
-            let body = world.get_body_mut(i).unwrap();
-            let pos = body.get_position();
-            let rot = body.get_rotation();
-            let is_static = body.is_static();
-            let world_pos = to_world_coords(pos);
-            
-            match body.get_shape_mut() {
-                RigidType::Circle(c) => {
-                    draw_circle(world_pos.x, world_pos.y, c.get_radius(), if is_static { GRAY } else { BLUE });
+        let child_ids = world.get_root_mut().get_children_ids().clone();
+        for id in child_ids {
+            if let Some(node) = world.get_nodes_mut().get_mut(&id) {
+                let pos = node.get_position();
+                let rot = node.get_rotation();
+                let is_static = node.is_static();
+                let world_pos = to_world_coords(pos);
 
-                    let va = Vector2::zero();
-                    let vb = Vector2 { x: c.get_radius(), y: 0.0 };
-                    let transform = Transform::new(body.get_position(), body.get_rotation());
-                    let tva = va.transform(&transform);
-                    let tvb = vb.transform(&transform);
+                if let Some(body) = node.get_component_mut::<Rigid>() {
+                    match body.get_shape_mut() {
+                        RigidType::Circle(c) => {
+                            draw_circle(world_pos.x, world_pos.y, c.get_radius(), if is_static { GRAY } else { BLUE });
 
-                    draw_line(tva.x, tva.y, tvb.x, tvb.y, 0.1, WHITE);
-                }
-                RigidType::Box(b) => {
-                    let vertices = to_world_coords_multi(b.get_transformed_vertices(pos, rot));
-                    if vertices.len() == 4 {
-                        draw_triangle(
-                            vertices[0],
-                            vertices[1],
-                            vertices[2],
-                            if is_static { GRAY } else { YELLOW }
-                        );
+                            let va = Vector2::zero();
+                            let vb = Vector2 { x: c.get_radius(), y: 0.0 };
+                            let transform = Transform::new(pos, rot);
+                            let tva = va.transform(&transform);
+                            let tvb = vb.transform(&transform);
 
-                        draw_triangle(
-                            vertices[0],
-                            vertices[2],
-                            vertices[3],
-                            if is_static { GRAY } else { YELLOW }
-                        );
-                    }
-                }
-                RigidType::Polygon(p) => {
-                    let vertices = to_world_coords_multi(p.get_transformed_vertices(pos, rot));
-
-                    if vertices.len() >= 3 {
-                        for i in 1..vertices.len() - 1 {
-                            draw_triangle(
-                                vertices[0],
-                                vertices[i],
-                                vertices[i + 1],
-                                if is_static { GRAY } else { PURPLE }
-                            );
+                            draw_line(tva.x, tva.y, tvb.x, tvb.y, 0.1, WHITE);
                         }
-                    }
-                }
-                RigidType::Concave(v) => {
-                    for p in v {
-                        let vertices = to_world_coords_multi(p.get_transformed_vertices(pos, rot));
-
-                        if vertices.len() >= 3 {
-                            for i in 1..vertices.len() - 1 {
+                        RigidType::Box(b) => {
+                            let vertices = to_world_coords_multi(b.get_transformed_vertices(pos, rot));
+                            if vertices.len() == 4 {
                                 draw_triangle(
                                     vertices[0],
-                                    vertices[i],
-                                    vertices[i + 1],
-                                    if is_static { GRAY } else { ORANGE }
+                                    vertices[1],
+                                    vertices[2],
+                                    if is_static { GRAY } else { YELLOW }
                                 );
+
+                                draw_triangle(
+                                    vertices[0],
+                                    vertices[2],
+                                    vertices[3],
+                                    if is_static { GRAY } else { YELLOW }
+                                );
+                            }
+                        }
+                        RigidType::Polygon(p) => {
+                            let vertices = to_world_coords_multi(p.get_transformed_vertices(pos, rot));
+
+                            if vertices.len() >= 3 {
+                                for i in 1..vertices.len() - 1 {
+                                    draw_triangle(
+                                        vertices[0],
+                                        vertices[i],
+                                        vertices[i + 1],
+                                        if is_static { GRAY } else { PURPLE }
+                                    );
+                                }
+                            }
+                        }
+                        RigidType::Concave(v) => {
+                            for p in v {
+                                let vertices = to_world_coords_multi(p.get_transformed_vertices(pos, rot));
+
+                                if vertices.len() >= 3 {
+                                    for i in 1..vertices.len() - 1 {
+                                        draw_triangle(
+                                            vertices[0],
+                                            vertices[i],
+                                            vertices[i + 1],
+                                            if is_static { GRAY } else { ORANGE }
+                                        );
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
+        set_default_camera();
+
+        draw_text(
+            &get_fps().to_string(),
+            20.0,
+            40.0,
+            40.0,
+            YELLOW,
+        );
 
         next_frame().await;
     }

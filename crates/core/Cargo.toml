@@ -1,5 +1,5 @@
 [package]
-name = "vyxen"
+name = "vyxen-core"
 
 version.workspace = true
 license.workspace = true
@@ -10,4 +10,3 @@ rust-version.workspace = true
 vyxen-math = { path = "../math" }
 vyxen-geometry = { path = "../geometry" }
 vyxen-physics2d = { path = "../physics2d" }
-vyxen-core = { path = "../core" }

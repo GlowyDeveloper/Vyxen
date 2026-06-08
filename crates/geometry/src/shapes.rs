@@ -2,7 +2,7 @@ use std::any::Any;
 
 use vyxen_math::{Transform, Vector2};
 
-pub trait Shape {
+pub trait Shape: Clone {
     fn as_any(&self) -> &dyn Any;
 }
 

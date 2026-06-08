@@ -1,7 +1,7 @@
 use vyxen_geometry::shapes::Polygon;
 use vyxen_math::{Vector2, is_nearly_equal};
 
-use crate::bodies::{Rigid, RigidType};
+use crate::bodies::RigidType;
 
 /// Information about a collision between two rigid bodies.
 ///  - `normal` is the direction of the collision
@@ -21,64 +21,78 @@ impl Collision {
     /// use vyxen_physics2d::{bodies::Rigid, collision::Collision};
     /// use vyxen_geometry::shapes::Circle;
     /// 
-    /// let mut body1 = Rigid::new(Vector2 { x: 0.0, y: 0.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// let mut body2 = Rigid::new(Vector2 { x: 0.5, y: 0.5 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let mut body1 = Rigid::generate_shape_type_from_shape(Circle::new(1.0));
+    /// let mut body2 = Rigid::generate_shape_type_from_shape(Circle::new(1.0));
     /// 
-    /// let collision = Collision::collide(&mut body1, &mut body2);
+    /// let collision = Collision::collide(&mut body1, Vector2 { x: 0.0, y: 0.0 }, 0.0,
+    ///     &mut body2, Vector2 { x: 0.5, y: 0.5 }, 0.0);
+    /// 
     /// assert!(collision.len() > 0);
     /// ```
-    pub fn collide(body_a: &mut Rigid, body_b: &mut Rigid) -> Vec<Collision> {
-        let pos_a = body_a.get_position();
-        let rot_a = body_a.get_rotation();
-
-        let pos_b = body_b.get_position();
-        let rot_b = body_b.get_rotation();
-
-        let shape_a = body_a.get_shape().clone();
-        let shape_b = body_b.get_shape().clone();
-
-        let vertices_a = match body_a.get_shape_mut() {
-            RigidType::Box(b) => b.get_transformed_vertices(pos_a, rot_a),
-            RigidType::Polygon(p) => p.get_transformed_vertices(pos_a, rot_a),
-            _ => {&[]}
-        };
-        let vertices_b = match body_b.get_shape_mut() {
-            RigidType::Box(b) => b.get_transformed_vertices(pos_b, rot_b),
-            RigidType::Polygon(p) => p.get_transformed_vertices(pos_b, rot_b),
-            _ => {&[]}
-        };
-
+    pub fn collide(shape_a: &mut RigidType, position_a: Vector2, rotation_a: f32, shape_b: &mut RigidType, position_b: Vector2, rotation_b: f32) -> Vec<Collision> {
         match (shape_a, shape_b) {
             (RigidType::Circle(c1), RigidType::Circle(c2)) =>
-                Self::intersect_circles(pos_a, c1.get_radius(), pos_b, c2.get_radius()),
+                Self::intersect_circles(position_a, c1.get_radius(), position_b, c2.get_radius()),
+            (RigidType::Box(a), RigidType::Box(b)) =>
+                Self::intersect_polygons(a.get_transformed_vertices(position_a, rotation_a), position_a,
+                    b.get_transformed_vertices(position_b, rotation_b), position_b),
+            (RigidType::Polygon(a), RigidType::Polygon(b)) =>
+                Self::intersect_polygons(a.get_transformed_vertices(position_a, rotation_a), position_a,
+                    b.get_transformed_vertices(position_b, rotation_b), position_b),
 
-            (RigidType::Box(_) | RigidType::Polygon(_), RigidType::Box(_) | RigidType::Polygon(_)) =>
-                Self::intersect_polygons(vertices_a, pos_a, vertices_b, pos_b),
+            (RigidType::Box(b), RigidType::Polygon(p)) =>
+                Self::intersect_polygons(b.get_transformed_vertices(position_a, rotation_a), position_a,
+                    p.get_transformed_vertices(position_b, rotation_b), position_b),
+            (RigidType::Polygon(p), RigidType::Box(b)) =>
+                Self::intersect_polygons(p.get_transformed_vertices(position_a, rotation_a), position_a,
+                    b.get_transformed_vertices(position_b, rotation_b), position_b),
 
-            (RigidType::Box(_) | RigidType::Polygon(_), RigidType::Circle(c)) =>
-                Self::intersect_polygon_circle(pos_b, c.get_radius(), vertices_a, pos_a)
+            (RigidType::Box(b), RigidType::Circle(c)) =>
+                Self::intersect_polygon_circle(position_b, c.get_radius(),
+                    b.get_transformed_vertices(position_a, rotation_a), position_a)
                     .into_iter()
                     .map(|c| Collision { normal: -c.normal, depth: c.depth })
                     .collect(),
-            (RigidType::Circle(c), RigidType::Box(_) | RigidType::Polygon(_)) =>
-                Self::intersect_polygon_circle(pos_a, c.get_radius(), vertices_b, pos_b),
+            (RigidType::Polygon(p), RigidType::Circle(c)) =>
+                Self::intersect_polygon_circle(position_b, c.get_radius(),
+                    p.get_transformed_vertices(position_a, rotation_a), position_a)
+                    .into_iter()
+                    .map(|c| Collision { normal: -c.normal, depth: c.depth })
+                    .collect(),
+            (RigidType::Circle(c), RigidType::Box(b)) =>
+                Self::intersect_polygon_circle(position_a, c.get_radius(),
+                    b.get_transformed_vertices(position_b, rotation_b), position_b),
+            (RigidType::Circle(c), RigidType::Polygon(p)) =>
+                Self::intersect_polygon_circle(position_a, c.get_radius(),
+                    p.get_transformed_vertices(position_b, rotation_b), position_b),
 
             (RigidType::Circle(c), RigidType::Concave(p)) =>
-                Self::collide_concave_with_circle(&p, pos_a, c.get_radius(), pos_b, rot_b),
+                Self::collide_concave_with_circle(&p, position_a, c.get_radius(), position_b, rotation_b),
 
             (RigidType::Concave(p), RigidType::Circle(c)) =>
-                Self::collide_concave_with_circle(&p, pos_b, c.get_radius(), pos_a, rot_a)
+                Self::collide_concave_with_circle(&p, position_b, c.get_radius(), position_a, rotation_a)
                     .into_iter()
                     .map(|c| Collision { normal: -c.normal, depth: c.depth })
                     .collect(),
 
             (RigidType::Concave(a), RigidType::Concave(b)) =>
-                Self::collide_concave_with_concave(&a, &b, pos_a, pos_b, rot_a, rot_b),
+                Self::collide_concave_with_concave(&a, &b, position_a, position_b, rotation_a, rotation_b),
 
-            (RigidType::Concave(a), RigidType::Polygon(_) | RigidType::Box(_)) =>
-                Self::collide_concave_with_polygon(&a, vertices_b, pos_a, pos_b, rot_a),
-            (RigidType::Polygon(_) | RigidType::Box(_), RigidType::Concave(b)) =>
-                Self::collide_concave_with_polygon(&b, vertices_a, pos_b, pos_a, rot_b)
+            (RigidType::Concave(a), RigidType::Polygon(p)) =>
+                Self::collide_concave_with_polygon(&a, p.get_transformed_vertices(position_b, rotation_b),
+                    position_a, position_b, rotation_a),
+            (RigidType::Concave(a), RigidType::Box(b)) =>
+                Self::collide_concave_with_polygon(&a, b.get_transformed_vertices(position_b, rotation_b),
+                    position_a, position_b, rotation_a),
+            (RigidType::Polygon(p), RigidType::Concave(b)) =>
+                Self::collide_concave_with_polygon(&b, p.get_transformed_vertices(position_a, rotation_a),
+                    position_b, position_a, rotation_b)
+                    .into_iter()
+                    .map(|c| Collision { normal: -c.normal, depth: c.depth })
+                    .collect(),
+            (RigidType::Box(b), RigidType::Concave(c)) =>
+                Self::collide_concave_with_polygon(&c, b.get_transformed_vertices(position_a, rotation_a),
+                    position_b, position_a, rotation_b)
                     .into_iter()
                     .map(|c| Collision { normal: -c.normal, depth: c.depth })
                     .collect(),
@@ -179,9 +193,13 @@ impl Collision {
             }
         }
 
-        let closest_point_index = Self::find_closest_point_on_polygon(circle_center, vertices);
+        let closest_point_index_opt = Self::find_closest_point_on_polygon(circle_center, vertices);
+        let closest_point_index = match closest_point_index_opt {
+            Some(i) => i,
+            None => return vec![],
+        };
 
-        let closest_point = vertices[closest_point_index as usize];
+        let closest_point = vertices[closest_point_index];
 
         let axis_vec = closest_point - circle_center;
 
@@ -297,20 +315,28 @@ impl Collision {
         }
     }
 
-    fn find_closest_point_on_polygon(circle_center: Vector2, vertices: &[Vector2]) -> i32 {
-        let mut result = -1;
+    fn find_closest_point_on_polygon(circle_center: Vector2, vertices: &[Vector2]) -> Option<usize> {
+        if vertices.is_empty() {
+            return None;
+        }
+
+        let mut found = false;
+        let mut result: usize = 0;
         let mut min_distance = std::f32::MAX;
 
-        for i in 0..vertices.len() {
-            let v = vertices[i];
+        for (i, &v) in vertices.iter().enumerate() {
             let distance = v.distance(&circle_center);
-            if distance < min_distance {
+            if distance.is_nan() {
+                continue;
+            }
+            if !found || distance < min_distance {
                 min_distance = distance;
-                result = i as i32;
+                result = i;
+                found = true;
             }
         }
 
-        result
+        if found { Some(result) } else { None }
     }
 }
 
@@ -374,65 +400,68 @@ impl ContactPoints {
     /// use vyxen_physics2d::{bodies::Rigid, collision::ContactPoints};
     /// use vyxen_geometry::shapes::Circle;
     /// 
-    /// let mut rigid_1 = Rigid::new(Vector2 { x: 2.0, y: 3.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
-    /// let mut rigid_2 = Rigid::new(Vector2 { x: 2.0, y: 4.0 }, 1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let mut rigid_1 = Rigid::generate_shape_type_from_shape(Circle::new(1.0));
+    /// let mut rigid_2 = Rigid::generate_shape_type_from_shape(Circle::new(1.0));
     /// 
-    /// let contact_points = ContactPoints::find_contact_points(&mut rigid_1, &mut rigid_2);
+    /// let contact_points = ContactPoints::find_contact_points(&mut rigid_1, Vector2 { x: 2.0, y: 3.0 }, 0.0,
+    ///     &mut rigid_2, Vector2 { x: 2.0, y: 4.0 }, 0.0);
+    /// 
     /// assert!(contact_points.contact_1.is_some());
     /// assert!(contact_points.contact_2.is_none()); // Circles can only have 1 contact point.
     /// ```
-    pub fn find_contact_points(body_a: &mut Rigid, body_b: &mut Rigid) -> Self {
-        let pos_a = body_a.get_position();
-        let rot_a = body_a.get_rotation();
-
-        let pos_b = body_b.get_position();
-        let rot_b = body_b.get_rotation();
-
-        let shape_a = body_a.get_shape().clone();
-        let shape_b = body_b.get_shape().clone();
-
-        let vertices_a = match body_a.get_shape_mut() {
-            RigidType::Box(b) => b.get_transformed_vertices(pos_a, rot_a),
-            RigidType::Polygon(p) => p.get_transformed_vertices(pos_a, rot_a),
-            _ => {&[]}
-        };
-        let vertices_b = match body_b.get_shape_mut() {
-            RigidType::Box(b) => b.get_transformed_vertices(pos_b, rot_b),
-            RigidType::Polygon(p) => p.get_transformed_vertices(pos_b, rot_b),
-            _ => {&[]}
-        };
-
+    pub fn find_contact_points(shape_a: &mut RigidType, position_a: Vector2, rotation_a: f32, shape_b: &mut RigidType, position_b: Vector2, rotation_b: f32) -> Self {
         match (shape_a, shape_b) {
             (RigidType::Circle(c1), RigidType::Circle(_)) => {
-                let contact = Self::find_contact_point_circle_to_circle(pos_a, c1.get_radius(), pos_b);
+                let contact = Self::find_contact_point_circle_to_circle(position_a, c1.get_radius(), position_b);
                 return ContactPoints { contact_1: Some(contact), contact_2: None };
             },
+            (RigidType::Box(a), RigidType::Box(b)) =>
+                Self::find_contact_points_polygon_to_polygon(a.get_transformed_vertices(position_a, rotation_a),
+                    b.get_transformed_vertices(position_b, rotation_b)),
+            (RigidType::Polygon(a), RigidType::Polygon(b)) =>
+                Self::find_contact_points_polygon_to_polygon(a.get_transformed_vertices(position_a, rotation_a),
+                    b.get_transformed_vertices(position_b, rotation_b)),
 
-            (RigidType::Box(_) | RigidType::Polygon(_), RigidType::Box(_) | RigidType::Polygon(_)) => {
-                return Self::find_contact_points_polygon_to_polygon(vertices_a, vertices_b);
-            },
+            (RigidType::Box(a), RigidType::Polygon(b)) =>
+                Self::find_contact_points_polygon_to_polygon(a.get_transformed_vertices(position_a, rotation_a),
+                    b.get_transformed_vertices(position_b, rotation_b)),
+            (RigidType::Polygon(a), RigidType::Box(b)) =>
+                Self::find_contact_points_polygon_to_polygon(a.get_transformed_vertices(position_a, rotation_a),
+                    b.get_transformed_vertices(position_b, rotation_b)),
 
-            (RigidType::Box(_) | RigidType::Polygon(_), RigidType::Circle(_)) => {
-                let contact = Self::find_contact_point_circle_to_polygon(pos_b, vertices_a);
+            (RigidType::Box(b), RigidType::Circle(_)) => {
+                let contact = Self::find_contact_point_circle_to_polygon(position_b, b.get_transformed_vertices(position_a, rotation_a));
                 return ContactPoints { contact_1: Some(contact), contact_2: None };
-            },
-            (RigidType::Circle(_), RigidType::Box(_) | RigidType::Polygon(_)) => {
-                let contact = Self::find_contact_point_circle_to_polygon(pos_a, vertices_b);
+            }
+            (RigidType::Polygon(p), RigidType::Circle(_)) => {
+                let contact = Self::find_contact_point_circle_to_polygon(position_b, p.get_transformed_vertices(position_a, rotation_a));
                 return ContactPoints { contact_1: Some(contact), contact_2: None };
-            },
+            }
+            (RigidType::Circle(_), RigidType::Box(b)) => {
+                let contact = Self::find_contact_point_circle_to_polygon(position_a, b.get_transformed_vertices(position_b, rotation_b));
+                return ContactPoints { contact_1: Some(contact), contact_2: None };
+            }
+            (RigidType::Circle(_), RigidType::Polygon(p)) => {
+                let contact = Self::find_contact_point_circle_to_polygon(position_a, p.get_transformed_vertices(position_b, rotation_b));
+                return ContactPoints { contact_1: Some(contact), contact_2: None };
+            }
 
             (RigidType::Circle(_), RigidType::Concave(p)) =>
-                Self::find_contact_point_concave_to_circle(&p, pos_b, pos_a, rot_a),
+                Self::find_contact_point_concave_to_circle(&p, position_b, position_a, rotation_b),
             (RigidType::Concave(p), RigidType::Circle(_)) =>
-                Self::find_contact_point_concave_to_circle(&p, pos_a, pos_b, rot_b),
+                Self::find_contact_point_concave_to_circle(&p, position_a, position_b, rotation_b),
 
             (RigidType::Concave(a), RigidType::Concave(b)) =>
-                Self::find_contact_point_concave_to_concave(&a, &b, pos_a, pos_b, rot_a, rot_b),
+                Self::find_contact_point_concave_to_concave(&a, &b, position_a, position_b, rotation_b, rotation_b),
 
-            (RigidType::Concave(a), RigidType::Polygon(_) | RigidType::Box(_)) =>
-                Self::find_contact_point_concave_to_polygon(&a, vertices_b, pos_a, rot_a),
-            (RigidType::Polygon(_) | RigidType::Box(_), RigidType::Concave(b)) =>
-                Self::find_contact_point_concave_to_polygon(&b, vertices_a, pos_b, rot_b)
+            (RigidType::Concave(a), RigidType::Polygon(p)) =>
+                Self::find_contact_point_concave_to_polygon(&a, p.get_transformed_vertices(position_b, rotation_b), position_a, rotation_b),
+            (RigidType::Concave(a), RigidType::Box(b)) =>
+                Self::find_contact_point_concave_to_polygon(&a, b.get_transformed_vertices(position_b, rotation_b), position_a, rotation_b),
+            (RigidType::Polygon(p), RigidType::Concave(c)) =>
+                Self::find_contact_point_concave_to_polygon(&c, p.get_transformed_vertices(position_a, rotation_a), position_b, rotation_b),
+            (RigidType::Box(b), RigidType::Concave(c)) =>
+                Self::find_contact_point_concave_to_polygon(&c, b.get_transformed_vertices(position_a, rotation_a), position_b, rotation_b)
         }
     }
 

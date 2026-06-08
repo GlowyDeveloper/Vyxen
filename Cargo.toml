@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/geometry","crates/math", "crates/physics2d","crates/vyxen", "testbed"]
+members = ["crates/geometry","crates/math", "crates/physics2d","crates/vyxen", "crates/core", "testbed"]
 
 [workspace.package]
 version = "0.1.0"
