@@ -1,4 +1,7 @@
 //! A 2D physics engine for Vyxen.
 
-pub mod bodies;
-pub mod collision;
+mod rigid;
+mod collision;
+
+pub use rigid::Rigid;
+pub use collision::{Collision, ContactPoints, Manifold};

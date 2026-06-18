@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use vyxen::{Collider, Node, World, geometry::shapes::{Box, Circle as VyxenCircle, Polygon}, math::{Transform, Vector2}, physics2d::bodies::{Rigid, RigidType}};
+use vyxen::{Node, World, components::Collider, geometry::{Box, Circle as VyxenCircle, Polygon, ShapeType}, math::{Transform, Vector2}, physics2d::Rigid};
 
 fn to_world_coords(v: Vector2) -> Vec2 {
     vec2(v.x, v.y)
@@ -178,7 +178,7 @@ async fn main() {
 
                 if let Some(body) = node.get_component_mut::<Rigid>() {
                     match body.get_shape_mut() {
-                        RigidType::Circle(c) => {
+                        ShapeType::Circle(c) => {
                             draw_circle(world_pos.x, world_pos.y, c.get_radius(), if is_static { GRAY } else { BLUE });
 
                             let va = Vector2::zero();
@@ -189,7 +189,7 @@ async fn main() {
 
                             draw_line(tva.x, tva.y, tvb.x, tvb.y, 0.1, WHITE);
                         }
-                        RigidType::Box(b) => {
+                        ShapeType::Box(b) => {
                             let vertices = to_world_coords_multi(b.get_transformed_vertices(pos, rot));
                             if vertices.len() == 4 {
                                 draw_triangle(
@@ -207,21 +207,19 @@ async fn main() {
                                 );
                             }
                         }
-                        RigidType::Polygon(p) => {
-                            let vertices = to_world_coords_multi(p.get_transformed_vertices(pos, rot));
-
-                            if vertices.len() >= 3 {
-                                for i in 1..vertices.len() - 1 {
-                                    draw_triangle(
-                                        vertices[0],
-                                        vertices[i],
-                                        vertices[i + 1],
-                                        if is_static { GRAY } else { PURPLE }
-                                    );
-                                }
+                        ShapeType::Polygon(p) => {
+                            let triangles = Polygon::triangulate(p.get_vertices());
+                            for mut polygon in triangles {
+                                let vertices = to_world_coords_multi(polygon.get_transformed_vertices(pos, rot));
+                                draw_triangle(
+                                    vertices[0],
+                                    vertices[1],
+                                    vertices[2],
+                                    if is_static { GRAY } else { PURPLE }
+                                );
                             }
                         }
-                        RigidType::Concave(v) => {
+                        ShapeType::Concave(v) => {
                             for p in v {
                                 let vertices = to_world_coords_multi(p.get_transformed_vertices(pos, rot));
 

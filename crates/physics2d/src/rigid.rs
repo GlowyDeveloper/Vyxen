@@ -1,22 +1,13 @@
-use vyxen_geometry::{aabb::AABB, shapes::{Box, Circle, Polygon, Shape}};
+use vyxen_geometry::{AABB, Box, Circle, Polygon, Shape, ShapeType};
 use vyxen_math::Vector2;
-
-/// An enum representing the type of a rigid body.
-#[derive(Debug, Clone, PartialEq)]
-pub enum RigidType {
-    Circle(Circle),
-    Box(Box),
-    Polygon(Polygon),
-    Concave(Vec<Polygon>)
-}
 
 /// A struct representing a rigid body in the physics simulation.
 /// 
 /// # Examples
 /// ```rust
 /// use vyxen_math::Vector2;
-/// use vyxen_physics2d::bodies::{Rigid, RigidType};
-/// use vyxen_geometry::shapes::Circle;
+/// use vyxen_physics2d::Rigid;
+/// use vyxen_geometry::Circle;
 /// 
 /// let circle = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
 /// assert!(circle.get_circle().is_some());
@@ -40,7 +31,7 @@ pub struct Rigid {
     static_friction: f32,
     dynamic_friction: f32,
 
-    shape: RigidType,
+    shape: ShapeType,
 
     aabb: AABB,
     aabb_required: bool,
@@ -52,8 +43,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_density(), 1.0);
@@ -66,8 +57,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
@@ -83,8 +74,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
@@ -101,8 +92,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_restitution(), 0.5);
@@ -115,8 +106,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_area(), std::f32::consts::PI);
@@ -129,8 +120,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
@@ -146,8 +137,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
@@ -169,15 +160,15 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::{Circle, ShapeType};
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let shape = rigid.get_shape();
-    /// let expected = RigidType::Circle(Circle::new(1.0));
+    /// let expected = ShapeType::Circle(Circle::new(1.0));
     /// assert!(shape == expected);
     /// ```
-    pub fn get_shape(&self) -> RigidType {
+    pub fn get_shape(&self) -> ShapeType {
         self.shape.clone()
     }
     /// A getter for the shape of the rigid body.
@@ -187,15 +178,15 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::{Circle, ShapeType};
     /// 
     /// let mut rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let mut shape = rigid.get_shape_mut();
-    /// let mut expected = RigidType::Circle(Circle::new(1.0));
+    /// let mut expected = ShapeType::Circle(Circle::new(1.0));
     /// assert!(shape == &mut expected);
     /// ```
-    pub fn get_shape_mut(&mut self) -> &mut RigidType {
+    pub fn get_shape_mut(&mut self) -> &mut ShapeType {
         &mut self.shape
     }
     /// Returns `None` if the shape is a box or polygon, return `Some(Circle)` if the shape is a circle
@@ -203,8 +194,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
-    /// use vyxen_geometry::shapes::{Box, Circle};
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::{Box, Circle, ShapeType};
     /// 
     /// let circle = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert!(circle.get_circle().is_some());
@@ -214,7 +205,7 @@ impl Rigid {
     /// ```
     pub fn get_circle(&self) -> Option<Circle> {
         match self.shape {
-            RigidType::Circle(c) => Some(c),
+            ShapeType::Circle(c) => Some(c),
             _ => None,
         }
     }
@@ -223,8 +214,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
-    /// use vyxen_geometry::shapes::{Box, Circle};
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::{Box, Circle, ShapeType};
     /// 
     /// let bx = Rigid::new(1.0, false, 0.5, Box::new(1.0, 1.0), 0.6, 0.4);
     /// assert!(bx.get_box().is_some());
@@ -234,7 +225,7 @@ impl Rigid {
     /// ```
     pub fn get_box(&self) -> Option<Box> {
         match self.shape {
-            RigidType::Box(b) => Some(b),
+            ShapeType::Box(b) => Some(b),
             _ => None,
         }
     }
@@ -243,8 +234,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
-    /// use vyxen_geometry::shapes::{Polygon, Circle};
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::{Polygon, Circle, ShapeType};
     /// 
     /// let v1 = Vector2 { x: 0.0, y: 2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
@@ -264,7 +255,7 @@ impl Rigid {
     /// ```
     pub fn get_convex_polygon(&self) -> Option<Polygon> {
         match &self.shape {
-            RigidType::Polygon(p) => Some(p.clone()),
+            ShapeType::Polygon(p) => Some(p.clone()),
             _ => None,
         }
     }
@@ -273,8 +264,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
-    /// use vyxen_geometry::shapes::{Polygon, Circle};
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::{Polygon, Circle, ShapeType};
     /// 
     /// let v1 = Vector2 { x: 2.0, y: -2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 2.0 };
@@ -294,7 +285,7 @@ impl Rigid {
     /// ```
     pub fn get_concave_polygon(&self) -> Option<Vec<Polygon>> {
         match &self.shape {
-            RigidType::Concave(p) => Some(p.clone()),
+            ShapeType::Concave(p) => Some(p.clone()),
             _ => None,
         }
     }
@@ -303,8 +294,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::{Circle, ShapeType};
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_static_friction(), 0.6);
@@ -317,8 +308,8 @@ impl Rigid {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::{Rigid, RigidType};
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::{Circle, ShapeType};
     /// 
     /// let rigid = Rigid::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_dynamic_friction(), 0.4);
@@ -336,8 +327,8 @@ impl Rigid {
     /// ## Circle
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Circle;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Circle;
     /// 
     /// let radius = 1.0;
     /// let density = 1.0;
@@ -352,8 +343,8 @@ impl Rigid {
     /// ## Box
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Box;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let width = 1.0;
     /// let height = 2.0;
@@ -369,8 +360,8 @@ impl Rigid {
     /// ## Polygon
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Polygon;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Polygon;
     /// 
     /// let width = 1.0;
     /// let height = 2.0;
@@ -433,10 +424,10 @@ impl Rigid {
         let mass =  area * if density <= 0.0 { 0.00001 } else { density };
 
         let inertia = match &shape_type {
-            RigidType::Circle(c) => c.rotational_inertia(mass),
-            RigidType::Box(b) => b.rotational_inertia(mass),
-            RigidType::Polygon(p) => p.rotational_inertia(mass),
-            RigidType::Concave(v) => {
+            ShapeType::Circle(c) => c.rotational_inertia(mass),
+            ShapeType::Box(b) => b.rotational_inertia(mass),
+            ShapeType::Polygon(p) => p.rotational_inertia(mass),
+            ShapeType::Concave(v) => {
                 let mut added = vec![];
                 v.iter().for_each(|p| added.push(p.rotational_inertia(mass)));
 
@@ -464,42 +455,42 @@ impl Rigid {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen_geometry::shapes::Circle;
-    /// use vyxen_physics2d::bodies::Rigid;
+    /// use vyxen_geometry::Circle;
+    /// use vyxen_physics2d::Rigid;
     /// 
     /// let rigid_type = Rigid::generate_shape_type_from_shape(Circle::new(2.0));
     /// ```
-    pub fn generate_shape_type_from_shape<T>(shape: T) -> RigidType
+    pub fn generate_shape_type_from_shape<T>(shape: T) -> ShapeType
     where 
         T: Shape
     {
         match () {
             _ if shape.as_any().is::<Circle>() => {
                 if let Some(circle) = shape.as_any().downcast_ref::<Circle>() {
-                    RigidType::Circle(*circle)
+                    ShapeType::Circle(*circle)
                 } else {
-                    RigidType::Circle(Circle::new(1.0))
+                    ShapeType::Circle(Circle::new(1.0))
                 }
             }
             _ if shape.as_any().is::<Box>() => {
                 if let Some(bx) = shape.as_any().downcast_ref::<Box>() {
-                    RigidType::Box(*bx)
+                    ShapeType::Box(*bx)
                 } else {
-                    RigidType::Circle(Circle::new(1.0))
+                    ShapeType::Circle(Circle::new(1.0))
                 }
             }
             _ if shape.as_any().is::<Polygon>() => {
                 if let Some(polygon) = shape.as_any().downcast_ref::<Polygon>() {
                     if polygon.is_convex() {
-                        RigidType::Polygon(polygon.clone())
+                        ShapeType::Polygon(polygon.clone())
                     } else {
-                        RigidType::Concave(Polygon::triangulate(polygon.get_vertices()))
+                        ShapeType::Concave(Polygon::triangulate(polygon.get_vertices()))
                     }
                 } else {
-                    RigidType::Circle(Circle::new(1.0))
+                    ShapeType::Circle(Circle::new(1.0))
                 }
             }
-            _ => RigidType::Circle(Circle::new(1.0))
+            _ => ShapeType::Circle(Circle::new(1.0))
         }
     }
 
@@ -507,8 +498,8 @@ impl Rigid {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Box;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let mut rigid = Rigid::new(10.0, false, 1.0, Box::new(5.0, 5.0), 0.6, 0.4);
     /// 
@@ -522,8 +513,8 @@ impl Rigid {
     /// 
     /// # Examples
     /// ```rust
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Box;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let mut rigid = Rigid::new(10.0, false, 1.0, Box::new(5.0, 5.0), 0.6, 0.4);
     /// 
@@ -531,9 +522,9 @@ impl Rigid {
     /// ```
     pub fn set_transform_required(&mut self, required: bool) {
         match self.get_shape_mut() {
-            RigidType::Box(b) => b.set_transform_required(required),
-            RigidType::Polygon(p) => p.set_transform_required(required),
-            RigidType::Concave(c) => c.iter_mut().for_each(|p| p.set_transform_required(required)),
+            ShapeType::Box(b) => b.set_transform_required(required),
+            ShapeType::Polygon(p) => p.set_transform_required(required),
+            ShapeType::Concave(c) => c.iter_mut().for_each(|p| p.set_transform_required(required)),
             _ => {}
         }
     }
@@ -544,8 +535,8 @@ impl Rigid {
     /// 
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::bodies::Rigid;
-    /// use vyxen_geometry::shapes::Box;
+    /// use vyxen_physics2d::Rigid;
+    /// use vyxen_geometry::Box;
     /// 
     /// let mut rigid = Rigid::new(1.0, false, 0.5, Box::new(1.0, 1.0), 0.6, 0.4);
     /// let aabb = rigid.get_aabb(Vector2 { x: 0.0, y: 0.0 }, 0.0);
@@ -556,7 +547,7 @@ impl Rigid {
     pub fn get_aabb(&mut self, pos: Vector2, rot: f32) -> AABB {
         if self.aabb_required {
             match self.get_shape_mut() {
-                RigidType::Circle(c) => {
+                ShapeType::Circle(c) => {
                     self.aabb = AABB::new_from_uncalculated(
                         pos.x - c.get_radius(),
                         pos.y - c.get_radius(),
@@ -564,7 +555,7 @@ impl Rigid {
                         pos.y + c.get_radius(),
                     );
                 }
-                RigidType::Box(b) => {
+                ShapeType::Box(b) => {
                     let vertices = b.get_transformed_vertices(pos, rot);
                     let mut min_x = std::f32::MAX;
                     let mut max_x = std::f32::MIN;
@@ -589,7 +580,7 @@ impl Rigid {
 
                     self.aabb = AABB::new_from_uncalculated(min_x, min_y, max_x, max_y);
                 }
-                RigidType::Polygon(p) => {
+                ShapeType::Polygon(p) => {
                     let vertices = p.get_transformed_vertices(pos, rot);
                     let mut min_x = std::f32::MAX;
                     let mut max_x = std::f32::MIN;
@@ -614,7 +605,7 @@ impl Rigid {
 
                     self.aabb = AABB::new_from_uncalculated(min_x, min_y, max_x, max_y);
                 }
-                RigidType::Concave(p) => {
+                ShapeType::Concave(p) => {
                     let mut vertices = vec![];
                     p.iter_mut().for_each(|p| p.get_transformed_vertices(pos, rot).iter().for_each(|v| vertices.push(v)));
 
