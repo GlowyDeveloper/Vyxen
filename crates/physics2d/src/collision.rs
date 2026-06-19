@@ -1,9 +1,9 @@
 use vyxen_geometry::{Polygon, ShapeType};
 use vyxen_math::{Vector2, is_nearly_equal};
 
-/// Information about a collision between two rigid bodies.
+/// Information about a collision between two shapes.
 ///  - `normal` is the direction of the collision
-///  - `depth` is how much the two bodies are penetrating each other.
+///  - `depth` is how much the two shapes are penetrating each other.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Collision {
     pub normal: Vector2,
@@ -11,16 +11,16 @@ pub struct Collision {
 }
 
 impl Collision {
-    /// Checks if 2 bodies collide
+    /// Checks if 2 shapes collide
     /// 
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::{Rigid, Collision};
+    /// use vyxen_physics2d::{RigidBody, Collision, shape_type_from_shape};
     /// use vyxen_geometry::Circle;
     /// 
-    /// let mut body1 = Rigid::generate_shape_type_from_shape(Circle::new(1.0));
-    /// let mut body2 = Rigid::generate_shape_type_from_shape(Circle::new(1.0));
+    /// let mut body1 = shape_type_from_shape(Circle::new(1.0));
+    /// let mut body2 = shape_type_from_shape(Circle::new(1.0));
     /// 
     /// let collision = Collision::collide(&mut body1, Vector2 { x: 0.0, y: 0.0 }, 0.0,
     ///     &mut body2, Vector2 { x: 0.5, y: 0.5 }, 0.0);
@@ -397,24 +397,24 @@ impl Manifold {
     }
 }
 
-/// The contact points of 2 bodies
+/// The contact points of 2 shapes
 pub struct ContactPoints {
     pub contact_1: Option<Vector2>,
     pub contact_2: Option<Vector2>
 }
 
 impl ContactPoints {
-    /// Finds the contact points bodies
+    /// Finds the contact points of 2 shapes
     /// 
     /// # Examples
     /// 
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::{Rigid, ContactPoints};
+    /// use vyxen_physics2d::{RigidBody, ContactPoints, shape_type_from_shape};
     /// use vyxen_geometry::Circle;
     /// 
-    /// let mut rigid_1 = Rigid::generate_shape_type_from_shape(Circle::new(1.0));
-    /// let mut rigid_2 = Rigid::generate_shape_type_from_shape(Circle::new(1.0));
+    /// let mut rigid_1 = shape_type_from_shape(Circle::new(1.0));
+    /// let mut rigid_2 = shape_type_from_shape(Circle::new(1.0));
     /// 
     /// let contact_points = ContactPoints::find_contact_points(&mut rigid_1, Vector2 { x: 2.0, y: 3.0 }, 0.0,
     ///     &mut rigid_2, Vector2 { x: 2.0, y: 4.0 }, 0.0);

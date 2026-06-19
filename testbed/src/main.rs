@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use vyxen::{Node, World, components::Collider, geometry::{Box, Circle as VyxenCircle, Polygon, ShapeType}, math::{Transform, Vector2}, physics2d::Rigid};
+use vyxen::{Node, World, components::Collider, geometry::{Box, Circle as VyxenCircle, Polygon, ShapeType}, math::{Transform, Vector2}, physics2d::{RigidBody, SoftBody}};
 
 fn to_world_coords(v: Vector2) -> Vec2 {
     vec2(v.x, v.y)
@@ -17,13 +17,14 @@ fn to_world_coords_multi(vec: &[Vector2]) -> Vec<Vec2> {
 async fn main() {
     let mut camera_target = vec2(0.0, 10.0);
     let mut zoom = 2.0;
+    let mut hitboxes = false;
 
     let mut world = World::new();
 
     let mut ground_node = Node::new("Ground".to_string());
     ground_node.set_is_static(true);
     ground_node.move_to(Vector2 { x: 0.0, y: 0.0 });
-    ground_node.add_component(Rigid::new(1.0, true, 0.5, Box::new(100.0, 5.0), 0.6, 0.4));
+    ground_node.add_component(RigidBody::new(1.0, true, 0.5, Box::new(100.0, 5.0), 0.6, 0.4));
     ground_node.add_component(Collider::new(Box::new(100.0, 5.0)));
     world.add_node(ground_node);
 
@@ -31,7 +32,7 @@ async fn main() {
     slope_1_node.set_is_static(true);
     slope_1_node.move_to(Vector2 { x: -10.0, y: 10.0 });
     slope_1_node.rotate_by(-0.3);
-    slope_1_node.add_component(Rigid::new(1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4));
+    slope_1_node.add_component(RigidBody::new(1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4));
     slope_1_node.add_component(Collider::new(Box::new(20.0, 2.0)));
     world.add_node(slope_1_node);
 
@@ -39,17 +40,9 @@ async fn main() {
     slope_2_node.set_is_static(true);
     slope_2_node.move_to(Vector2 { x: 10.0, y: 20.0 });
     slope_2_node.rotate_by(0.3);
-    slope_2_node.add_component(Rigid::new(1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4));
+    slope_2_node.add_component(RigidBody::new(1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4));
     slope_2_node.add_component(Collider::new(Box::new(20.0, 2.0)));
     world.add_node(slope_2_node);
-
-    for i in 0..100 {
-        let mut node = Node::new("Circle".to_string());
-        node.move_to(Vector2 { x: i as f32 * 0.75, y: 10.0 });
-        node.add_component(Rigid::new(1.0, false, 1.0, VyxenCircle::new(1.0), 0.6, 0.4));
-        node.add_component(Collider::new(VyxenCircle::new(1.0)));
-        world.add_node(node);
-    }
 
     loop {
         let dt = get_frame_time();
@@ -102,10 +95,18 @@ async fn main() {
             let static_friction = rand::gen_range(0.0, 1.0);
             let dynamic_friction = rand::gen_range(0.0, 1.0);
 
+            let shape = VyxenCircle::new(radius);
+
             let mut node = Node::new("Circle".to_string());
             node.move_to(world_pos);
-            node.add_component(Rigid::new(density, false, restitution, VyxenCircle::new(radius), static_friction, dynamic_friction));
-            node.add_component(Collider::new(VyxenCircle::new(radius)));
+
+            if !is_key_down(KeyCode::Space) {
+                node.add_component(RigidBody::new(density, false, restitution, shape, static_friction, dynamic_friction));
+            } else {
+                node.add_component(SoftBody::new(density, false, restitution, shape.clone(), static_friction, dynamic_friction));
+            }
+
+            node.add_component(Collider::new(shape));
             world.add_node(node);
         }
 
@@ -122,10 +123,18 @@ async fn main() {
             let static_friction = rand::gen_range(0.0, 1.0);
             let dynamic_friction = rand::gen_range(0.0, 1.0);
 
+            let shape = Box::new(width, height);
+
             let mut node = Node::new("Box".to_string());
             node.move_to(world_pos);
-            node.add_component(Rigid::new(density, false, restitution, Box::new(width, height), static_friction, dynamic_friction));
-            node.add_component(Collider::new(Box::new(width, height)));
+
+            if !is_key_down(KeyCode::Space) {
+                node.add_component(RigidBody::new(density, false, restitution, shape, static_friction, dynamic_friction));
+            } else {
+                node.add_component(SoftBody::new(density, false, restitution, shape.clone(), static_friction, dynamic_friction));
+            }
+
+            node.add_component(Collider::new(shape));
             world.add_node(node);
         }
 
@@ -152,11 +161,23 @@ async fn main() {
                 });
             }
 
+            let shape = Polygon::new_from_relative_vertices(&vertices);
+
             let mut node = Node::new("Polygon".to_string());
             node.move_to(world_pos);
-            node.add_component(Rigid::new(density, false, restitution, Polygon::new_from_relative_vertices(&vertices), static_friction, dynamic_friction));
-            node.add_component(Collider::new(Polygon::new_from_relative_vertices(&vertices)));
+
+            if !is_key_down(KeyCode::Space) {
+                node.add_component(RigidBody::new(density, false, restitution, shape.clone(), static_friction, dynamic_friction));
+            } else {
+                node.add_component(SoftBody::new(density, false, restitution, shape.clone(), static_friction, dynamic_friction));
+            }
+
+            node.add_component(Collider::new(shape));
             world.add_node(node);
+        }
+
+        if is_key_pressed(KeyCode::H) {
+            hitboxes = !hitboxes;
         }
 
         world.step(dt);
@@ -176,7 +197,63 @@ async fn main() {
                 let is_static = node.is_static();
                 let world_pos = to_world_coords(pos);
 
-                if let Some(body) = node.get_component_mut::<Rigid>() {
+                if hitboxes == true {
+                    if let Some(collider) = node.get_component_mut::<Collider>() {
+                        match collider.get_hitbox_mut() {
+                            ShapeType::Circle(c) => {
+                                draw_circle(world_pos.x, world_pos.y, c.get_radius(), DARKGRAY);
+                            }
+                            ShapeType::Box(b) => {
+                                let vertices = to_world_coords_multi(b.get_transformed_vertices(pos, rot));
+                                if vertices.len() == 4 {
+                                    draw_triangle(
+                                        vertices[0],
+                                        vertices[1],
+                                        vertices[2],
+                                        DARKGRAY
+                                    );
+
+                                    draw_triangle(
+                                        vertices[0],
+                                        vertices[2],
+                                        vertices[3],
+                                        DARKGRAY
+                                    );
+                                }
+                            }
+                            ShapeType::Polygon(p) => {
+                                let triangles = Polygon::triangulate(p.get_vertices());
+                                for mut polygon in triangles {
+                                    let vertices = to_world_coords_multi(polygon.get_transformed_vertices(pos, rot));
+                                    draw_triangle(
+                                        vertices[0],
+                                        vertices[1],
+                                        vertices[2],
+                                        DARKGRAY
+                                    );
+                                }
+                            }
+                            ShapeType::Concave(v) => {
+                                for p in v {
+                                    let vertices = to_world_coords_multi(p.get_transformed_vertices(pos, rot));
+
+                                    if vertices.len() >= 3 {
+                                        for i in 1..vertices.len() - 1 {
+                                            draw_triangle(
+                                                vertices[0],
+                                                vertices[i],
+                                                vertices[i + 1],
+                                                DARKGRAY
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Some(body) = node.get_component_mut::<RigidBody>() {
                     match body.get_shape_mut() {
                         ShapeType::Circle(c) => {
                             draw_circle(world_pos.x, world_pos.y, c.get_radius(), if is_static { GRAY } else { BLUE });
@@ -237,6 +314,32 @@ async fn main() {
                         }
                     }
                 }
+
+                if let Some(body) = node.get_component_mut::<SoftBody>() {
+                    let mut points = vec![];
+                    body.get_points().iter().for_each(|p| points.push(p.get_position()));
+
+                    let triangles = Polygon::triangulate(&points);
+                    for mut polygon in triangles {
+                        let vertices = to_world_coords_multi(polygon.get_transformed_vertices(pos, rot));
+                        draw_triangle(
+                            vertices[0],
+                            vertices[1],
+                            vertices[2],
+                            if is_static { GRAY } else { PINK }
+                        );
+                    }
+
+                    let transform = Transform::new(pos, rot);
+
+                    for point in points {
+                        let transformed = point.transform(&transform);
+
+                        let size = 1.0 / zoom;
+
+                        draw_rectangle(transformed.x - (size / 2.0), transformed.y - (size / 2.0), size, size, WHITE);
+                    }
+                }
             }
         }
 
@@ -249,6 +352,12 @@ async fn main() {
             40.0,
             YELLOW,
         );
+
+        draw_text("Circle: LEFT MOUSE BUTTON", 20.0, screen_height() - 20.0 - 120.0, 20.0, YELLOW);
+        draw_text("Box: RIGHT MOUSE BUTTON", 20.0, screen_height() - 20.0 - 100.0, 20.0, YELLOW);
+        draw_text("Polygon: MOUSE WHEEL BUTTON", 20.0, screen_height() - 20.0 - 80.0, 20.0, YELLOW);
+        draw_text("Hold SPACE to make a softbody", 20.0, screen_height() - 20.0 - 40.0, 20.0, YELLOW);
+        draw_text("Press H to show hitboxes", 20.0, screen_height() - 20.0, 20.0, YELLOW);
 
         next_frame().await;
     }

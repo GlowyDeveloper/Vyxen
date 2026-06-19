@@ -208,6 +208,17 @@ impl PartialEq for Vector2 {
     }
 }
 
+impl Add<f32> for Vector2 {
+    type Output = Self;
+
+    fn add(self, other: f32) -> Self {
+        Vector2 {
+            x: self.x + other,
+            y: self.y + other,
+        }
+    }
+}
+
 impl Add for Vector2 {
     type Output = Self;
 
@@ -215,6 +226,17 @@ impl Add for Vector2 {
         Vector2 {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl Sub<f32> for Vector2 {
+    type Output = Self;
+
+    fn sub(self, other: f32) -> Self {
+        Vector2 {
+            x: self.x - other,
+            y: self.y - other,
         }
     }
 }

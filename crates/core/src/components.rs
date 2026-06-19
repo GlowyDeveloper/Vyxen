@@ -2,7 +2,7 @@ use std::any::Any;
 
 use vyxen_geometry::{AABB, Shape, ShapeType};
 use vyxen_math::Vector2;
-use vyxen_physics2d::Rigid;
+use vyxen_physics2d::{RigidBody, SoftBody, shape_type_from_shape};
 
 /// Component trait for attaching arbitrary data to `Node`s.
 pub trait Component {
@@ -10,7 +10,12 @@ pub trait Component {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
-impl Component for Rigid {
+impl Component for RigidBody {
+    fn as_any(&self) -> &dyn Any { self }
+    fn as_any_mut(&mut self) -> &mut dyn Any { self }
+}
+
+impl Component for SoftBody {
     fn as_any(&self) -> &dyn Any { self }
     fn as_any_mut(&mut self) -> &mut dyn Any { self }
 }
@@ -71,7 +76,7 @@ impl Collider {
         T: Shape
     {
         Self {
-            hitbox: Rigid::generate_shape_type_from_shape(hitbox),
+            hitbox: shape_type_from_shape(hitbox),
             aabb: AABB::new_from_uncalculated(std::f32::MAX, std::f32::MAX, std::f32::MIN, std::f32::MIN),
             old_pos: Vector2::zero(),
             old_rot: 0.0,
@@ -235,6 +240,11 @@ impl Collider {
         } else {
             self.aabb
         }
+    }
+
+    /// Sets if the aabb needs to be reinitialized
+    pub fn set_uninitilized(&mut self) {
+        self.aabb_initialized = false;
     }
 }
 
