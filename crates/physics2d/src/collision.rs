@@ -725,7 +725,7 @@ impl ContactPoints {
             }
         }
 
-        for p in vertices_a {
+        for p in vertices_b {
             for j in 0..vertices_a.len() {
                 let va = vertices_a[j];
                 let vb = vertices_a[(j + 1) % vertices_a.len()];

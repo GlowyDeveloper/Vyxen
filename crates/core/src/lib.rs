@@ -545,7 +545,7 @@ impl World {
         for s in 0..indices.len() {
             let i = indices[s];
             let max_x = self.aabbs[i].get_max().x;
-            
+
             for j in indices.iter().skip(s + 1) {
                 if self.aabbs[*j].get_min().x > max_x {
                     break;
@@ -1748,7 +1748,10 @@ impl Node {
         let b_cos = b_rot.cos();
         let b_sin = b_rot.sin();
 
-        for contact in [manifold.get_contact_1(), manifold.get_contact_2()].into_iter().flatten() {
+        for contact in [manifold.get_contact_1(), manifold.get_contact_2()]
+            .into_iter()
+            .flatten()
+        {
             let mut idx_a = 0;
             let mut min_dist_a = f32::MAX;
             if let Some(soft) = node_a.get_component::<SoftBody>() {
@@ -1970,9 +1973,7 @@ impl Node {
                                 y: friction_impulse.x * a_sin - friction_impulse.y * a_cos,
                             };
 
-                            point.set_velocity(
-                                point.get_velocity() + local_f_impulse * a_inv_mass,
-                            );
+                            point.set_velocity(point.get_velocity() + local_f_impulse * a_inv_mass);
                             node_a.set_linear_velocity(
                                 node_a.get_linear_velocity()
                                     - friction_impulse * (a_inv_mass / count_a),
@@ -1991,9 +1992,7 @@ impl Node {
                                 y: -friction_impulse.x * b_sin + friction_impulse.y * b_cos,
                             };
 
-                            point.set_velocity(
-                                point.get_velocity() + local_f_impulse * b_inv_mass,
-                            );
+                            point.set_velocity(point.get_velocity() + local_f_impulse * b_inv_mass);
                             node_b.set_linear_velocity(
                                 node_b.get_linear_velocity()
                                     + friction_impulse * (b_inv_mass / count_b),
@@ -2066,7 +2065,10 @@ impl Node {
         let s_cos = s_rot.cos();
         let s_sin = s_rot.sin();
 
-        for contact in [manifold.get_contact_1(), manifold.get_contact_2()].into_iter().flatten() {
+        for contact in [manifold.get_contact_1(), manifold.get_contact_2()]
+            .into_iter()
+            .flatten()
+        {
             let mut closest_idx = 0;
             let mut min_dist = f32::MAX;
 
@@ -2184,8 +2186,7 @@ impl Node {
                         y: -normal_impulse.x * s_sin + normal_impulse.y * s_cos,
                     };
 
-                    point
-                        .set_velocity(point.get_velocity() + local_normal_impulse * s_inv_mass);
+                    point.set_velocity(point.get_velocity() + local_normal_impulse * s_inv_mass);
                     soft_node.set_linear_velocity(
                         soft_node.get_linear_velocity()
                             + normal_impulse * (s_inv_mass / point_count),
@@ -2389,18 +2390,8 @@ impl Node {
             let new_vertices: Vec<Vector2> =
                 soft.get_points().iter().map(|p| p.get_position()).collect();
             if let Some(collider) = self.get_component_mut::<Collider>() {
-                if let ShapeType::Polygon(p) = collider.get_hitbox_mut() {
-                    *p = Polygon::new(&new_vertices);
-                    collider.set_uninitilized();
-                }
-                if let ShapeType::Box(_) = collider.get_hitbox() {
-                    *collider.get_hitbox_mut() = ShapeType::Polygon(Polygon::new(&new_vertices));
-                    collider.set_uninitilized();
-                }
-                if let Some(collider) = self.get_component_mut::<Collider>() {
-                    *collider.get_hitbox_mut() = ShapeType::Polygon(Polygon::new(&new_vertices));
-                    collider.set_uninitilized();
-                }
+                *collider.get_hitbox_mut() = ShapeType::Polygon(Polygon::new(&new_vertices));
+                collider.set_uninitilized();
             }
         }
     }
