@@ -1,5 +1,11 @@
 use macroquad::prelude::*;
-use vyxen::{Node, World, components::Collider, geometry::{Box, Circle as VyxenCircle, Polygon, ShapeType}, math::{Transform, Vector2}, physics2d::{RigidBody, SoftBody}};
+use vyxen::{
+    Node, World,
+    components::Collider,
+    geometry::{Box, Circle as VyxenCircle, Polygon, ShapeType},
+    math::{Transform, Vector2},
+    physics2d::{RigidBody, SoftBody},
+};
 
 fn to_world_coords(v: Vector2) -> Vec2 {
     vec2(v.x, v.y)
@@ -24,7 +30,14 @@ async fn main() {
     let mut ground_node = Node::new("Ground".to_string());
     ground_node.set_is_static(true);
     ground_node.move_to(Vector2 { x: 0.0, y: 0.0 });
-    ground_node.add_component(RigidBody::new(1.0, true, 0.5, Box::new(100.0, 5.0), 0.6, 0.4));
+    ground_node.add_component(RigidBody::new(
+        1.0,
+        true,
+        0.5,
+        Box::new(100.0, 5.0),
+        0.6,
+        0.4,
+    ));
     ground_node.add_component(Collider::new(Box::new(100.0, 5.0)));
     world.add_node(ground_node);
 
@@ -32,7 +45,14 @@ async fn main() {
     slope_1_node.set_is_static(true);
     slope_1_node.move_to(Vector2 { x: -10.0, y: 10.0 });
     slope_1_node.rotate_by(-0.3);
-    slope_1_node.add_component(RigidBody::new(1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4));
+    slope_1_node.add_component(RigidBody::new(
+        1.0,
+        true,
+        0.5,
+        Box::new(20.0, 2.0),
+        0.6,
+        0.4,
+    ));
     slope_1_node.add_component(Collider::new(Box::new(20.0, 2.0)));
     world.add_node(slope_1_node);
 
@@ -40,7 +60,14 @@ async fn main() {
     slope_2_node.set_is_static(true);
     slope_2_node.move_to(Vector2 { x: 10.0, y: 20.0 });
     slope_2_node.rotate_by(0.3);
-    slope_2_node.add_component(RigidBody::new(1.0, true, 0.5, Box::new(20.0, 2.0), 0.6, 0.4));
+    slope_2_node.add_component(RigidBody::new(
+        1.0,
+        true,
+        0.5,
+        Box::new(20.0, 2.0),
+        0.6,
+        0.4,
+    ));
     slope_2_node.add_component(Collider::new(Box::new(20.0, 2.0)));
     world.add_node(slope_2_node);
 
@@ -75,10 +102,7 @@ async fn main() {
         let camera = Camera2D {
             target: camera_target,
 
-            zoom: vec2(
-                zoom * 20.0 / screen_width(),
-                -zoom * 20.0 / screen_height(),
-            ),
+            zoom: vec2(zoom * 20.0 / screen_width(), -zoom * 20.0 / screen_height()),
 
             ..Default::default()
         };
@@ -86,7 +110,10 @@ async fn main() {
         if is_mouse_button_pressed(MouseButton::Left) {
             let mouse_pos = mouse_position();
             let world_pos = camera.screen_to_world(Vec2::new(mouse_pos.0, mouse_pos.1));
-            let world_pos = Vector2 { x: world_pos.x, y: world_pos.y };
+            let world_pos = Vector2 {
+                x: world_pos.x,
+                y: world_pos.y,
+            };
 
             let radius = rand::gen_range(1.0, 5.0);
             let density = rand::gen_range(1.0, 10.0);
@@ -101,9 +128,23 @@ async fn main() {
             node.move_to(world_pos);
 
             if !is_key_down(KeyCode::Space) {
-                node.add_component(RigidBody::new(density, false, restitution, shape, static_friction, dynamic_friction));
+                node.add_component(RigidBody::new(
+                    density,
+                    false,
+                    restitution,
+                    shape,
+                    static_friction,
+                    dynamic_friction,
+                ));
             } else {
-                node.add_component(SoftBody::new(density, false, restitution, shape.clone(), static_friction, dynamic_friction));
+                node.add_component(SoftBody::new(
+                    density,
+                    false,
+                    restitution,
+                    shape,
+                    static_friction,
+                    dynamic_friction,
+                ));
             }
 
             node.add_component(Collider::new(shape));
@@ -113,7 +154,10 @@ async fn main() {
         if is_mouse_button_pressed(MouseButton::Right) {
             let mouse_pos = mouse_position();
             let world_pos = camera.screen_to_world(Vec2::new(mouse_pos.0, mouse_pos.1));
-            let world_pos = Vector2 { x: world_pos.x, y: world_pos.y };
+            let world_pos = Vector2 {
+                x: world_pos.x,
+                y: world_pos.y,
+            };
 
             let width = rand::gen_range(1.0, 5.0);
             let height = rand::gen_range(1.0, 5.0);
@@ -129,9 +173,23 @@ async fn main() {
             node.move_to(world_pos);
 
             if !is_key_down(KeyCode::Space) {
-                node.add_component(RigidBody::new(density, false, restitution, shape, static_friction, dynamic_friction));
+                node.add_component(RigidBody::new(
+                    density,
+                    false,
+                    restitution,
+                    shape,
+                    static_friction,
+                    dynamic_friction,
+                ));
             } else {
-                node.add_component(SoftBody::new(density, false, restitution, shape.clone(), static_friction, dynamic_friction));
+                node.add_component(SoftBody::new(
+                    density,
+                    false,
+                    restitution,
+                    shape,
+                    static_friction,
+                    dynamic_friction,
+                ));
             }
 
             node.add_component(Collider::new(shape));
@@ -141,7 +199,10 @@ async fn main() {
         if is_mouse_button_pressed(MouseButton::Middle) {
             let mouse_pos = mouse_position();
             let world_pos = camera.screen_to_world(Vec2::new(mouse_pos.0, mouse_pos.1));
-            let world_pos = Vector2 { x: world_pos.x, y: world_pos.y };
+            let world_pos = Vector2 {
+                x: world_pos.x,
+                y: world_pos.y,
+            };
 
             let density = rand::gen_range(1.0, 10.0);
             let restitution = rand::gen_range(0.0, 1.0);
@@ -167,9 +228,23 @@ async fn main() {
             node.move_to(world_pos);
 
             if !is_key_down(KeyCode::Space) {
-                node.add_component(RigidBody::new(density, false, restitution, shape.clone(), static_friction, dynamic_friction));
+                node.add_component(RigidBody::new(
+                    density,
+                    false,
+                    restitution,
+                    shape.clone(),
+                    static_friction,
+                    dynamic_friction,
+                ));
             } else {
-                node.add_component(SoftBody::new(density, false, restitution, shape.clone(), static_friction, dynamic_friction));
+                node.add_component(SoftBody::new(
+                    density,
+                    false,
+                    restitution,
+                    shape.clone(),
+                    static_friction,
+                    dynamic_friction,
+                ));
             }
 
             node.add_component(Collider::new(shape));
@@ -197,45 +272,34 @@ async fn main() {
                 let is_static = node.is_static();
                 let world_pos = to_world_coords(pos);
 
-                if hitboxes == true {
+                if hitboxes {
                     if let Some(collider) = node.get_component_mut::<Collider>() {
                         match collider.get_hitbox_mut() {
                             ShapeType::Circle(c) => {
                                 draw_circle(world_pos.x, world_pos.y, c.get_radius(), DARKGRAY);
                             }
                             ShapeType::Box(b) => {
-                                let vertices = to_world_coords_multi(b.get_transformed_vertices(pos, rot));
+                                let vertices =
+                                    to_world_coords_multi(b.get_transformed_vertices(pos, rot));
                                 if vertices.len() == 4 {
-                                    draw_triangle(
-                                        vertices[0],
-                                        vertices[1],
-                                        vertices[2],
-                                        DARKGRAY
-                                    );
+                                    draw_triangle(vertices[0], vertices[1], vertices[2], DARKGRAY);
 
-                                    draw_triangle(
-                                        vertices[0],
-                                        vertices[2],
-                                        vertices[3],
-                                        DARKGRAY
-                                    );
+                                    draw_triangle(vertices[0], vertices[2], vertices[3], DARKGRAY);
                                 }
                             }
                             ShapeType::Polygon(p) => {
                                 let triangles = Polygon::triangulate(p.get_vertices());
                                 for mut polygon in triangles {
-                                    let vertices = to_world_coords_multi(polygon.get_transformed_vertices(pos, rot));
-                                    draw_triangle(
-                                        vertices[0],
-                                        vertices[1],
-                                        vertices[2],
-                                        DARKGRAY
+                                    let vertices = to_world_coords_multi(
+                                        polygon.get_transformed_vertices(pos, rot),
                                     );
+                                    draw_triangle(vertices[0], vertices[1], vertices[2], DARKGRAY);
                                 }
                             }
                             ShapeType::Concave(v) => {
                                 for p in v {
-                                    let vertices = to_world_coords_multi(p.get_transformed_vertices(pos, rot));
+                                    let vertices =
+                                        to_world_coords_multi(p.get_transformed_vertices(pos, rot));
 
                                     if vertices.len() >= 3 {
                                         for i in 1..vertices.len() - 1 {
@@ -243,7 +307,7 @@ async fn main() {
                                                 vertices[0],
                                                 vertices[i],
                                                 vertices[i + 1],
-                                                DARKGRAY
+                                                DARKGRAY,
                                             );
                                         }
                                     }
@@ -256,10 +320,18 @@ async fn main() {
                 if let Some(body) = node.get_component_mut::<RigidBody>() {
                     match body.get_shape_mut() {
                         ShapeType::Circle(c) => {
-                            draw_circle(world_pos.x, world_pos.y, c.get_radius(), if is_static { GRAY } else { BLUE });
+                            draw_circle(
+                                world_pos.x,
+                                world_pos.y,
+                                c.get_radius(),
+                                if is_static { GRAY } else { BLUE },
+                            );
 
                             let va = Vector2::zero();
-                            let vb = Vector2 { x: c.get_radius(), y: 0.0 };
+                            let vb = Vector2 {
+                                x: c.get_radius(),
+                                y: 0.0,
+                            };
                             let transform = Transform::new(pos, rot);
                             let tva = va.transform(&transform);
                             let tvb = vb.transform(&transform);
@@ -267,38 +339,42 @@ async fn main() {
                             draw_line(tva.x, tva.y, tvb.x, tvb.y, 0.1, WHITE);
                         }
                         ShapeType::Box(b) => {
-                            let vertices = to_world_coords_multi(b.get_transformed_vertices(pos, rot));
+                            let vertices =
+                                to_world_coords_multi(b.get_transformed_vertices(pos, rot));
                             if vertices.len() == 4 {
                                 draw_triangle(
                                     vertices[0],
                                     vertices[1],
                                     vertices[2],
-                                    if is_static { GRAY } else { YELLOW }
+                                    if is_static { GRAY } else { YELLOW },
                                 );
 
                                 draw_triangle(
                                     vertices[0],
                                     vertices[2],
                                     vertices[3],
-                                    if is_static { GRAY } else { YELLOW }
+                                    if is_static { GRAY } else { YELLOW },
                                 );
                             }
                         }
                         ShapeType::Polygon(p) => {
                             let triangles = Polygon::triangulate(p.get_vertices());
                             for mut polygon in triangles {
-                                let vertices = to_world_coords_multi(polygon.get_transformed_vertices(pos, rot));
+                                let vertices = to_world_coords_multi(
+                                    polygon.get_transformed_vertices(pos, rot),
+                                );
                                 draw_triangle(
                                     vertices[0],
                                     vertices[1],
                                     vertices[2],
-                                    if is_static { GRAY } else { PURPLE }
+                                    if is_static { GRAY } else { PURPLE },
                                 );
                             }
                         }
                         ShapeType::Concave(v) => {
                             for p in v {
-                                let vertices = to_world_coords_multi(p.get_transformed_vertices(pos, rot));
+                                let vertices =
+                                    to_world_coords_multi(p.get_transformed_vertices(pos, rot));
 
                                 if vertices.len() >= 3 {
                                     for i in 1..vertices.len() - 1 {
@@ -306,7 +382,7 @@ async fn main() {
                                             vertices[0],
                                             vertices[i],
                                             vertices[i + 1],
-                                            if is_static { GRAY } else { ORANGE }
+                                            if is_static { GRAY } else { ORANGE },
                                         );
                                     }
                                 }
@@ -317,16 +393,19 @@ async fn main() {
 
                 if let Some(body) = node.get_component_mut::<SoftBody>() {
                     let mut points = vec![];
-                    body.get_points().iter().for_each(|p| points.push(p.get_position()));
+                    body.get_points()
+                        .iter()
+                        .for_each(|p| points.push(p.get_position()));
 
                     let triangles = Polygon::triangulate(&points);
                     for mut polygon in triangles {
-                        let vertices = to_world_coords_multi(polygon.get_transformed_vertices(pos, rot));
+                        let vertices =
+                            to_world_coords_multi(polygon.get_transformed_vertices(pos, rot));
                         draw_triangle(
                             vertices[0],
                             vertices[1],
                             vertices[2],
-                            if is_static { GRAY } else { PINK }
+                            if is_static { GRAY } else { PINK },
                         );
                     }
 
@@ -337,7 +416,13 @@ async fn main() {
 
                         let size = 1.0 / zoom;
 
-                        draw_rectangle(transformed.x - (size / 2.0), transformed.y - (size / 2.0), size, size, WHITE);
+                        draw_rectangle(
+                            transformed.x - (size / 2.0),
+                            transformed.y - (size / 2.0),
+                            size,
+                            size,
+                            WHITE,
+                        );
                     }
                 }
             }
@@ -345,19 +430,43 @@ async fn main() {
 
         set_default_camera();
 
+        draw_text(get_fps().to_string(), 20.0, 40.0, 40.0, YELLOW);
+
         draw_text(
-            &get_fps().to_string(),
+            "Circle: LEFT MOUSE BUTTON",
             20.0,
-            40.0,
-            40.0,
+            screen_height() - 20.0 - 120.0,
+            20.0,
             YELLOW,
         );
-
-        draw_text("Circle: LEFT MOUSE BUTTON", 20.0, screen_height() - 20.0 - 120.0, 20.0, YELLOW);
-        draw_text("Box: RIGHT MOUSE BUTTON", 20.0, screen_height() - 20.0 - 100.0, 20.0, YELLOW);
-        draw_text("Polygon: MOUSE WHEEL BUTTON", 20.0, screen_height() - 20.0 - 80.0, 20.0, YELLOW);
-        draw_text("Hold SPACE to make a softbody", 20.0, screen_height() - 20.0 - 40.0, 20.0, YELLOW);
-        draw_text("Press H to show hitboxes", 20.0, screen_height() - 20.0, 20.0, YELLOW);
+        draw_text(
+            "Box: RIGHT MOUSE BUTTON",
+            20.0,
+            screen_height() - 20.0 - 100.0,
+            20.0,
+            YELLOW,
+        );
+        draw_text(
+            "Polygon: MOUSE WHEEL BUTTON",
+            20.0,
+            screen_height() - 20.0 - 80.0,
+            20.0,
+            YELLOW,
+        );
+        draw_text(
+            "Hold SPACE to make a softbody",
+            20.0,
+            screen_height() - 20.0 - 40.0,
+            20.0,
+            YELLOW,
+        );
+        draw_text(
+            "Press H to show hitboxes",
+            20.0,
+            screen_height() - 20.0,
+            20.0,
+            YELLOW,
+        );
 
         next_frame().await;
     }

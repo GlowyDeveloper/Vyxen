@@ -9,7 +9,7 @@ pub trait Shape: Clone {
 /// A simple circle struct
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Circle {
-    radius: f32
+    radius: f32,
 }
 
 impl Shape for Circle {
@@ -21,9 +21,7 @@ impl Shape for Circle {
 impl Circle {
     /// Creates a new circle
     pub fn new(radius: f32) -> Self {
-        Circle {
-            radius
-        }
+        Circle { radius }
     }
 
     /// Gets the rotational inertia of the circle
@@ -64,7 +62,7 @@ impl Box {
             width,
             vertices,
             transformed_vertices: vertices,
-            transform_required: true
+            transform_required: true,
         }
     }
 
@@ -92,7 +90,10 @@ impl Box {
         [
             Vector2 { x: left, y: top },
             Vector2 { x: right, y: top },
-            Vector2 { x: right, y: bottom },
+            Vector2 {
+                x: right,
+                y: bottom,
+            },
             Vector2 { x: left, y: bottom },
         ]
     }
@@ -127,7 +128,7 @@ impl Box {
 pub struct Polygon {
     vertices: Vec<Vector2>,
     transformed_vertices: Vec<Vector2>,
-    transform_required: bool
+    transform_required: bool,
 }
 
 impl Shape for Polygon {
@@ -138,9 +139,9 @@ impl Shape for Polygon {
 
 impl Polygon {
     /// Creates a new polygon
-    /// 
+    ///
     /// # Note
-    /// 
+    ///
     ///  - The vertices should be the vertices placed around the world. Not relative.
     ///  - Position should be the position of the polygon at the time of creation.
     pub fn new(vertices: &[Vector2]) -> Self {
@@ -183,14 +184,13 @@ impl Polygon {
 
             area2 += cross;
 
-            inertia_sum += cross * (
-                p0.x * p0.x +
-                p0.x * p1.x +
-                p1.x * p1.x +
-                p0.y * p0.y +
-                p0.y * p1.y +
-                p1.y * p1.y
-            );
+            inertia_sum += cross
+                * (p0.x * p0.x
+                    + p0.x * p1.x
+                    + p1.x * p1.x
+                    + p0.y * p0.y
+                    + p0.y * p1.y
+                    + p1.y * p1.y);
         }
 
         let area = area2.abs() * 0.5;
@@ -237,28 +237,28 @@ impl Polygon {
     }
 
     /// Returns if a polygon is convex
-    /// 
+    ///
     /// # Example
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_geometry::Polygon;
-    /// 
+    ///
     /// let v1 = Vector2 { x: 2.0, y: -2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 2.0 };
     /// let v3 = Vector2 { x: -2.0, y: 2.0 };
     /// let v4 = Vector2 { x: -2.0, y: -2.0 };
     /// let v5 = Vector2 { x: 0.0, y: 0.0 };
-    /// 
+    ///
     /// let concave = Polygon::new(&[v1, v2, v3, v4, v5]);
-    /// 
+    ///
     /// assert!(!concave.is_convex());
-    /// 
+    ///
     /// let v1 = Vector2 { x: 0.0, y: 2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
     /// let v3 = Vector2 { x: -2.0, y: 2.0 };
-    /// 
+    ///
     /// let convex = Polygon::new(&[v1, v2, v3]);
-    /// 
+    ///
     /// assert!(convex.is_convex());
     /// ```
     pub fn is_convex(&self) -> bool {
@@ -295,18 +295,18 @@ impl Polygon {
     }
 
     /// Turns a `Polygon` into a `Vec<Polygon>`
-    /// 
+    ///
     /// # Example
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_geometry::Polygon;
-    /// 
+    ///
     /// let v1 = Vector2 { x: 2.0, y: -2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 2.0 };
     /// let v3 = Vector2 { x: -2.0, y: 2.0 };
     /// let v4 = Vector2 { x: -2.0, y: -2.0 };
     /// let v5 = Vector2 { x: 0.0, y: 0.0 };
-    /// 
+    ///
     /// let triangulated = Polygon::triangulate(&[v1, v2, v3, v4, v5]);
     /// assert_eq!(triangulated.len(), 3);
     /// ```
@@ -344,12 +344,12 @@ impl Polygon {
 
                 let mut contains_point = false;
 
-                for j in 0..len {
+                for (j, vertex) in verts.iter().enumerate().take(len) {
                     if j == i || j == (i + 1) % len || j == (i + len - 1) % len {
                         continue;
                     }
 
-                    if Self::point_in_triangle(verts[j], prev, curr, next) {
+                    if Self::point_in_triangle(*vertex, prev, curr, next) {
                         contains_point = true;
                         break;
                     }
@@ -373,7 +373,9 @@ impl Polygon {
         }
 
         if verts.len() == 3 {
-            result.push(Polygon::new_from_relative_vertices(&[verts[0], verts[1], verts[2]]));
+            result.push(Polygon::new_from_relative_vertices(&[
+                verts[0], verts[1], verts[2],
+            ]));
         }
 
         result
@@ -391,21 +393,21 @@ impl Polygon {
     }
 
     /// Returns if vertices are clockwise
-    /// 
+    ///
     /// # Example
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_geometry::Polygon;
-    /// 
+    ///
     /// let v1 = Vector2 { x: 2.0, y: -2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 2.0 };
     /// let v3 = Vector2 { x: -2.0, y: 2.0 };
     /// let v4 = Vector2 { x: -2.0, y: -2.0 };
     /// let v5 = Vector2 { x: 0.0, y: 0.0 };
-    /// 
+    ///
     /// let counter_clockwise = Polygon::is_clockwise(&[v1, v2, v3, v4, v5]);
     /// assert_eq!(counter_clockwise, false);
-    /// 
+    ///
     /// let clockwise = Polygon::is_clockwise(&[v5, v4, v3, v2, v1]);
     /// assert!(clockwise);
     /// ```
@@ -423,25 +425,25 @@ impl Polygon {
     }
 
     /// Ensures the polygons are counter clockwise
-    /// 
+    ///
     /// # Example
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_geometry::Polygon;
-    /// 
+    ///
     /// let v1 = Vector2 { x: 0.0, y: 0.0 };
     /// let v2 = Vector2 { x: -2.0, y: -2.0 };
     /// let v3 = Vector2 { x: -2.0, y: 2.0 };
     /// let v4 = Vector2 { x: 2.0, y: 2.0 };
     /// let v5 = Vector2 { x: 2.0, y: -2.0 };
-    /// 
+    ///
     /// let mut vertices = vec![v1, v2, v3, v4, v5];
     /// let reversed = vec![v5, v4, v3, v2, v1];
-    /// 
+    ///
     /// Polygon::ensure_counter_clockwise(&mut vertices);
     /// assert!(vertices == reversed)
     /// ```
-    pub fn ensure_counter_clockwise(vertices: &mut Vec<Vector2>) {
+    pub fn ensure_counter_clockwise(vertices: &mut [Vector2]) {
         if Self::is_clockwise(vertices) {
             vertices.reverse();
         }
@@ -454,7 +456,7 @@ pub enum ShapeType {
     Circle(Circle),
     Box(Box),
     Polygon(Polygon),
-    Concave(Vec<Polygon>)
+    Concave(Vec<Polygon>),
 }
 
 /// Axis-Aligned Bounding Box (AABB)
@@ -503,7 +505,7 @@ impl AABB {
     }
 
     /// Checks **if** two `AABB`s intersect eachother
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
@@ -513,21 +515,22 @@ impl AABB {
     ///     Vector2 { x: 0.0, y: 0.0 },
     ///     Vector2 { x: 1.0, y: 1.0 },
     /// );
-    /// 
+    ///
     /// let b = AABB::new(
     ///     Vector2 { x: 0.5, y: 0.5 },
     ///     Vector2 { x: 1.5, y: 1.5 },
     /// );
-    /// 
+    ///
     /// assert!(AABB::intersect_aabb(a, b));
     /// ```
     pub fn intersect_aabb(aabb_a: AABB, aabb_b: AABB) -> bool {
-        if aabb_a.get_max().x <= aabb_b.get_min().x ||
-            aabb_b.get_max().x <= aabb_a.get_min().x ||
-            aabb_a.get_max().y <= aabb_b.get_min().y ||
-            aabb_b.get_max().y <= aabb_a.get_min().y {
+        if aabb_a.get_max().x <= aabb_b.get_min().x
+            || aabb_b.get_max().x <= aabb_a.get_min().x
+            || aabb_a.get_max().y <= aabb_b.get_min().y
+            || aabb_b.get_max().y <= aabb_a.get_min().y
+        {
             return false;
         }
-        return true;
+        true
     }
 }

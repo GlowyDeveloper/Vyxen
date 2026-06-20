@@ -1,32 +1,35 @@
 //! A math library made for Vyxen.
 
-use std::{ops::{Add, Div, Mul, Neg, Range, Sub}, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    ops::{Add, Div, Mul, Neg, Range, Sub},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 /// A 2D vector with x and y components.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```rust
 /// use vyxen_math::Vector2;
-/// 
+///
 /// let v1 = Vector2 { x: 1.0, y: 2.0 };
 /// assert_eq!(v1.x, 1.0);
 /// assert_eq!(v1.y, 2.0);
-/// 
+///
 /// let v2 = Vector2 { x: 3.0, y: 4.0 };
 /// assert_eq!(v2.x, 3.0);
 /// assert_eq!(v2.y, 4.0);
-/// 
+///
 /// let length = v1.length();
 /// assert_eq!(length, (1.0f32 * 1.0 + 2.0 * 2.0).sqrt());
-/// 
+///
 /// let normalized = v1.normalize();
 /// assert_eq!(normalized.x, 1.0 / (1.0f32 * 1.0 + 2.0 * 2.0).sqrt());
 /// assert_eq!(normalized.y, 2.0 / (1.0f32 * 1.0 + 2.0 * 2.0).sqrt());
-/// 
+///
 /// let dot = v1.dot(&v2);
 /// assert_eq!(dot, 1.0 * 3.0 + 2.0 * 4.0);
-/// 
+///
 /// let cross = v1.cross(&v2);
 /// assert_eq!(cross, 1.0 * 4.0 - 2.0 * 3.0);
 /// ```
@@ -38,11 +41,11 @@ pub struct Vector2 {
 
 impl Vector2 {
     /// Creates a new Vector2 are 0, 0.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// 
+    ///
     /// let v = Vector2::zero();
     /// assert_eq!(v.x, 0.0);
     /// assert_eq!(v.y, 0.0);
@@ -52,11 +55,11 @@ impl Vector2 {
     }
 
     /// Returns the length of the vector.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// 
+    ///
     /// let v = Vector2 { x: 3.0, y: 4.0 };
     /// let length = v.length();
     /// assert_eq!(length, 5.0);
@@ -66,11 +69,11 @@ impl Vector2 {
     }
 
     /// Returns the length squared of the vector.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// 
+    ///
     /// let v = Vector2 { x: 3.0, y: 4.0 };
     /// let length = v.length();
     /// assert_eq!(length, 5.0);
@@ -83,11 +86,11 @@ impl Vector2 {
     }
 
     /// Returns the distance between this vector and another vector.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// 
+    ///
     /// let v1 = Vector2 { x: 1.0, y: 2.0 };
     /// let v2 = Vector2 { x: 4.0, y: 6.0 };
     /// let distance = v1.distance(&v2);
@@ -100,11 +103,11 @@ impl Vector2 {
     }
 
     /// Returns the distance between this vector and another vector.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// 
+    ///
     /// let v1 = Vector2 { x: 1.0, y: 2.0 };
     /// let v2 = Vector2 { x: 4.0, y: 6.0 };
     /// let distance = v1.distance(&v2);
@@ -120,11 +123,11 @@ impl Vector2 {
     }
 
     /// Returns the normalized vector.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// 
+    ///
     /// let v = Vector2 { x: 3.0, y: 4.0 };
     /// let normalized = v.normalize();
     /// assert_eq!(normalized.length(), 1.0);
@@ -138,11 +141,11 @@ impl Vector2 {
     }
 
     /// Returns the dot product of this vector and another vector.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// 
+    ///
     /// let v1 = Vector2 { x: 1.0, y: 2.0 };
     /// let v2 = Vector2 { x: 3.0, y: 4.0 };
     /// let dot = v1.dot(&v2);
@@ -153,11 +156,11 @@ impl Vector2 {
     }
 
     /// Returns the cross product of this vector and another vector.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// 
+    ///
     /// let v1 = Vector2 { x: 1.0, y: 2.0 };
     /// let v2 = Vector2 { x: 3.0, y: 4.0 };
     /// let cross = v1.cross(&v2);
@@ -168,33 +171,32 @@ impl Vector2 {
     }
 
     /// Transforms this vector by a Transform
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::{Vector2, Transform};
-    /// 
+    ///
     /// let v = Vector2 { x: 5.0, y: 5.0 };
     /// let t = Transform::new(Vector2 {x: 5.0, y: 2.0}, 45.0);
     /// let transformed = v.transform(&t);
-
     /// assert!(v != transformed);
     /// ```
     pub fn transform(&self, transform: &Transform) -> Self {
         Self {
             x: self.x * transform.cos - self.y * transform.sin + transform.pos_x,
-            y: self.x * transform.sin + self.y * transform.cos + transform.pos_y
+            y: self.x * transform.sin + self.y * transform.cos + transform.pos_y,
         }
     }
 
     /// Returns if two `Vector2`s are nealy equal (0.0005).
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// 
+    ///
     /// let v1 = Vector2 { x: 5.0, y: 5.0 };
     /// let v2 = Vector2 { x: 4.9999, y: 4.9999 };
-    /// 
+    ///
     /// assert!(v1.is_nearly_equal(&v2));
     /// ```
     pub fn is_nearly_equal(&self, other: &Self) -> bool {
@@ -317,11 +319,11 @@ pub struct Transform {
 
 impl Transform {
     /// Creates a new Transform Matrix
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::{Vector2, Transform};
-    /// 
+    ///
     /// let transform = Transform::new(Vector2 {x: 5.0, y: 2.0}, 45.0);
     /// ```
     pub fn new(position: Vector2, angle: f32) -> Self {
@@ -334,11 +336,11 @@ impl Transform {
     }
 
     /// Creates a zero-ed Transform Matrix
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::{Vector2, Transform};
-    /// 
+    ///
     /// let transform = Transform::zero();
     /// ```
     pub fn zero() -> Self {
@@ -347,18 +349,18 @@ impl Transform {
 }
 
 /// Returns if two `f32`s are nealy equal (0.0005).
-/// 
+///
 /// # Examples
 /// ```rust
 /// use vyxen_math::is_nearly_equal;
-/// 
+///
 /// let f1 = 5.0;
 /// let f2 = 4.9999;
-/// 
+///
 /// assert!(is_nearly_equal(f1, f2));
 /// ```
 pub fn is_nearly_equal(a: f32, b: f32) -> bool {
-    (a-b).abs() < 0.0005
+    (a - b).abs() < 0.0005
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -368,17 +370,17 @@ pub struct Random {
 
 impl Random {
     /// Creates a new Random with a given seed.
-    /// 
+    ///
     /// # Note
-    /// 
+    ///
     /// If the seed is 0, it will be generated from the current time.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::new(12345);
-    /// 
+    ///
     /// let value1 = rng.next_u32();
     /// let value2 = rng.next_u32();
     /// ```
@@ -391,13 +393,13 @@ impl Random {
     }
 
     /// Creates a new Random from the current time.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.next_u32();
     /// let value2 = rng.next_u32();
     /// ```
@@ -411,11 +413,11 @@ impl Random {
     }
 
     /// Returns the current seed of the Random.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::new(12345);
     /// let seed = rng.seed();
     /// assert_eq!(seed, 12345);
@@ -425,17 +427,17 @@ impl Random {
     }
 
     /// Resets the Random with a new seed.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::new(12345);
     /// let seed = rng.seed();
     /// assert_eq!(seed, 12345);
-    /// 
+    ///
     /// rng.reseed(67890);
-    /// 
+    ///
     /// let new_seed = rng.seed();
     /// assert_eq!(new_seed, 67890);
     /// ```
@@ -444,18 +446,19 @@ impl Random {
     }
 
     /// Generates a random u64.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.next_u64();
     /// let value2 = rng.next_u64();
     /// ```
     pub fn next_u64(&mut self) -> u64 {
-        self.state = self.state
+        self.state = self
+            .state
             .wrapping_mul(6364136223846793005)
             .wrapping_add(1442695040888963407);
 
@@ -469,13 +472,13 @@ impl Random {
     }
 
     /// Generates a random u32.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.next_u32();
     /// let value2 = rng.next_u32();
     /// ```
@@ -484,13 +487,13 @@ impl Random {
     }
 
     /// Generates a random f32.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.next_f32();
     /// let value2 = rng.next_f32();
     /// ```
@@ -499,13 +502,13 @@ impl Random {
     }
 
     /// Generates a random f64.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.next_f64();
     /// let value2 = rng.next_f64();
     /// ```
@@ -514,13 +517,13 @@ impl Random {
     }
 
     /// Generates a random bool.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.next_bool();
     /// let value2 = rng.next_bool();
     /// ```
@@ -529,13 +532,13 @@ impl Random {
     }
 
     /// Generates a random u32 in the given range.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.range_u32(0..10);
     /// let value2 = rng.range_u32(0..100);
     /// ```
@@ -546,13 +549,13 @@ impl Random {
     }
 
     /// Generates a random u64 in the given range.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.range_u64(0..10);
     /// let value2 = rng.range_u64(0..100);
     /// ```
@@ -563,13 +566,13 @@ impl Random {
     }
 
     /// Generates a random f32 in the given range.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.range_f32(0.0..10.0);
     /// let value2 = rng.range_f32(0.0..100.0);
     /// ```
@@ -580,13 +583,13 @@ impl Random {
     }
 
     /// Generates a random f64 in the given range.
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Random;
-    /// 
+    ///
     /// let mut rng = Random::from_time();
-    /// 
+    ///
     /// let value1 = rng.range_f64(0.0..10.0);
     /// let value2 = rng.range_f64(0.0..100.0);
     /// ```
@@ -615,13 +618,25 @@ mod tests {
         assert_eq!(v1 + v2, Vector2 { x: 4.0, y: 6.0 });
         assert_eq!(v1 - v2, Vector2 { x: -2.0, y: -2.0 });
         assert_eq!(v1 * v2, Vector2 { x: 3.0, y: 8.0 });
-        assert_eq!(v1 / v2, Vector2 { x: 1.0 / 3.0, y: 0.5 });
+        assert_eq!(
+            v1 / v2,
+            Vector2 {
+                x: 1.0 / 3.0,
+                y: 0.5
+            }
+        );
         assert_eq!(-v1, Vector2 { x: -1.0, y: -2.0 });
         assert_eq!(v1.length(), (1.0_f32 * 1.0 + 2.0_f32 * 2.0).sqrt());
         assert_eq!(v1.length_squared(), 1.0_f32 * 1.0 + 2.0_f32 * 2.0);
         assert_eq!(v1.distance(&v2), (2.0_f32 * 2.0 + 2.0_f32 * 2.0).sqrt());
         assert_eq!(v1.distance_squared(&v2), 2.0_f32 * 2.0 + 2.0_f32 * 2.0);
-        assert_eq!(v1.normalize(), Vector2 { x: 1.0 / (1.0_f32 * 1.0 + 2.0_f32 * 2.0).sqrt(), y: 2.0 / (1.0_f32 * 1.0 + 2.0_f32 * 2.0).sqrt() });
+        assert_eq!(
+            v1.normalize(),
+            Vector2 {
+                x: 1.0 / (1.0_f32 * 1.0 + 2.0_f32 * 2.0).sqrt(),
+                y: 2.0 / (1.0_f32 * 1.0 + 2.0_f32 * 2.0).sqrt()
+            }
+        );
         assert_eq!(v1.dot(&v2), 1.0 * 3.0 + 2.0 * 4.0);
         assert_eq!(v1.cross(&v2), 1.0 * 4.0 - 2.0 * 3.0);
         assert!(v1.is_nearly_equal(&Vector2 { x: 1.0, y: 1.9999 }));

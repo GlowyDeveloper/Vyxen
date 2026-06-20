@@ -1,27 +1,30 @@
 //! A 2D physics engine for Vyxen.
 
-use vyxen_geometry::{Circle, Box, Polygon, Shape, ShapeType};
+use vyxen_geometry::{Box, Circle, Polygon, Shape, ShapeType};
 
-mod rigid;
 mod collision;
+mod rigid;
 mod soft;
 
-pub use rigid::RigidBody;
 pub use collision::{Collision, ContactPoints, Manifold};
-pub use soft::{SoftBody, Spring, PointMass, SPRING_FORCE, SPRING_DAMPING, SHAPE_RECONSTRUCTION_STIFFNESS, SHAPE_DAMPING};
+pub use rigid::RigidBody;
+pub use soft::{
+    PointMass, SHAPE_DAMPING, SHAPE_RECONSTRUCTION_STIFFNESS, SPRING_DAMPING, SPRING_FORCE,
+    SoftBody, Spring,
+};
 
 /// Generates a shape type from shape
-/// 
+///
 /// # Examples
 /// ```rust
 /// use vyxen_geometry::Circle;
 /// use vyxen_physics2d::shape_type_from_shape;
-/// 
+///
 /// let rigid_type = shape_type_from_shape(Circle::new(2.0));
 /// ```
 pub fn shape_type_from_shape<T>(shape: T) -> ShapeType
-where 
-    T: Shape
+where
+    T: Shape,
 {
     match () {
         _ if shape.as_any().is::<Circle>() => {
@@ -49,6 +52,6 @@ where
                 ShapeType::Circle(Circle::new(1.0))
             }
         }
-        _ => ShapeType::Circle(Circle::new(1.0))
+        _ => ShapeType::Circle(Circle::new(1.0)),
     }
 }
