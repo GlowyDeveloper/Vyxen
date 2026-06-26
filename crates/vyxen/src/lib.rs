@@ -93,4 +93,9 @@ pub mod physics2d {
     pub use vyxen_physics2d::*;
 }
 
+/// The whole engine renderer
+pub mod renderer {
+    pub use vyxen_renderer::*;
+}
+
 pub use vyxen_core::*;

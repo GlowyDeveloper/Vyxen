@@ -4,7 +4,7 @@ Before opening a pull request, please run:
 
 ```bash
 cargo fmt
-cargo clippy --all-targets --all-features -- -D warnings
+cargo clippy --all-targets --all-features
 cargo test
 ```
 

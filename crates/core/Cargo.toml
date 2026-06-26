@@ -7,6 +7,6 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-vyxen-math = { path = "../math" }
-vyxen-geometry = { path = "../geometry" }
-vyxen-physics2d = { path = "../physics2d" }
+vyxen-math.workspace = true
+vyxen-geometry.workspace = true
+vyxen-physics2d.workspace = true

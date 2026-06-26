@@ -7,4 +7,4 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-vyxen-math = { path = "../math" }
+vyxen-math.workspace = true

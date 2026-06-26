@@ -7,5 +7,4 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-macroquad = "0.4.14"
-vyxen = { path = "../crates/vyxen" }
+vyxen.workspace = true
