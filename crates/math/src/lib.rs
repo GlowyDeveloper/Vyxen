@@ -606,6 +606,238 @@ impl Default for Random {
     }
 }
 
+/// A 4×4 matrix used for 2D and 3D transformations.
+///
+/// # Examples
+/// ```
+/// use vyxen_math::Matrix4;
+///
+/// let matrix = Matrix4::new();
+///
+/// assert_eq!(matrix, Matrix4 {m: [[0.0; 4]; 4]});
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Matrix4 {
+    /// The matrix elements stored in columns.
+    pub m: [[f32; 4]; 4],
+}
+
+impl Matrix4 {
+    /// Creates a new `Matrix4`. All elements are initilized to `0.0`
+    ///
+    /// # Examples
+    /// ```
+    /// use vyxen_math::Matrix4;
+    ///
+    /// let matrix = Matrix4::new();
+    ///
+    /// assert_eq!(matrix, Matrix4 {m: [[0.0; 4]; 4]});
+    /// ```
+    pub fn new() -> Self {
+        Self { m: [[0.0; 4]; 4] }
+    }
+
+    /// Creates the identity matrix.
+    ///
+    /// # Examples
+    /// ```
+    /// use vyxen_math::Matrix4;
+    ///
+    /// let identity = Matrix4::identity();
+    ///
+    /// assert_eq!(
+    ///     identity,
+    ///     Matrix4 {
+    ///         m: [
+    ///             [1.0, 0.0, 0.0, 0.0],
+    ///             [0.0, 1.0, 0.0, 0.0],
+    ///             [0.0, 0.0, 1.0, 0.0],
+    ///             [0.0, 0.0, 0.0, 1.0],
+    ///         ],
+    ///     }
+    /// );
+    /// ```
+    pub fn identity() -> Self {
+        Self {
+            m: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        }
+    }
+
+    /// The returned matrix translates by `x`, `y`, and `z`.
+    ///
+    /// # Examples
+    /// ```
+    /// use vyxen_math::Matrix4;
+    ///
+    /// let x = 2.0;
+    /// let y = 4.0;
+    /// let z = 6.0;
+    ///
+    /// let translation = Matrix4::translation(x, y, z);
+    ///
+    /// assert_eq!(
+    ///     translation,
+    ///     Matrix4 {
+    ///         m: [
+    ///             [1.0, 0.0, 0.0, 0.0],
+    ///             [0.0, 1.0, 0.0, 0.0],
+    ///             [0.0, 0.0, 1.0, 0.0],
+    ///             [x, y, z, 1.0],
+    ///         ],
+    ///     }
+    /// );
+    /// ```
+    pub fn translation(x: f32, y: f32, z: f32) -> Self {
+        Self {
+            m: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [x, y, z, 1.0],
+            ],
+        }
+    }
+
+    /// The returned matrix scales each axis independently.
+    ///
+    /// # Examples
+    /// ```
+    /// use vyxen_math::Matrix4;
+    ///
+    /// let x = 2.0;
+    /// let y = 4.0;
+    /// let z = 6.0;
+    ///
+    /// let scale = Matrix4::scale(x, y, z);
+    ///
+    /// assert_eq!(
+    ///     scale,
+    ///     Matrix4 {
+    ///         m: [
+    ///             [x, 0.0, 0.0, 0.0],
+    ///             [0.0, y, 0.0, 0.0],
+    ///             [0.0, 0.0, z, 0.0],
+    ///             [0.0, 0.0, 0.0, 1.0],
+    ///         ],
+    ///     }
+    /// );
+    /// ```
+    pub fn scale(x: f32, y: f32, z: f32) -> Self {
+        Self {
+            m: [
+                [x, 0.0, 0.0, 0.0],
+                [0.0, y, 0.0, 0.0],
+                [0.0, 0.0, z, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        }
+    }
+
+    /// Maps the cube defined by bounds into space without perspective.
+    ///
+    /// # Examples
+    /// ```
+    /// use vyxen_math::Matrix4;
+    ///
+    /// let projection = Matrix4::orthographic(
+    ///     -1.0, 1.0,
+    ///     -1.0, 1.0,
+    ///     -1.0, 1.0,
+    /// );
+    ///
+    /// assert_eq!(
+    ///     projection,
+    ///     Matrix4 {
+    ///         m: [
+    ///             [1.0, 0.0,  0.0, 0.0],
+    ///             [0.0, 1.0,  0.0, 0.0],
+    ///             [0.0, 0.0, -1.0, 0.0],
+    ///             [0.0, 0.0,  0.0, 1.0],
+    ///         ],
+    ///     }
+    /// );
+    /// ```
+    pub fn orthographic(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Self {
+        Self {
+            m: [
+                [2.0 / (right - left), 0.0, 0.0, 0.0],
+                [0.0, 2.0 / (top - bottom), 0.0, 0.0],
+                [0.0, 0.0, -2.0 / (far - near), 0.0],
+                [
+                    -(right + left) / (right - left),
+                    -(top + bottom) / (top - bottom),
+                    -(far + near) / (far - near),
+                    1.0,
+                ],
+            ],
+        }
+    }
+
+    /// The returned matrix is rotated around the Z axis.
+    ///
+    /// # Examples
+    /// ```
+    /// use vyxen_math::Matrix4;
+    ///
+    /// let rotation = Matrix4::rotation_z(std::f32::consts::PI);
+    ///
+    /// assert_eq!(
+    ///     rotation,
+    ///     Matrix4 {
+    ///         m: [
+    ///             [ 0.0,  1.0, 0.0, 0.0],
+    ///             [-1.0,  0.0, 0.0, 0.0],
+    ///             [ 0.0,  0.0, 1.0, 0.0],
+    ///             [ 0.0,  0.0, 0.0, 1.0],
+    ///         ],
+    ///     }
+    /// );
+    /// ```
+    pub fn rotate(angle: f32) -> Self {
+        let c = angle.cos();
+        let s = angle.sin();
+
+        Self {
+            m: [
+                [c, s, 0.0, 0.0],
+                [-s, c, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        }
+    }
+}
+
+impl std::ops::Mul for Matrix4 {
+    type Output = Matrix4;
+
+    fn mul(self, rhs: Matrix4) -> Matrix4 {
+        let mut result = Matrix4 { m: [[0.0; 4]; 4] };
+
+        for c in 0..4 {
+            for r in 0..4 {
+                result.m[c][r] = 0.0;
+                for i in 0..4 {
+                    result.m[c][r] += self.m[i][r] * rhs.m[c][i];
+                }
+            }
+        }
+
+        result
+    }
+}
+
+impl From<Matrix4> for [[f32; 4]; 4] {
+    fn from(matrix: Matrix4) -> Self {
+        matrix.m
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

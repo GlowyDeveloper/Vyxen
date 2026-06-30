@@ -37,7 +37,7 @@
 //!  - SoftBody
 //!
 //! ```rust
-//! use vyxen::{Node, components::Collider, geometry::Circle};
+//! use vyxen::{Node, Collider, geometry::Circle};
 //!
 //! let mut node = Node::new("Foo".to_string());
 //! let collider = Collider::new(Circle::new(1.0));
