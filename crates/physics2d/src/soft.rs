@@ -1,7 +1,5 @@
-use vyxen_geometry::{Box, Circle, Polygon, Shape, ShapeType};
+use vyxen_geometry::{Box, Circle, Polygon, Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::{Vector2, is_nearly_equal};
-
-use crate::shape_type_from_shape;
 
 /// Default for the spring force
 pub const SPRING_FORCE: f32 = 100.0;

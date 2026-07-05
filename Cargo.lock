@@ -1942,6 +1942,7 @@ dependencies = [
 name = "vyxen-core"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "vyxen-geometry",
  "vyxen-math",
  "vyxen-physics2d",
@@ -1982,6 +1983,7 @@ dependencies = [
  "image",
  "log",
  "pollster",
+ "vyxen-geometry",
  "vyxen-math",
  "wasm-bindgen",
  "wasm-bindgen-futures",

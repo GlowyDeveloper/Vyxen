@@ -1,6 +1,4 @@
-use vyxen_geometry::{Box, Circle, Polygon, Shape, ShapeType};
-
-use crate::shape_type_from_shape;
+use vyxen_geometry::{Box, Circle, Polygon, Shape, ShapeType, shape_type_from_shape};
 
 /// A struct representing a rigid body in the physics simulation.
 ///

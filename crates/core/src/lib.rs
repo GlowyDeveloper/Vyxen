@@ -1,35 +1,13 @@
 use std::{any::Any, collections::HashMap};
 
-use vyxen_geometry::{AABB, Polygon, Shape, ShapeType};
+use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::{Random, Vector2};
 use vyxen_physics2d::{
-    Collision, ContactPoints, Manifold, RigidBody, SoftBody, shape_type_from_shape,
+    Collision, ContactPoints, Manifold, RigidBody, SoftBody,
 };
+use vyxen_renderer::{EventLoop, Renderer, Sprite, backend::State};
 
-/// World struct used throughout the engine
-///
-/// # Examples
-/// ```rust
-/// use vyxen_core::{World, Node};
-/// use vyxen_math::Vector2;
-/// use vyxen_physics2d::RigidBody;
-/// use vyxen_geometry::Circle;
-///
-/// let mut world = World::new();
-///
-/// let mut node = Node::new("Foo".to_string());
-/// let id = node.get_id();
-/// node.add_component(RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4));
-///
-/// world.add_node(node);
-///
-/// assert_eq!(2, world.get_nodes_len());
-///
-/// world.remove_node_by_id(id);
-///
-/// assert_eq!(1, world.get_nodes_len());
-/// ```
-pub struct World {
+pub struct Scene {
     nodes: HashMap<u64, Node>,
     contact_pairs: Vec<(usize, usize)>,
     manifolds: Vec<Manifold>,
@@ -38,13 +16,13 @@ pub struct World {
     aabbs: Vec<AABB>,
 }
 
-impl Default for World {
+impl Default for Scene {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl World {
+impl Scene {
     /// Generates a new world
     ///
     /// # Examples
@@ -230,20 +208,17 @@ impl World {
     /// world.add_node(node1);
     /// world.add_node(node2);
     ///
-    /// // add child inside the world
-    /// {
-    ///     let node1_copy = world.get_node_mut(node1_id).unwrap();
-    ///     node1_copy.add_child(node2_id);
-    /// }
+    /// let node1_copy = world.get_node_mut(node1_id).unwrap();
+    /// node1_copy.add_child(node2_id);
     ///
     /// assert_eq!(3, world.get_nodes_len());
     ///
-    /// world.remove_node_by_id(node1_id);
+    /// world.remove_node(&node1);
     ///
     /// assert_eq!(1, world.get_nodes_len());
     /// ```
-    pub fn remove_node(&mut self, node: &Node) {
-        self.remove_node_by_id(node.get_id());
+    pub fn remove_node(&mut self, node: &Node) -> anyhow::Result<()> {
+        self.remove_node_by_id(node.get_id())
     }
 
     /// Removes the node from the world by id with all of its children
@@ -276,13 +251,19 @@ impl World {
     ///
     /// assert_eq!(1, world.get_nodes_len());
     /// ```
-    pub fn remove_node_by_id(&mut self, id: u64) {
+    pub fn remove_node_by_id(&mut self, id: u64) -> anyhow::Result<()> {
+        if id == 0 {
+            anyhow::bail!("Root node cannot be removed.")
+        }
+
         if let Some(node) = self.nodes.remove(&id) {
             let child_ids: Vec<u64> = node.get_children_ids().to_vec();
             for child_id in child_ids {
-                self.remove_node_by_id(child_id);
+                self.remove_node_by_id(child_id)?;
             }
         }
+
+        Ok(())
     }
 
     /// Gets the len of the amount of nodes in the world.
@@ -635,6 +616,93 @@ impl World {
             self.nodes.insert(id_a, node_a);
             self.nodes.insert(id_b, node_b);
         }
+    }
+}
+
+pub struct Game {
+    loaded_scene: Option<Scene>,
+    renderer: Renderer,
+    event_loop: EventLoop<State>,
+}
+
+impl Game {
+    pub fn new() -> anyhow::Result<Self> {
+        let event_loop = EventLoop::with_user_event().build()?;
+        Ok(Self {
+            loaded_scene: None,
+            renderer: Renderer::new(&event_loop),
+            event_loop,
+        })
+    }
+
+    pub fn step(&mut self, dt: f32) {
+        if let Some(scene) = &mut self.loaded_scene {
+            scene.step(dt);
+        }
+    }
+
+    pub fn get_scene(&self) -> Option<&Scene> {
+        self.loaded_scene.as_ref()
+    }
+
+    pub fn get_scene_mut(&mut self) -> Option<&mut Scene> {
+        self.loaded_scene.as_mut()
+    }
+
+    pub fn load_scene(&mut self, scene: Scene) {
+        self.loaded_scene = Some(scene);
+    }
+
+    pub fn get_renderer(&self) -> &Renderer {
+        &self.renderer
+    }
+
+    pub fn get_renderer_mut(&mut self) -> &mut Renderer {
+        &mut self.renderer
+    }
+
+    pub fn get_event_loop(&self) -> &EventLoop<State> {
+        &self.event_loop
+    }
+
+    pub fn get_event_loop_mut(&mut self) -> &mut EventLoop<State> {
+        &mut self.event_loop
+    }
+
+    pub fn update_sprites(&mut self) {
+        if let Some(scene) = &mut self.loaded_scene {
+            let sprites = scene
+                .get_nodes_mut()
+                .iter_mut()
+                .filter_map(|(_, node)| {
+                    let pos = node.get_position();
+                    let rot = node.get_rotation();
+
+                    if let Some(sprite) = node.get_component_mut::<Sprite>() {
+                        sprite.set_position(pos);
+                        sprite.set_rotation(rot);
+                        Some(sprite.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<Sprite>>();
+
+            self.renderer.set_sprites(sprites);
+        }
+    }
+
+    pub fn run(mut self) -> anyhow::Result<()> {
+        self.update_sprites();
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.event_loop.run_app(&mut self.renderer)?;
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.event_loop.spawn_app(self.renderer);
+        }
+        Ok(())
     }
 }
 
@@ -2417,6 +2485,15 @@ impl Component for SoftBody {
     }
 }
 
+impl Component for Sprite {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
 /// Allows nodes to collide with eachother.
 ///
 /// # Examples
@@ -2671,11 +2748,11 @@ impl Component for Collider {
 /// ```
 pub trait Script: 'static {
     /// Called when the script is first added to a node
-    fn on_ready(&mut self, _: &mut World) {}
+    fn on_ready(&mut self, _: &mut Scene) {}
     /// Called every frame
-    fn process(&mut self, _: &mut World) {}
+    fn process(&mut self, _: &mut Scene) {}
     /// Called every physics frame
-    fn physics_process(&mut self, this: &mut Node, world: &mut World, dt: f32) {
+    fn physics_process(&mut self, this: &mut Node, world: &mut Scene, dt: f32) {
         this.physics_process_default(world.gravity, dt);
     }
     /// Called when the node collides with another node
@@ -2684,7 +2761,7 @@ pub trait Script: 'static {
         this: &mut Node,
         other: &mut Node,
         manifold: Manifold,
-        _: &mut World,
+        _: &mut Scene,
     ) {
         Node::on_collision_default(this, other, manifold)
     }

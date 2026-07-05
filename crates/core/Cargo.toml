@@ -11,3 +11,5 @@ vyxen-math.workspace = true
 vyxen-geometry.workspace = true
 vyxen-physics2d.workspace = true
 vyxen-renderer.workspace = true
+
+anyhow.workspace = true

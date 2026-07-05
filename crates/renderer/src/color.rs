@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
     r: f32,
     g: f32,
@@ -44,5 +45,11 @@ impl Color {
 
     pub fn set_a(&mut self, a: f32) {
         self.a = a;
+    }
+}
+
+impl Into<[f32; 4]> for Color {
+    fn into(self) -> [f32; 4] {
+        [self.r, self.g, self.b, self.a]
     }
 }
