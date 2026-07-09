@@ -1,11 +1,19 @@
-use std::{any::Any, collections::HashMap};
+use std::{any::Any, collections::HashMap, sync::Arc};
 
 use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::{Random, Vector2};
-use vyxen_physics2d::{
-    Collision, ContactPoints, Manifold, RigidBody, SoftBody,
+use vyxen_physics2d::{Collision, ContactPoints, Manifold, RigidBody, SoftBody};
+use vyxen_renderer::{
+    Sprite,
+    backend::{
+        State,
+        winit_reexports::{
+            ActiveEventLoop, ApplicationHandler, EventLoop, Window, WindowEvent, WindowId,
+        },
+    },
 };
-use vyxen_renderer::{EventLoop, Renderer, Sprite, backend::State};
+
+type Callback = Box<dyn FnMut(&mut Game, &ActiveEventLoop)>;
 
 pub struct Scene {
     nodes: HashMap<u64, Node>,
@@ -621,17 +629,16 @@ impl Scene {
 
 pub struct Game {
     loaded_scene: Option<Scene>,
-    renderer: Renderer,
-    event_loop: EventLoop<State>,
+    state: Option<State>,
+    callback: Option<Callback>,
 }
 
 impl Game {
     pub fn new() -> anyhow::Result<Self> {
-        let event_loop = EventLoop::with_user_event().build()?;
         Ok(Self {
             loaded_scene: None,
-            renderer: Renderer::new(&event_loop),
-            event_loop,
+            state: None,
+            callback: None,
         })
     }
 
@@ -653,22 +660,6 @@ impl Game {
         self.loaded_scene = Some(scene);
     }
 
-    pub fn get_renderer(&self) -> &Renderer {
-        &self.renderer
-    }
-
-    pub fn get_renderer_mut(&mut self) -> &mut Renderer {
-        &mut self.renderer
-    }
-
-    pub fn get_event_loop(&self) -> &EventLoop<State> {
-        &self.event_loop
-    }
-
-    pub fn get_event_loop_mut(&mut self) -> &mut EventLoop<State> {
-        &mut self.event_loop
-    }
-
     pub fn update_sprites(&mut self) {
         if let Some(scene) = &mut self.loaded_scene {
             let sprites = scene
@@ -688,21 +679,102 @@ impl Game {
                 })
                 .collect::<Vec<Sprite>>();
 
-            self.renderer.set_sprites(sprites);
+            if let Some(state) = self.state.as_mut() {
+                state.set_sprites(sprites);
+            }
         }
     }
 
-    pub fn run(mut self) -> anyhow::Result<()> {
-        self.update_sprites();
+    pub fn run<F>(mut self, callback: F) -> anyhow::Result<()>
+    where
+        F: FnMut(&mut Game, &ActiveEventLoop) + 'static,
+    {
+        let event_loop = EventLoop::new()?;
+        self.callback = Some(Box::new(callback));
+
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.event_loop.run_app(&mut self.renderer)?;
+            event_loop.run_app(&mut self)?;
         }
         #[cfg(target_arch = "wasm32")]
         {
-            self.event_loop.spawn_app(self.renderer);
+            event_loop.spawn_app(self);
         }
+
         Ok(())
+    }
+
+    pub fn run_without_callback(mut self) -> anyhow::Result<()> {
+        let event_loop = EventLoop::new()?;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            event_loop.run_app(&mut self)?;
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            event_loop.spawn_app(self);
+        }
+
+        Ok(())
+    }
+}
+
+impl ApplicationHandler for Game {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        let window_attributes = Window::default_attributes().with_title("My Game");
+
+        let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+
+        let mut state = pollster::block_on(State::new(window)).unwrap();
+
+        state.resize(
+            state.get_window().inner_size().width,
+            state.get_window().inner_size().height,
+        );
+
+        self.state = Some(state);
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        match event {
+            WindowEvent::Resized(physical_size) => {
+                if let Some(state) = &mut self.state {
+                    state.resize(physical_size.width, physical_size.height);
+                }
+            }
+            WindowEvent::RedrawRequested => {
+                if let Some(mut callback) = self.callback.take() {
+                    callback(self, event_loop);
+                    self.callback = Some(callback);
+                }
+
+                self.step(1.0 / 60.0);
+                self.update_sprites();
+
+                if let Some(state) = &mut self.state {
+                    state.update();
+                    state.render().unwrap();
+                }
+            }
+
+            WindowEvent::CloseRequested => {
+                event_loop.exit();
+            }
+
+            _ => {}
+        }
+    }
+
+    fn about_to_wait(&mut self, _: &ActiveEventLoop) {
+        if let Some(state) = &self.state {
+            state.get_window().request_redraw();
+        }
     }
 }
 

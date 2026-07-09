@@ -1,8 +1,10 @@
-//fn main() {
-//    let _ = vyxen::renderer::run();
-//}
-
-use vyxen::{Collider, Game, Node, Scene, geometry::Box, math::Vector2, physics2d::RigidBody, renderer::{Color, DrawType, Sprite, Texture}};
+use vyxen::{
+    Collider, Game, Node, Scene,
+    geometry::Box,
+    math::Vector2,
+    physics2d::RigidBody,
+    renderer::{Color, DrawType, Sprite, Texture},
+};
 
 fn main() {
     let mut game = Game::new().unwrap();
@@ -62,11 +64,13 @@ fn main() {
     slope_2_node.add_component(Collider::new(Box::new(20.0, 2.0)));
     let mut slope_2_sprite = Sprite::new();
     slope_2_sprite.set_shape(Box::new(20.0, 2.0));
-    slope_2_sprite.set_draw_type(DrawType::Texture(Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()));
+    slope_2_sprite.set_draw_type(DrawType::Texture(
+        Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap(),
+    ));
     slope_2_node.add_component(slope_2_sprite);
     scene.add_node(slope_2_node);
 
     game.load_scene(scene);
 
-    game.run().unwrap();
+    let _ = game.run_without_callback();
 }

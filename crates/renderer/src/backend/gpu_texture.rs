@@ -23,7 +23,7 @@ impl GpuTexture {
             height: dimensions.1,
             depth_or_array_layers: 1,
         };
-        
+
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some(label),
             size,
@@ -77,6 +77,11 @@ impl GpuTexture {
             label: Some(label),
         });
 
-        Ok(Self { texture, view, sampler, bind_group })
+        Ok(Self {
+            texture,
+            view,
+            sampler,
+            bind_group,
+        })
     }
 }

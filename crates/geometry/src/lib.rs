@@ -502,7 +502,6 @@ where
     }
 }
 
-
 /// Axis-Aligned Bounding Box (AABB)
 ///
 /// # Examples

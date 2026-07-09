@@ -5,25 +5,13 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn from_bytes(
-        bytes: &[u8],
-        label: &'static str,
-    ) -> anyhow::Result<Self> {
+    pub fn from_bytes(bytes: &[u8], label: &'static str) -> anyhow::Result<Self> {
         let image = image::load_from_memory(bytes)?;
-        Ok(Self {
-            image,
-            label,
-        })
+        Ok(Self { image, label })
     }
 
-    pub fn from_image(
-        image: image::DynamicImage,
-        label: &'static str,
-    ) -> Self {
-        Self {
-            image,
-            label
-        }
+    pub fn from_image(image: image::DynamicImage, label: &'static str) -> Self {
+        Self { image, label }
     }
 
     pub fn get_image(&self) -> &image::DynamicImage {
@@ -31,6 +19,6 @@ impl Texture {
     }
 
     pub fn get_label(&self) -> &'static str {
-        self.label.as_ref()
+        self.label
     }
 }

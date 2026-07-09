@@ -1,6 +1,6 @@
-use vyxen_math::{Matrix4, Vector2};
-use crate::backend::{SpriteRaw, App};
+use crate::backend::SpriteRaw;
 use vyxen_geometry::{Shape, ShapeType, shape_type_from_shape};
+use vyxen_math::{Matrix4, Vector2};
 
 pub use color::Color;
 pub use texture::Texture;
@@ -10,14 +10,13 @@ pub mod backend;
 mod color;
 mod texture;
 
-pub use crate::backend::App as Renderer;
-pub use winit::event_loop::EventLoop;
+pub use crate::backend::Camera;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DrawType {
     Texture(Texture),
     Color(Color),
-    None
+    None,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -26,7 +25,13 @@ pub struct Sprite {
     vertices: Option<ShapeType>,
     position_ref: Vector2,
     rotation_ref: f32,
-    z: f32
+    z: f32,
+}
+
+impl Default for Sprite {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Sprite {
@@ -36,7 +41,7 @@ impl Sprite {
             vertices: None,
             position_ref: Vector2::zero(),
             rotation_ref: 0.0,
-            z: 0.0
+            z: 0.0,
         }
     }
 
@@ -46,7 +51,7 @@ impl Sprite {
             vertices: None,
             position_ref: Vector2::zero(),
             rotation_ref: 0.0,
-            z: 0.0
+            z: 0.0,
         }
     }
 
@@ -56,7 +61,7 @@ impl Sprite {
             vertices: None,
             position_ref: Vector2::zero(),
             rotation_ref: 0.0,
-            z: 0.0
+            z: 0.0,
         }
     }
 
@@ -87,7 +92,7 @@ impl Sprite {
         &self.draw_type
     }
 
-    pub(crate) fn to_raw(&self) -> SpriteRaw {
+    pub fn to_raw(&self) -> SpriteRaw {
         let color: [f32; 4] = match &self.draw_type {
             DrawType::Texture(_) => [1.0, 1.0, 1.0, 1.0],
             DrawType::Color(color) => (*color).into(),
@@ -98,36 +103,8 @@ impl Sprite {
         let rot = self.rotation_ref;
 
         SpriteRaw {
-            matrix: (Matrix4::translation(pos.x, pos.y, self.z)
-                * Matrix4::rotate(rot))
-            .into(),
+            matrix: (Matrix4::translation(pos.x, pos.y, self.z) * Matrix4::rotate(rot)).into(),
             color,
         }
     }
-}
-
-pub fn run() -> anyhow::Result<()> {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        env_logger::init();
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        console_error_panic_hook::set_once();
-        console_log::init_with_level(log::Level::Info).unwrap_throw();
-    }
-
-    let event_loop = EventLoop::with_user_event().build()?;
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let mut app = App::new(&event_loop);
-        event_loop.run_app(&mut app)?;
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        let app = App::new(&event_loop);
-        event_loop.spawn_app(app);
-    }
-
-    Ok(())
 }

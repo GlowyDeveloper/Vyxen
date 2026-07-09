@@ -13,3 +13,4 @@ vyxen-physics2d.workspace = true
 vyxen-renderer.workspace = true
 
 anyhow.workspace = true
+pollster.workspace = true

@@ -6,10 +6,7 @@ use crate::{Sprite, backend::Vertex};
 pub const CIRCLE_SEGMENTS: usize = 32;
 
 pub fn sprite_geometry(sprite: &Sprite) -> Option<(Vec<Vertex>, Vec<u16>)> {
-    match sprite.get_vertices() {
-        Some(shape_type) => Some(shape_geometry(shape_type)),
-        None => None,
-    }
+    sprite.get_vertices().map(shape_geometry)
 }
 
 pub fn shape_geometry(shape_type: &ShapeType) -> (Vec<Vertex>, Vec<u16>) {
@@ -109,17 +106,6 @@ pub fn concave_geometry(polygons: &[Polygon]) -> (Vec<Vertex>, Vec<u16>) {
                 });
             }
             indices.extend_from_slice(&[base, base + 1, base + 2]);
-        } else {
-            for triangle in Polygon::triangulate(polygon.get_vertices()) {
-                let base = vertices.len() as u16;
-                for position in triangle.get_vertices() {
-                    vertices.push(Vertex {
-                        position: [position.x, position.y, 0.0],
-                        tex_coords: uv_from_position(*position, bounds),
-                    });
-                }
-                indices.extend_from_slice(&[base, base + 1, base + 2]);
-            }
         }
     }
 
@@ -127,8 +113,14 @@ pub fn concave_geometry(polygons: &[Polygon]) -> (Vec<Vertex>, Vec<u16>) {
 }
 
 pub fn compute_bounds(positions: &[Vector2]) -> (Vector2, Vector2) {
-    let mut min = Vector2 { x: f32::INFINITY, y: f32::INFINITY };
-    let mut max = Vector2 { x: f32::NEG_INFINITY, y: f32::NEG_INFINITY };
+    let mut min = Vector2 {
+        x: f32::INFINITY,
+        y: f32::INFINITY,
+    };
+    let mut max = Vector2 {
+        x: f32::NEG_INFINITY,
+        y: f32::NEG_INFINITY,
+    };
 
     for position in positions {
         min.x = min.x.min(position.x);
@@ -145,8 +137,5 @@ pub fn uv_from_position(position: Vector2, bounds: (Vector2, Vector2)) -> [f32; 
     let width = (max.x - min.x).max(0.0001);
     let height = (max.y - min.y).max(0.0001);
 
-    [
-        (position.x - min.x) / width,
-        (position.y - min.y) / height,
-    ]
+    [(position.x - min.x) / width, (position.y - min.y) / height]
 }
