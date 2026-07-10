@@ -6,16 +6,43 @@
 
 </div>
 
-## Creating a world
+**Vyxen isn't on <https://crates.io> yet!**
 
-Vyxen doesn't use scenes (yet).
+If you to install it into you're project, add this into the Cargo.toml:
 
-Vyxen uses worlds to hold all nodes.
+```toml
+vyxen = { git = "https://github.com/GlowyDeveloper/Vyxen/tree/master/crates/vyxen" }
+```
+
+## Creating a game
+
+Vyxen has a root `game`.
 
 ```rust
-use vyxen::World;
+use vyxen::prelude::*;
 
-let mut world = World::new();
+let game = Game::new();
+```
+
+## Creating and loading a scene.
+
+Scenes are used to hold all nodes, like godot.
+
+```rust
+use vyxen::prelude::*;
+
+let scene = Scene::new();
+```
+
+Scenes are then loaded into the game.
+
+```rust
+use vyxen::prelude::*;
+
+let mut game = Game::new();
+let scene = Scene::new();
+
+game.load_scene(scene);
 ```
 
 ## Adding nodes
@@ -25,12 +52,12 @@ Nodes are the main focus of Vyxen.
 Nodes are generic. There's no pre-made nodes.
 
 ```rust
-use vyxen::{Node, World};
+use vyxen::prelude::*;
 
-let mut world = World::new();
+let mut scene = Scene::new();
 
-let mut node = Node::new("Foo".to_string());
-world.add_node(node);
+let node = Node::new("Foo".to_string());
+scene.add_node(node);
 ```
 
 ## Components
@@ -41,9 +68,10 @@ The currently implemented components are:
  - Collider
  - RigidBody
  - SoftBody
+ - Sprite
 
 ```rust
-use vyxen::{Node, components::Collider, geometry::Circle};
+use vyxen::prelude::*;
 
 let mut node = Node::new("Foo".to_string());
 let collider = Collider::new(Circle::new(1.0));
@@ -62,11 +90,11 @@ The overridable methods are:
  - on_collision
 
 ```rust
-use vyxen::{Node, Script, World};
+use vyxen::prelude::*;
 
 struct ExampleScript;
 impl Script for ExampleScript {
-    fn physics_process(&mut self, _: &mut Node, _: &mut World, _: f32) {
+    fn physics_process(&mut self, _: &mut Node, _: &mut Scene, _: f32) {
         println!("Processing...");
     }
 }
@@ -75,11 +103,99 @@ let mut node = Node::new("Foo".to_string());
 node.set_script(ExampleScript);
 ```
 
+## Rendering
+
+The currently supported OS:
+
+|API       |Windows|Linux/Android|MacOs/iOS|Web|
+|----------|-------|-------------|---------|---|
+|Vulkan    |✅    |✅           |1️⃣      |   |
+|Metal     |       |             |✅      |   |
+|DirectX 12|✅    |             |         |   |
+|OpenGL    |✅    |✅           |2️⃣      |   |
+|WebGPU    |       |             |         |✅|
+|Tested    |✅    |✅           |         |   |
+
+✅ = Works
+1️⃣ = MoltenVK required
+2️⃣ = ANGLE required
+
+To render the scene:
+
+```rust, no_run
+use vyxen::prelude::*;
+
+let mut game = Game::new();
+let mut scene = Scene::new();
+
+let mut sprite = Sprite::new();
+sprite.set_shape(Box::new(20.0, 2.0));
+sprite.set_draw_type(DrawType::Color(GREEN));
+
+let mut node = Node::new("Foo".to_string());
+node.add_component(sprite);
+node.set_is_static(true);
+scene.add_node(node);
+
+game.load_scene(scene);
+
+let _ = game.run_without_callback();
+```
+
+If you would like a callback, instead use:
+
+```rust, no_run
+use vyxen::prelude::*;
+
+let mut game = Game::new();
+let mut scene = Scene::new();
+
+let mut sprite = Sprite::new();
+sprite.set_shape(Box::new(20.0, 2.0));
+sprite.set_draw_type(DrawType::Color(GREEN));
+
+let mut node = Node::new("Foo".to_string());
+node.add_component(sprite);
+node.set_is_static(true);
+scene.add_node(node);
+
+game.load_scene(scene);
+
+let _ = game.run(|_game, _event_loop, _window_event| {
+    // Callback here
+});
+```
+
+After you'll get this window:
+
+<img width="50%" src="docs/Example-image-1.png">
+
+## Window Config
+
+You can change many things by a single type.
+
+```rust, ignore
+let mut config = WindowConfig::new();
+config.set_title("Hello".to_string());
+config.set_max_size(Vector2 { x: 400.0, y: 400.0 });
+config.set_min_size(Vector2 { x: 200.0, y: 200.0 });
+config.set_size(Vector2 { x: 300.0, y: 300.0 });
+config.set_background_color(LIGHT_BLUE);
+
+game.set_config(config);
+
+let _ = game.run_without_callback();
+```
+
+Once that is added, the window is changed to this:
+
+<img width="30%" src="docs/Example-image-2.png">
+
 ## License
 
 This project is licensed under either of
 
- - Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
- - MIT license ([LICENSE-MIT](LICENSE-MIT) or https://opensource.org/license/mit)
+ - Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or <https://www.apache.org/licenses/LICENSE-2.0>)
+ - MIT license ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/license/mit>)
 
 at your option.

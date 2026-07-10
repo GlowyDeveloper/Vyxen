@@ -1891,7 +1891,6 @@ dependencies = [
  "anyhow",
  "bytemuck",
  "image",
- "pollster",
  "vyxen-geometry",
  "vyxen-math",
  "wgpu",

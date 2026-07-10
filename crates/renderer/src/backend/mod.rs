@@ -98,6 +98,26 @@ impl Vertex {
     }
 }
 
+/// Camera struct for the scene.
+///
+/// # Examples
+/// ```rust
+/// use vyxen_renderer::Camera;
+/// use vyxen_math::Vector2;
+///
+/// let mut camera = Camera::new(800.0, 600.0);
+/// camera.set_width(600.0);
+/// camera.set_height(300.0);
+/// camera.set_zoom(2.0);
+/// camera.set_position(Vector2 { x: 100.0, y: 100.0 });
+/// camera.set_rotation(90.0);
+///
+/// assert_eq!(camera.get_width(), 600.0);
+/// assert_eq!(camera.get_height(), 300.0);
+/// assert_eq!(camera.get_zoom(), 2.0);
+/// assert_eq!(camera.get_position(), Vector2 { x: 100.0, y: 100.0 });
+/// assert_eq!(camera.get_rotation(), 90.0);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Camera {
     position: Vector2,
@@ -108,6 +128,26 @@ pub struct Camera {
 }
 
 impl Camera {
+    /// Makes a new camera.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    /// use vyxen_math::Vector2;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    /// camera.set_width(600.0);
+    /// camera.set_height(300.0);
+    /// camera.set_zoom(2.0);
+    /// camera.set_position(Vector2 { x: 100.0, y: 100.0 });
+    /// camera.set_rotation(90.0);
+    ///
+    /// assert_eq!(camera.get_width(), 600.0);
+    /// assert_eq!(camera.get_height(), 300.0);
+    /// assert_eq!(camera.get_zoom(), 2.0);
+    /// assert_eq!(camera.get_position(), Vector2 { x: 100.0, y: 100.0 });
+    /// assert_eq!(camera.get_rotation(), 90.0);
+    /// ```
     pub fn new(width: f32, height: f32) -> Self {
         Self {
             position: Vector2 { x: 0.0, y: 0.0 },
@@ -118,42 +158,184 @@ impl Camera {
         }
     }
 
+    /// Gets the width.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_width(), 800.0);
+    ///
+    /// camera.set_width(600.0);
+    ///
+    /// assert_eq!(camera.get_width(), 600.0);
+    /// ```
     pub fn get_width(&self) -> f32 {
         self.width
     }
 
+    /// Gets the height.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_height(), 600.0);
+    ///
+    /// camera.set_height(400.0);
+    ///
+    /// assert_eq!(camera.get_height(), 400.0);
+    /// ```
     pub fn get_height(&self) -> f32 {
         self.height
     }
 
+    /// Gets the zoom.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_zoom(), 1.0);
+    ///
+    /// camera.set_zoom(2.0);
+    ///
+    /// assert_eq!(camera.get_zoom(), 2.0);
+    /// ```
     pub fn get_zoom(&self) -> f32 {
         self.zoom
     }
 
+    /// Gets the position.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    /// use vyxen_math::Vector2;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_position(), Vector2 { x: 0.0, y: 0.0 });
+    ///
+    /// camera.set_position(Vector2 { x: 100.0, y: 100.0 });
+    ///
+    /// assert_eq!(camera.get_position(), Vector2 { x: 100.0, y: 100.0 });
+    /// ```
     pub fn get_position(&self) -> Vector2 {
         self.position
     }
 
+    /// Gets the rotation.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_rotation(), 0.0);
+    ///
+    /// camera.set_rotation(90.0);
+    ///
+    /// assert_eq!(camera.get_rotation(), 90.0);
+    /// ```
     pub fn get_rotation(&self) -> f32 {
         self.rotation
     }
 
+    /// Sets the width.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_width(), 800.0);
+    ///
+    /// camera.set_width(600.0);
+    ///
+    /// assert_eq!(camera.get_width(), 600.0);
+    /// ```
     pub fn set_width(&mut self, width: f32) {
         self.width = width;
     }
 
+    /// Sets the height.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_height(), 600.0);
+    ///
+    /// camera.set_height(400.0);
+    ///
+    /// assert_eq!(camera.get_height(), 400.0);
+    /// ```
     pub fn set_height(&mut self, height: f32) {
         self.height = height;
     }
 
+    /// Sets the zoom.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_zoom(), 1.0);
+    ///
+    /// camera.set_zoom(2.0);
+    ///
+    /// assert_eq!(camera.get_zoom(), 2.0);
+    /// ```
     pub fn set_zoom(&mut self, zoom: f32) {
         self.zoom = zoom;
     }
 
+    /// Sets the position.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    /// use vyxen_math::Vector2;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_position(), Vector2 { x: 0.0, y: 0.0 });
+    ///
+    /// camera.set_position(Vector2 { x: 100.0, y: 100.0 });
+    ///
+    /// assert_eq!(camera.get_position(), Vector2 { x: 100.0, y: 100.0 });
+    /// ```
     pub fn set_position(&mut self, position: Vector2) {
         self.position = position;
     }
 
+    /// Sets the rotation.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_renderer::Camera;
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// assert_eq!(camera.get_rotation(), 0.0);
+    ///
+    /// camera.set_rotation(90.0);
+    ///
+    /// assert_eq!(camera.get_rotation(), 90.0);
+    /// ```
     pub fn set_rotation(&mut self, rotation: f32) {
         self.rotation = rotation;
     }

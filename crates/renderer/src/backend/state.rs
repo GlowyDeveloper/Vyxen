@@ -5,7 +5,7 @@ use wgpu::util::DeviceExt as _;
 use winit::window::Window;
 
 use crate::{
-    Camera, Sprite,
+    Camera, Sprite, WindowConfig,
     backend::{
         CameraUniform, GpuTexture, MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE,
         MAX_SPRITES, SpriteRaw, Vertex, shape_geometry::sprite_geometry,
@@ -32,17 +32,15 @@ pub struct State {
     texture_cache: HashMap<&'static str, GpuTexture>,
     sprites: Vec<Sprite>,
     sprite_buffer: wgpu::Buffer,
+    custom_config: WindowConfig,
 }
 
 impl State {
-    pub async fn new(window: Arc<Window>) -> anyhow::Result<State> {
+    pub async fn new(window: Arc<Window>, custom_config: WindowConfig) -> anyhow::Result<State> {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            #[cfg(not(target_arch = "wasm32"))]
-            backends: wgpu::Backends::PRIMARY,
-            #[cfg(target_arch = "wasm32")]
-            backends: wgpu::Backends::GL,
+            backends: custom_config.render_mode.into(),
             flags: Default::default(),
             memory_budget_thresholds: Default::default(),
             backend_options: Default::default(),
@@ -306,6 +304,7 @@ impl State {
             texture_cache: HashMap::new(),
             sprites: Vec::new(),
             sprite_buffer,
+            custom_config,
         })
     }
 
@@ -413,10 +412,10 @@ impl State {
                     depth_slice: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
+                            r: self.custom_config.background_color.r() as f64,
+                            g: self.custom_config.background_color.g() as f64,
+                            b: self.custom_config.background_color.b() as f64,
+                            a: self.custom_config.background_color.a() as f64,
                         }),
                         store: wgpu::StoreOp::Store,
                     },
@@ -532,5 +531,9 @@ impl State {
 
     pub fn get_window(&self) -> &Arc<Window> {
         &self.window
+    }
+
+    pub fn set_config(&mut self, config: WindowConfig) {
+        self.custom_config = config;
     }
 }

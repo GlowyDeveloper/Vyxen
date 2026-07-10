@@ -4,17 +4,42 @@ use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::{Random, Vector2};
 use vyxen_physics2d::{Collision, ContactPoints, Manifold, RigidBody, SoftBody};
 use vyxen_renderer::{
-    Sprite,
+    Sprite, WindowConfig,
     backend::{
         State,
-        winit_reexports::{
-            ActiveEventLoop, ApplicationHandler, EventLoop, Window, WindowEvent, WindowId,
-        },
+        winit_reexports::{ActiveEventLoop, ApplicationHandler, EventLoop, WindowEvent, WindowId},
     },
 };
 
-type Callback = Box<dyn FnMut(&mut Game, &ActiveEventLoop)>;
+type Callback = Box<dyn FnMut(&mut Game, &ActiveEventLoop, WindowEvent)>;
 
+/// Scene to hold nodes in the game
+///
+/// # Examples
+/// ```rust
+/// use vyxen_core::{Scene, Node, Game};
+/// use vyxen_math::Vector2;
+/// use vyxen_physics2d::RigidBody;
+/// use vyxen_geometry::Circle;
+///
+/// let mut scene = Scene::new();
+///
+/// let mut node = Node::new("Foo".to_string());
+/// let id = node.get_id();
+/// node.add_component(RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4));
+///
+/// scene.add_node(node);
+///
+/// assert_eq!(2, scene.get_nodes_len());
+///
+/// scene.remove_node_by_id(id);
+///
+/// assert_eq!(1, scene.get_nodes_len());
+///
+/// let mut game = Game::new();
+///
+/// game.load_scene(scene);
+/// ```
 pub struct Scene {
     nodes: HashMap<u64, Node>,
     contact_pairs: Vec<(usize, usize)>,
@@ -31,28 +56,28 @@ impl Default for Scene {
 }
 
 impl Scene {
-    /// Generates a new world
+    /// Generates a new scene
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{World, Node};
+    /// use vyxen_core::{Scene, Node};
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// let id = node.get_id();
     /// node.add_component(RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4));
     ///
-    /// world.add_node(node);
+    /// scene.add_node(node);
     ///
-    /// assert_eq!(2, world.get_nodes_len());
+    /// assert_eq!(2, scene.get_nodes_len());
     ///
-    /// world.remove_node_by_id(id);
+    /// scene.remove_node_by_id(id);
     ///
-    /// assert_eq!(1, world.get_nodes_len());
+    /// assert_eq!(1, scene.get_nodes_len());
     /// ```
     pub fn new() -> Self {
         let mut nodes = HashMap::new();
@@ -70,47 +95,47 @@ impl Scene {
         }
     }
 
-    /// Gets the world root as a mutable reference
+    /// Gets the scene root as a mutable reference
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::World;
+    /// use vyxen_core::Scene;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
-    /// let root = world.get_root_mut();
+    /// let root = scene.get_root_mut();
     /// ```
     pub fn get_root_mut(&mut self) -> &mut Node {
         self.nodes.get_mut(&0).unwrap()
     }
 
-    /// Gets the world root as a reference
+    /// Gets the scene root as a reference
     ///
     /// For a mutable reference, refer to `get_root_mut()`
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::World;
+    /// use vyxen_core::Scene;
     ///
-    /// let world = World::new();
+    /// let scene = Scene::new();
     ///
-    /// let root = world.get_root();
+    /// let root = scene.get_root();
     /// ```
     pub fn get_root(&self) -> &Node {
         self.nodes.get(&0).unwrap()
     }
 
-    /// Gets the nodes of the world as a reference
+    /// Gets the nodes of the scene as a reference
     ///
     /// For a mutable reference, refer to `get_nodes_mut()`
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::World;
+    /// use vyxen_core::Scene;
     ///
-    /// let world = World::new();
+    /// let scene = Scene::new();
     ///
-    /// let nodes = world.get_nodes();
+    /// let nodes = scene.get_nodes();
     ///
     /// assert_eq!(1, nodes.len());
     /// ```
@@ -118,15 +143,15 @@ impl Scene {
         &self.nodes
     }
 
-    /// Gets the nodes of the world as a mutable reference
+    /// Gets the nodes of the scene as a mutable reference
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::World;
+    /// use vyxen_core::Scene;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
-    /// let nodes = world.get_nodes_mut();
+    /// let nodes = scene.get_nodes_mut();
     ///
     /// assert_eq!(1, nodes.len());
     /// ```
@@ -134,21 +159,21 @@ impl Scene {
         &mut self.nodes
     }
 
-    /// Gets a node from the world by id
+    /// Gets a node from the scene by id
     ///
     /// For a mutable reference, refer to `get_node_mut()`
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{World, Node};
+    /// use vyxen_core::{Scene, Node};
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// let node_id = node.get_id();
-    /// world.add_node(node);
+    /// scene.add_node(node);
     ///
-    /// let node = world.get_node(node_id).unwrap();
+    /// let node = scene.get_node(node_id).unwrap();
     ///
     /// assert_eq!(node.get_id(), node_id);
     /// ```
@@ -156,19 +181,19 @@ impl Scene {
         self.nodes.get(&id)
     }
 
-    /// Gets a node from the world by id as a mutable reference
+    /// Gets a node from the scene by id as a mutable reference
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{World, Node};
+    /// use vyxen_core::{Scene, Node};
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// let node_id = node.get_id();
-    /// world.add_node(node);
+    /// scene.add_node(node);
     ///
-    /// let node = world.get_node_mut(node_id).unwrap();
+    /// let node = scene.get_node_mut(node_id).unwrap();
     ///
     /// assert_eq!(node.get_id(), node_id);
     /// ```
@@ -180,14 +205,14 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{World, Node};
+    /// use vyxen_core::{Scene, Node};
     /// use vyxen_math::Vector2;
     /// use vyxen_geometry::Circle;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
     /// let mut node = Node::new("Foo".to_string());
-    /// world.add_node(node);
+    /// scene.add_node(node);
     /// ```
     pub fn add_node(&mut self, node: Node) {
         let id = node.get_id();
@@ -197,47 +222,22 @@ impl Scene {
         }
     }
 
-    /// Removes the node from the world with all of its children
+    /// Removes the node from the scene with all of its children
     ///
-    /// # Examples
-    /// ```rust
-    /// use vyxen_core::{World, Node};
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::Circle;
-    ///
-    /// let mut world = World::new();
-    ///
-    /// let mut node1 = Node::new("Foo".to_string());
-    /// let node1_id = node1.get_id();
-    ///
-    /// let mut node2 = Node::new("Bar".to_string());
-    /// let node2_id = node2.get_id();
-    ///
-    /// world.add_node(node1);
-    /// world.add_node(node2);
-    ///
-    /// let node1_copy = world.get_node_mut(node1_id).unwrap();
-    /// node1_copy.add_child(node2_id);
-    ///
-    /// assert_eq!(3, world.get_nodes_len());
-    ///
-    /// world.remove_node(&node1);
-    ///
-    /// assert_eq!(1, world.get_nodes_len());
-    /// ```
+    /// Wrapper for `remove_node_by_id()`.
     pub fn remove_node(&mut self, node: &Node) -> anyhow::Result<()> {
         self.remove_node_by_id(node.get_id())
     }
 
-    /// Removes the node from the world by id with all of its children
+    /// Removes the node from the scene by id with all of its children
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{World, Node};
+    /// use vyxen_core::{Scene, Node};
     /// use vyxen_math::Vector2;
     /// use vyxen_geometry::Circle;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
     /// let mut node1 = Node::new("Foo".to_string());
     /// let node1_id = node1.get_id();
@@ -245,19 +245,19 @@ impl Scene {
     /// let mut node2 = Node::new("Bar".to_string());
     /// let node2_id = node2.get_id();
     ///
-    /// world.add_node(node1);
-    /// world.add_node(node2);
+    /// scene.add_node(node1);
+    /// scene.add_node(node2);
     ///
     /// {
-    ///     let node1_copy = world.get_node_mut(node1_id).unwrap();
+    ///     let node1_copy = scene.get_node_mut(node1_id).unwrap();
     ///     node1_copy.add_child(node2_id);
     /// }
     ///
-    /// assert_eq!(3, world.get_nodes_len());
+    /// assert_eq!(3, scene.get_nodes_len());
     ///
-    /// world.remove_node_by_id(node1_id);
+    /// scene.remove_node_by_id(node1_id);
     ///
-    /// assert_eq!(1, world.get_nodes_len());
+    /// assert_eq!(1, scene.get_nodes_len());
     /// ```
     pub fn remove_node_by_id(&mut self, id: u64) -> anyhow::Result<()> {
         if id == 0 {
@@ -274,15 +274,15 @@ impl Scene {
         Ok(())
     }
 
-    /// Gets the len of the amount of nodes in the world.
+    /// Gets the len of the amount of nodes in the scene.
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{World, Node};
+    /// use vyxen_core::{Scene, Node};
     /// use vyxen_math::Vector2;
     /// use vyxen_geometry::Circle;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
     /// let mut node1 = Node::new("Foo".to_string());
     /// let node1_id = node1.get_id();
@@ -290,85 +290,85 @@ impl Scene {
     /// let mut node2 = Node::new("Bar".to_string());
     /// let node2_id = node2.get_id();
     ///
-    /// world.add_node(node1);
-    /// world.add_node(node2);
+    /// scene.add_node(node1);
+    /// scene.add_node(node2);
     ///
     /// {
-    ///     let node1_copy = world.get_node_mut(node1_id).unwrap();
+    ///     let node1_copy = scene.get_node_mut(node1_id).unwrap();
     ///     node1_copy.add_child(node2_id);
     /// }
     ///
-    /// assert_eq!(3, world.get_nodes_len());
+    /// assert_eq!(3, scene.get_nodes_len());
     /// ```
     pub fn get_nodes_len(&self) -> usize {
         self.nodes.len()
     }
 
-    /// Returns the gravity of the world
+    /// Returns the gravity of the scene
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::World;
+    /// use vyxen_core::Scene;
     /// use vyxen_math::Vector2;
     ///
-    /// let world = World::new();
+    /// let scene = Scene::new();
     ///
-    /// assert_eq!(Vector2 { x: 0.0, y: -9.81 }, world.get_gravity());
+    /// assert_eq!(Vector2 { x: 0.0, y: -9.81 }, scene.get_gravity());
     /// ```
     pub fn get_gravity(&self) -> Vector2 {
         self.gravity
     }
 
-    /// Sets the gravity of the world
+    /// Sets the gravity of the scene
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::World;
+    /// use vyxen_core::Scene;
     /// use vyxen_math::Vector2;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
-    /// assert_eq!(Vector2 { x: 0.0, y: -9.81 }, world.get_gravity());
+    /// assert_eq!(Vector2 { x: 0.0, y: -9.81 }, scene.get_gravity());
     ///
-    /// world.set_gravity(Vector2 { x: 0.0, y: 9.81 });
+    /// scene.set_gravity(Vector2 { x: 0.0, y: 9.81 });
     ///
-    /// assert_eq!(Vector2 { x: 0.0, y: 9.81 }, world.get_gravity());
+    /// assert_eq!(Vector2 { x: 0.0, y: 9.81 }, scene.get_gravity());
     /// ```
     pub fn set_gravity(&mut self, g: Vector2) {
         self.gravity = g;
     }
 
-    /// Gets the iterations of the world
+    /// Gets the iterations of the scene
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::World;
+    /// use vyxen_core::Scene;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
-    /// assert_eq!(10, world.get_iterations());
+    /// assert_eq!(10, scene.get_iterations());
     ///
-    /// world.set_iterations(20);
+    /// scene.set_iterations(20);
     ///
-    /// assert_eq!(20, world.get_iterations());
+    /// assert_eq!(20, scene.get_iterations());
     /// ```
     pub fn get_iterations(&self) -> usize {
         self.iterations
     }
 
-    /// Sets the iterations of the world
+    /// Sets the iterations of the scene
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::World;
+    /// use vyxen_core::Scene;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
-    /// assert_eq!(10, world.get_iterations());
+    /// assert_eq!(10, scene.get_iterations());
     ///
-    /// world.set_iterations(20);
+    /// scene.set_iterations(20);
     ///
-    /// assert_eq!(20, world.get_iterations());
+    /// assert_eq!(20, scene.get_iterations());
     /// ```
     pub fn set_iterations(&mut self, iterations: usize) {
         self.iterations = iterations;
@@ -378,18 +378,18 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{World, Node};
+    /// use vyxen_core::{Scene, Node};
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let mut world = World::new();
+    /// let mut scene = Scene::new();
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.add_component(RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4));
-    /// world.add_node(node);
+    /// scene.add_node(node);
     ///
-    /// world.step(0.1);
+    /// scene.step(0.1);
     /// ```
     pub fn step(&mut self, dt: f32) {
         let ids_snapshot: Vec<u64> = self.nodes.keys().cloned().collect();
@@ -627,39 +627,150 @@ impl Scene {
     }
 }
 
+/// Game struct to hold everything
+///
+/// # Examples
+/// ```rust
+/// use vyxen_core::{Scene, Game};
+///
+/// let scene = Scene::new();
+///
+/// let mut game = Game::new();
+///
+/// game.load_scene(scene);
+/// ```
 pub struct Game {
     loaded_scene: Option<Scene>,
     state: Option<State>,
     callback: Option<Callback>,
+    config: WindowConfig,
+}
+
+impl Default for Game {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Game {
-    pub fn new() -> anyhow::Result<Self> {
-        Ok(Self {
+    /// Game struct to hold everything
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::{Scene, Game};
+    ///
+    /// let scene = Scene::new();
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// game.load_scene(scene);
+    /// ```
+    pub fn new() -> Self {
+        Self {
             loaded_scene: None,
             state: None,
             callback: None,
-        })
+            config: WindowConfig::new(),
+        }
     }
 
+    /// Steps the scene.
+    ///
+    /// Ran automatically in `run()`
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::{Scene, Game};
+    ///
+    /// let scene = Scene::new();
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// game.load_scene(scene);
+    ///
+    /// game.step(0.1);
+    /// ```
     pub fn step(&mut self, dt: f32) {
         if let Some(scene) = &mut self.loaded_scene {
             scene.step(dt);
         }
     }
 
+    /// Gets the loaded scene.
+    ///
+    /// If you want the mutable version, refer to `get_scene_mut()`
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::{Scene, Game};
+    ///
+    /// let scene = Scene::new();
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// game.load_scene(scene);
+    ///
+    /// let loaded = game.get_scene().unwrap();
+    /// ```
     pub fn get_scene(&self) -> Option<&Scene> {
         self.loaded_scene.as_ref()
     }
 
+    /// Gets the loaded scene mutably.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::{Scene, Game};
+    ///
+    /// let mut scene = Scene::new();
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// game.load_scene(scene);
+    ///
+    /// let mut loaded = game.get_scene_mut().unwrap();
+    /// ```
     pub fn get_scene_mut(&mut self) -> Option<&mut Scene> {
         self.loaded_scene.as_mut()
     }
 
+    /// Loads a new scene.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::{Scene, Game};
+    ///
+    /// let scene = Scene::new();
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// game.load_scene(scene);
+    /// ```
     pub fn load_scene(&mut self, scene: Scene) {
         self.loaded_scene = Some(scene);
     }
 
+    /// Sets a new config
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::{Scene, Game};
+    /// use vyxen_renderer::WindowConfig;
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// let mut conf = WindowConfig::new();
+    /// conf.set_title("Foobar".to_string());
+    ///
+    /// game.set_config(conf);
+    /// ```
+    pub fn set_config(&mut self, config: WindowConfig) {
+        self.config = config;
+    }
+
+    /// Updates the sprites for the renderer.
+    ///
+    /// Called automatically by `run()`.
     pub fn update_sprites(&mut self) {
         if let Some(scene) = &mut self.loaded_scene {
             let sprites = scene
@@ -685,9 +796,25 @@ impl Game {
         }
     }
 
+    /// Runs the game.
+    ///
+    /// # Examples
+    /// ```rust, no_run
+    /// use vyxen_core::{Scene, Game};
+    ///
+    /// let scene = Scene::new();
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// game.load_scene(scene);
+    ///
+    /// game.run(|_, _, _| {
+    ///     println!("callback"); // Called every frame
+    /// });
+    /// ```
     pub fn run<F>(mut self, callback: F) -> anyhow::Result<()>
     where
-        F: FnMut(&mut Game, &ActiveEventLoop) + 'static,
+        F: FnMut(&mut Game, &ActiveEventLoop, WindowEvent) + 'static,
     {
         let event_loop = EventLoop::new()?;
         self.callback = Some(Box::new(callback));
@@ -704,6 +831,20 @@ impl Game {
         Ok(())
     }
 
+    /// Runs the game without a callback.
+    ///
+    /// # Examples
+    /// ```rust, no_run
+    /// use vyxen_core::{Scene, Game};
+    ///
+    /// let scene = Scene::new();
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// game.load_scene(scene);
+    ///
+    /// game.run_without_callback();
+    /// ```
     pub fn run_without_callback(mut self) -> anyhow::Result<()> {
         let event_loop = EventLoop::new()?;
 
@@ -722,11 +863,13 @@ impl Game {
 
 impl ApplicationHandler for Game {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window_attributes = Window::default_attributes().with_title("My Game");
+        let window = Arc::new(
+            event_loop
+                .create_window(self.config.clone().into())
+                .unwrap(),
+        );
 
-        let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
-
-        let mut state = pollster::block_on(State::new(window)).unwrap();
+        let mut state = pollster::block_on(State::new(window, self.config.clone())).unwrap();
 
         state.resize(
             state.get_window().inner_size().width,
@@ -750,7 +893,7 @@ impl ApplicationHandler for Game {
             }
             WindowEvent::RedrawRequested => {
                 if let Some(mut callback) = self.callback.take() {
-                    callback(self, event_loop);
+                    callback(self, event_loop, event);
                     self.callback = Some(callback);
                 }
 
@@ -758,6 +901,7 @@ impl ApplicationHandler for Game {
                 self.update_sprites();
 
                 if let Some(state) = &mut self.state {
+                    state.set_config(self.config.clone());
                     state.update();
                     state.render().unwrap();
                 }
@@ -778,7 +922,7 @@ impl ApplicationHandler for Game {
     }
 }
 
-/// Node struct for the world
+/// Node struct for the scene
 ///
 /// # Examples
 /// ```rust
@@ -925,11 +1069,11 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Script, World};
+    /// use vyxen_core::{Node, Script, Scene};
     ///
     /// struct TestScript;
     /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut World) {
+    ///     fn process(&mut self, _: &mut Scene) {
     ///        println!("Processing...");
     ///     }
     /// }
@@ -948,11 +1092,11 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Script, World};
+    /// use vyxen_core::{Node, Script, Scene};
     ///
     /// struct TestScript;
     /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut World) {
+    ///     fn process(&mut self, _: &mut Scene) {
     ///        println!("Processing...");
     ///     }
     /// }
@@ -971,11 +1115,11 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Script, World};
+    /// use vyxen_core::{Node, Script, Scene};
     ///
     /// struct TestScript;
     /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut World) {
+    ///     fn process(&mut self, _: &mut Scene) {
     ///        println!("Processing...");
     ///     }
     /// }
@@ -1049,11 +1193,11 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Script, World};
+    /// use vyxen_core::{Node, Script, Scene};
     ///
     /// struct TestScript;
     /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut World) {
+    ///     fn process(&mut self, _: &mut Scene) {
     ///        println!("Processing...");
     ///     }
     /// }
@@ -1069,19 +1213,19 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Script, World};
+    /// use vyxen_core::{Node, Script, Scene};
     ///
     /// struct TestScript;
     /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut World) {
+    ///     fn process(&mut self, _: &mut Scene) {
     ///        println!("Processing...");
     ///     }
     /// }
     ///
     /// let mut parent = Node::new("Parent".to_string());
-    /// parent.set_script_boxed(Box::new(TestScript));
+    /// parent.set_script_box(Box::new(TestScript));
     /// ```
-    pub fn set_script_boxed(&mut self, script: Box<dyn Script>) {
+    pub fn set_script_box(&mut self, script: Box<dyn Script>) {
         self.script.push(script);
     }
 
@@ -1894,11 +2038,11 @@ impl Node {
             if let Some(soft) = node_a.get_component::<SoftBody>() {
                 for (i, p) in soft.get_points().iter().enumerate() {
                     let local_p = p.get_position();
-                    let world_pos = Vector2 {
+                    let scene_pos = Vector2 {
                         x: a_pos.x + local_p.x * a_cos - local_p.y * a_sin,
                         y: a_pos.y + local_p.x * a_sin + local_p.y * a_cos,
                     };
-                    let dist = world_pos.distance_squared(&contact);
+                    let dist = scene_pos.distance_squared(&contact);
                     if dist < min_dist_a {
                         min_dist_a = dist;
                         idx_a = i;
@@ -1911,11 +2055,11 @@ impl Node {
             if let Some(soft) = node_b.get_component::<SoftBody>() {
                 for (i, p) in soft.get_points().iter().enumerate() {
                     let local_p = p.get_position();
-                    let world_pos = Vector2 {
+                    let scene_pos = Vector2 {
                         x: b_pos.x + local_p.x * b_cos - local_p.y * b_sin,
                         y: b_pos.y + local_p.x * b_sin + local_p.y * b_cos,
                     };
-                    let dist = world_pos.distance_squared(&contact);
+                    let dist = scene_pos.distance_squared(&contact);
                     if dist < min_dist_b {
                         min_dist_b = dist;
                         idx_b = i;
@@ -1967,26 +2111,26 @@ impl Node {
 
             let vel_a = if let Some(soft) = node_a.get_component::<SoftBody>() {
                 let p_local_vel = soft.get_points()[idx_a].get_velocity();
-                let p_world_vel = Vector2 {
+                let p_scene_vel = Vector2 {
                     x: p_local_vel.x * a_cos - p_local_vel.y * a_sin,
                     y: p_local_vel.x * a_sin + p_local_vel.y * a_cos,
                 };
                 node_a.get_linear_velocity()
                     + r_a_prep * node_a.get_rotational_velocity()
-                    + p_world_vel
+                    + p_scene_vel
             } else {
                 Vector2::zero()
             };
 
             let vel_b = if let Some(soft) = node_b.get_component::<SoftBody>() {
                 let p_local_vel = soft.get_points()[idx_b].get_velocity();
-                let p_world_vel = Vector2 {
+                let p_scene_vel = Vector2 {
                     x: p_local_vel.x * b_cos - p_local_vel.y * b_sin,
                     y: p_local_vel.x * b_sin + p_local_vel.y * b_cos,
                 };
                 node_b.get_linear_velocity()
                     + r_b_prep * node_b.get_rotational_velocity()
-                    + p_world_vel
+                    + p_scene_vel
             } else {
                 Vector2::zero()
             };
@@ -2057,26 +2201,26 @@ impl Node {
 
             let vel_a_new = if let Some(soft) = node_a.get_component::<SoftBody>() {
                 let p_local_vel = soft.get_points()[idx_a].get_velocity();
-                let p_world_vel = Vector2 {
+                let p_scene_vel = Vector2 {
                     x: p_local_vel.x * a_cos - p_local_vel.y * a_sin,
                     y: p_local_vel.x * a_sin + p_local_vel.y * a_cos,
                 };
                 node_a.get_linear_velocity()
                     + r_a_prep * node_a.get_rotational_velocity()
-                    + p_world_vel
+                    + p_scene_vel
             } else {
                 Vector2::zero()
             };
 
             let vel_b_new = if let Some(soft) = node_b.get_component::<SoftBody>() {
                 let p_local_vel = soft.get_points()[idx_b].get_velocity();
-                let p_world_vel = Vector2 {
+                let p_scene_vel = Vector2 {
                     x: p_local_vel.x * b_cos - p_local_vel.y * b_sin,
                     y: p_local_vel.x * b_sin + p_local_vel.y * b_cos,
                 };
                 node_b.get_linear_velocity()
                     + r_b_prep * node_b.get_rotational_velocity()
-                    + p_world_vel
+                    + p_scene_vel
             } else {
                 Vector2::zero()
             };
@@ -2212,12 +2356,12 @@ impl Node {
             if let Some(soft) = soft_node.get_component::<SoftBody>() {
                 for (i, p) in soft.get_points().iter().enumerate() {
                     let local_p = p.get_position();
-                    let world_pos = Vector2 {
+                    let scene_pos = Vector2 {
                         x: s_pos.x + local_p.x * s_cos - local_p.y * s_sin,
                         y: s_pos.y + local_p.x * s_sin + local_p.y * s_cos,
                     };
 
-                    let dist = world_pos.distance_squared(&contact);
+                    let dist = scene_pos.distance_squared(&contact);
                     if dist < min_dist {
                         min_dist = dist;
                         closest_idx = i;
@@ -2266,13 +2410,13 @@ impl Node {
 
             let vel_soft = if let Some(soft) = soft_node.get_component::<SoftBody>() {
                 let p_local_vel = soft.get_points()[closest_idx].get_velocity();
-                let p_world_vel = Vector2 {
+                let p_scene_vel = Vector2 {
                     x: p_local_vel.x * s_cos - p_local_vel.y * s_sin,
                     y: p_local_vel.x * s_sin + p_local_vel.y * s_cos,
                 };
                 soft_node.get_linear_velocity()
                     + r_soft_prep * soft_node.get_rotational_velocity()
-                    + p_world_vel
+                    + p_scene_vel
             } else {
                 Vector2::zero()
             };
@@ -2339,13 +2483,13 @@ impl Node {
                 + r_rigid_prep * rigid_node.get_rotational_velocity();
             let vel_soft_new = if let Some(soft) = soft_node.get_component::<SoftBody>() {
                 let p_local_vel = soft.get_points()[closest_idx].get_velocity();
-                let p_world_vel = Vector2 {
+                let p_scene_vel = Vector2 {
                     x: p_local_vel.x * s_cos - p_local_vel.y * s_sin,
                     y: p_local_vel.x * s_sin + p_local_vel.y * s_cos,
                 };
                 soft_node.get_linear_velocity()
                     + r_soft_prep * soft_node.get_rotational_velocity()
-                    + p_world_vel
+                    + p_scene_vel
             } else {
                 Vector2::zero()
             };
@@ -2806,17 +2950,17 @@ impl Component for Collider {
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_core::{Script, World};
+/// use vyxen_core::{Script, Scene};
 ///
 /// struct TestScript;
 /// impl Script for TestScript {
-///     fn process(&mut self, _: &mut World) {
+///     fn process(&mut self, _: &mut Scene) {
 ///        println!("Processing...");
 ///     }
 /// }
 ///
 /// let mut script = TestScript;
-/// script.process(&mut World::new());
+/// script.process(&mut Scene::new());
 /// ```
 pub trait Script: 'static {
     /// Called when the script is first added to a node
@@ -2824,8 +2968,8 @@ pub trait Script: 'static {
     /// Called every frame
     fn process(&mut self, _: &mut Scene) {}
     /// Called every physics frame
-    fn physics_process(&mut self, this: &mut Node, world: &mut Scene, dt: f32) {
-        this.physics_process_default(world.gravity, dt);
+    fn physics_process(&mut self, this: &mut Node, scene: &mut Scene, dt: f32) {
+        this.physics_process_default(scene.gravity, dt);
     }
     /// Called when the node collides with another node
     fn on_collision(

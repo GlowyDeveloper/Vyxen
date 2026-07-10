@@ -1,7 +1,10 @@
+//! A geometry library made for Vyxen.
+
 use std::any::Any;
 
 use vyxen_math::{Transform, Vector2};
 
+/// Trait differentiating different shapes.
 pub trait Shape: Clone {
     fn as_any(&self) -> &dyn Any;
 }
@@ -463,8 +466,7 @@ pub enum ShapeType {
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_geometry::Circle;
-/// use vyxen_physics2d::shape_type_from_shape;
+/// use vyxen_geometry::{Circle, shape_type_from_shape};
 ///
 /// let rigid_type = shape_type_from_shape(Circle::new(2.0));
 /// ```

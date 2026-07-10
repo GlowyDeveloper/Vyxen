@@ -16,8 +16,8 @@ impl Collision {
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::{RigidBody, Collision, shape_type_from_shape};
-    /// use vyxen_geometry::Circle;
+    /// use vyxen_physics2d::{RigidBody, Collision};
+    /// use vyxen_geometry::{Circle, shape_type_from_shape};
     ///
     /// let mut body1 = shape_type_from_shape(Circle::new(1.0));
     /// let mut body2 = shape_type_from_shape(Circle::new(1.0));
@@ -554,8 +554,8 @@ impl ContactPoints {
     ///
     /// ```rust
     /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::{RigidBody, ContactPoints, shape_type_from_shape};
-    /// use vyxen_geometry::Circle;
+    /// use vyxen_physics2d::{RigidBody, ContactPoints};
+    /// use vyxen_geometry::{Circle, shape_type_from_shape};
     ///
     /// let mut rigid_1 = shape_type_from_shape(Circle::new(1.0));
     /// let mut rigid_2 = shape_type_from_shape(Circle::new(1.0));
