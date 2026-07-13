@@ -4,9 +4,11 @@ use vyxen_geometry::{Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::{Matrix4, Vector2};
 use winit::{
     dpi::{LogicalPosition, LogicalSize, Position, Size},
-    platform::windows::WindowAttributesExtWindows,
     window::{Fullscreen, Icon, Window, WindowAttributes},
 };
+
+#[cfg(target_os = "windows")]
+use winit::platform::windows::WindowAttributesExtWindows;
 
 /// Backend components for the renderer. Not recommended for use, may be short of documentation.
 pub mod backend;
@@ -552,7 +554,8 @@ impl From<WindowConfig> for WindowAttributes {
             None
         };
 
-        let attr = Window::default_attributes()
+        #[allow(unused_mut)]
+        let mut attr = Window::default_attributes()
             .with_inner_size(inner_size)
             .with_min_inner_size(min_size)
             .with_max_inner_size(max_size)
@@ -562,8 +565,12 @@ impl From<WindowConfig> for WindowAttributes {
             .with_visible(value.visible)
             .with_decorations(value.decorations)
             .with_window_icon(value.icon.clone())
-            .with_taskbar_icon(value.icon)
             .with_fullscreen(fullscreen);
+
+        #[cfg(target_os = "windows")]
+        {
+            attr = attr.with_taskbar_icon(value.icon);
+        }
 
         if let Some(vector) = value.position {
             let position =
