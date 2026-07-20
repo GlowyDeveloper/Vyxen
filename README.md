@@ -2,7 +2,7 @@
 
 # Vyxen
 
-**A godot-style game engine written in Rust**
+**A Godot-style game engine library written in Rust**
 
 </div>
 
@@ -168,13 +168,17 @@ let _ = game.run(|_game, _event_loop, _window_event| {
 
 After you'll get this window:
 
-<img width="50%" src="docs/Example-image-1.png">
+<img width="50%" src="https://raw.githubusercontent.com/GlowyDeveloper/Vyxen/refs/heads/master/docs/Example-image-1.png">
 
 ## Window Config
 
 You can change many things by a single type.
 
-```rust, ignore
+```rust, no_run
+use vyxen::prelude::*;
+
+let mut game = Game::new();
+
 let mut config = WindowConfig::new();
 config.set_title("Hello".to_string());
 config.set_max_size(Vector2 { x: 400.0, y: 400.0 });
@@ -189,7 +193,7 @@ let _ = game.run_without_callback();
 
 Once that is added, the window is changed to this:
 
-<img width="30%" src="docs/Example-image-2.png">
+<img width="30%" src="https://raw.githubusercontent.com/GlowyDeveloper/Vyxen/refs/heads/master/docs/Example-image-2.png">
 
 ## License
 

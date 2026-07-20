@@ -8,6 +8,12 @@ license = "MIT OR Apache-2.0"
 edition = "2024"
 rust-version = "1.86"
 
+homepage = "https://github.com/GlowyDeveloper/Vyxen"
+repository = "https://github.com/GlowyDeveloper/Vyxen"
+keywords = ["game", "engine", "gamedev", "gui"]
+categories = ["gui", "game-development", "game-engines", "graphics"]
+readme = "README.md"
+
 [workspace.dependencies]
 vyxen-math = { path = "crates/math" }
 vyxen-geometry = { path = "crates/geometry" }

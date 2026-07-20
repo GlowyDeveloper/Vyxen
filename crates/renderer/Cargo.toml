@@ -1,9 +1,18 @@
 [package]
 name = "vyxen-renderer"
+
 version.workspace = true
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme.workspace = true
+
+description = "Renders the game for the Vyxen library"
 
 [dependencies]
 vyxen-math.workspace = true

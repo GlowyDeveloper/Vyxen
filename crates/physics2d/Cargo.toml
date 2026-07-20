@@ -6,6 +6,14 @@ license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme.workspace = true
+
+description = "Physics types for the Vyxen library in 2d development"
+
 [dependencies]
 vyxen-math.workspace = true
 vyxen-geometry.workspace = true

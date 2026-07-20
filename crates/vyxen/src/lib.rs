@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 #![doc = include_str!("../../../README.md")]
 
 /// Collection of example colors for quick use.

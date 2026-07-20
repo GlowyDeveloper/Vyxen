@@ -1,4 +1,5 @@
-//! A geometry library made for Vyxen.
+#![forbid(unsafe_code)]
+#![doc = include_str!("../README.md")]
 
 use std::any::Any;
 

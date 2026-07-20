@@ -1,4 +1,5 @@
-//! A 2D physics engine for Vyxen.
+#![forbid(unsafe_code)]
+#![doc = include_str!("../README.md")]
 
 mod collision;
 mod rigid;

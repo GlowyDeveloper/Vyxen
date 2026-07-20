@@ -1872,9 +1872,6 @@ dependencies = [
 [[package]]
 name = "vyxen-math"
 version = "0.1.0"
-dependencies = [
- "bytemuck",
-]
 
 [[package]]
 name = "vyxen-physics2d"

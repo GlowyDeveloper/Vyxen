@@ -1,3 +1,6 @@
+#![forbid(unsafe_code)]
+#![doc = include_str!("../README.md")]
+
 use crate::backend::SpriteRaw;
 use image::GenericImageView as _;
 use vyxen_geometry::{Shape, ShapeType, shape_type_from_shape};

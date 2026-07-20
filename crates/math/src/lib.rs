@@ -1,4 +1,5 @@
-//! A math library made for Vyxen.
+#![forbid(unsafe_code)]
+#![doc = include_str!("../README.md")]
 
 use std::{
     ops::{Add, Div, Mul, Neg, Range, Sub},

@@ -6,5 +6,12 @@ license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme.workspace = true
+
+description = "Math types for the Vyxen library"
+
 [dependencies]
-bytemuck.workspace = true

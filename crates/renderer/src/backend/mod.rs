@@ -66,14 +66,11 @@ impl SpriteRaw {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     position: [f32; 3],
     tex_coords: [f32; 2],
 }
-
-unsafe impl bytemuck::Pod for Vertex {}
-unsafe impl bytemuck::Zeroable for Vertex {}
 
 impl Vertex {
     fn desc() -> wgpu::VertexBufferLayout<'static> {

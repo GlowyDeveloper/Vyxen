@@ -1,3 +1,6 @@
+#![forbid(unsafe_code)]
+#![doc = include_str!("../README.md")]
+
 use std::{any::Any, collections::HashMap, sync::Arc};
 
 use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
