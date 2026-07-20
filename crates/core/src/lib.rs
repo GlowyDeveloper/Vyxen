@@ -14,6 +14,9 @@ use vyxen_renderer::{
     },
 };
 
+#[cfg(target_arch = "wasm32")]
+use vyxen_renderer::backend::winit_reexports::EventLoopExtWebSys;
+
 type Callback = Box<dyn FnMut(&mut Game, &ActiveEventLoop, WindowEvent)>;
 
 /// Scene to hold nodes in the game
@@ -848,6 +851,7 @@ impl Game {
     ///
     /// game.run_without_callback();
     /// ```
+    #[allow(unused_mut)]
     pub fn run_without_callback(mut self) -> anyhow::Result<()> {
         let event_loop = EventLoop::new()?;
 

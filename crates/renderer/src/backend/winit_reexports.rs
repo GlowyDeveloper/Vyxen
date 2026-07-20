@@ -4,3 +4,6 @@ pub use winit::{
     event_loop::{ActiveEventLoop, EventLoop},
     window::{Window, WindowId},
 };
+
+#[cfg(target_arch = "wasm32")]
+pub use winit::platform::web::EventLoopExtWebSys;
