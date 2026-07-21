@@ -1,23 +1,26 @@
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
-use std::{any::Any, collections::HashMap, sync::Arc};
+use std::{any::Any, collections::HashMap, path::PathBuf, sync::Arc};
 
 use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
+use vyxen_input::{Inputs, KeyCode, KeyState};
 use vyxen_math::{Random, Vector2};
 use vyxen_physics2d::{Collision, ContactPoints, Manifold, RigidBody, SoftBody};
-use vyxen_renderer::{
-    Sprite, WindowConfig,
-    backend::{
-        State,
-        winit_reexports::{ActiveEventLoop, ApplicationHandler, EventLoop, WindowEvent, WindowId},
-    },
+use vyxen_renderer::{Sprite, WindowConfig, WindowEvent, backend::State};
+
+use winit::{
+    application::ApplicationHandler,
+    event::ElementState,
+    event_loop::{ActiveEventLoop, EventLoop},
+    keyboard::PhysicalKey,
+    window::WindowId,
 };
 
 #[cfg(target_arch = "wasm32")]
-use vyxen_renderer::backend::winit_reexports::EventLoopExtWebSys;
+use winit::platform::web::EventLoopExtWebSys;
 
-type Callback = Box<dyn FnMut(&mut Game, &ActiveEventLoop, WindowEvent)>;
+type Callback = Box<dyn FnMut(&mut Game, &ActiveEventLoop, Event)>;
 
 /// Scene to hold nodes in the game
 ///
@@ -650,6 +653,7 @@ pub struct Game {
     state: Option<State>,
     callback: Option<Callback>,
     config: WindowConfig,
+    inputs: Inputs,
 }
 
 impl Default for Game {
@@ -677,6 +681,7 @@ impl Game {
             state: None,
             callback: None,
             config: WindowConfig::new(),
+            inputs: Inputs::new(),
         }
     }
 
@@ -820,7 +825,7 @@ impl Game {
     /// ```
     pub fn run<F>(mut self, callback: F) -> anyhow::Result<()>
     where
-        F: FnMut(&mut Game, &ActiveEventLoop, WindowEvent) + 'static,
+        F: FnMut(&mut Game, &ActiveEventLoop, Event) + 'static,
     {
         let event_loop = EventLoop::new()?;
         self.callback = Some(Box::new(callback));
@@ -866,6 +871,63 @@ impl Game {
 
         Ok(())
     }
+
+    /// If a key has been pressed between the current frame and the last.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_input::{KeyCode, Inputs};
+    /// use vyxen_core::Game;
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// assert!(!game.is_just_pressed(KeyCode::KeyH));
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// For `is_just_pressed` to be processed correctly, the game must be first ran from `run` or `run_without_callback`.
+    pub fn is_just_pressed(&self, keycode: KeyCode) -> bool {
+        self.inputs.just_pressed(keycode)
+    }
+
+    /// If a key has been released between the current frame and the last.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_input::KeyCode;
+    /// use vyxen_core::Game;
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// assert!(!game.is_just_released(KeyCode::KeyH));
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// For `is_just_released` to be processed correctly, the game must be first ran from `run` or `run_without_callback`.
+    pub fn is_just_released(&self, keycode: KeyCode) -> bool {
+        self.inputs.just_released(keycode)
+    }
+
+    /// If a key is currently held.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_input::KeyCode;
+    /// use vyxen_core::Game;
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// assert!(!game.is_held(KeyCode::KeyH));
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// For `is_held` to be processed correctly, the game must be first ran from `run` or `run_without_callback`.
+    pub fn is_held(&self, keycode: KeyCode) -> bool {
+        self.inputs.held(keycode)
+    }
 }
 
 impl ApplicationHandler for Game {
@@ -892,6 +954,15 @@ impl ApplicationHandler for Game {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        if let Some(mut callback) = self.callback.take() {
+            let into: Event = event.clone().into();
+            if into != Event::Unknown {
+                callback(self, event_loop, into);
+            }
+
+            self.callback = Some(callback);
+        }
+
         match event {
             WindowEvent::Resized(physical_size) => {
                 if let Some(state) = &mut self.state {
@@ -899,11 +970,6 @@ impl ApplicationHandler for Game {
                 }
             }
             WindowEvent::RedrawRequested => {
-                if let Some(mut callback) = self.callback.take() {
-                    callback(self, event_loop, event);
-                    self.callback = Some(callback);
-                }
-
                 self.step(1.0 / 60.0);
                 self.update_sprites();
 
@@ -913,7 +979,14 @@ impl ApplicationHandler for Game {
                     state.render().unwrap();
                 }
             }
-
+            WindowEvent::KeyboardInput { event, .. } => {
+                if let PhysicalKey::Code(code) = event.physical_key {
+                    match event.state {
+                        ElementState::Pressed => self.inputs.key_pressed(code.into()),
+                        ElementState::Released => self.inputs.key_released(code.into()),
+                    }
+                }
+            }
             WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
@@ -923,6 +996,8 @@ impl ApplicationHandler for Game {
     }
 
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
+        self.inputs.begin_frame();
+
         if let Some(state) = &self.state {
             state.get_window().request_redraw();
         }
@@ -2987,5 +3062,114 @@ pub trait Script: 'static {
         _: &mut Scene,
     ) {
         Node::on_collision_default(this, other, manifold)
+    }
+}
+
+/// Window Events.
+/// Retuned from a callback in `Game`.
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum Event {
+    /// Change of window size
+    Resized(Vector2),
+    /// Window movement
+    Moved(Vector2),
+    /// Close Request
+    CloseRequested,
+    /// Window closing
+    Destroyed,
+    /// A file dropped on the window
+    DroppedFile(PathBuf),
+    /// A file hovered on the window
+    HoveredFile(PathBuf),
+    /// A file was hovered, and moved from the window
+    HoveredFileCancelled,
+    /// Window gained focus
+    Focused,
+    /// Window lost focus
+    Unfocused,
+    /// Keyboard input
+    KeyboardInput(KeyCode, KeyState),
+    // CursorMoved(Vector2),            // Will be implemented next
+    /// Cursor entered the window
+    CursorEntered,
+    /// Cursor exited the window
+    CursorExited,
+    // MouseWheel,                      // Will be implemented next
+    // MouseInput,                      // Will be implemented next
+    /// Two-finger pinch gesture
+    /// MacOS and iOS only.
+    PinchGesture(f64),
+    /// Pan gesture
+    /// MacOS and iOS only.
+    PanGesture(Vector2),
+    /// Double tap gesture
+    /// MacOS and iOS only.
+    DoubleTapGesture,
+    /// Two-finger rotation gesture
+    /// MacOS and iOS only.
+    RotationGesture(f32),
+    /// Touchpad pressure, including stage.
+    /// MacOS only.
+    TouchpadPressure(f32, i64),
+    /// Touch input
+    Touch(Vector2),
+    /// Window moved across screens with different DPIs.
+    ScaleChanged(f64),
+    /// Window hidden behind another.
+    Occluded,
+    /// Window became visible
+    Visible,
+    /// Window should be redrawn
+    RedrawRequested,
+    /// Window should be redrawn
+    Unknown,
+}
+
+impl From<WindowEvent> for Event {
+    fn from(value: WindowEvent) -> Self {
+        match value {
+            WindowEvent::Resized(physical) => Self::Resized(Vector2 {
+                x: physical.width as f32,
+                y: physical.height as f32,
+            }),
+            WindowEvent::Moved(physical) => Self::Moved(Vector2 {
+                x: physical.x as f32,
+                y: physical.y as f32,
+            }),
+            WindowEvent::CloseRequested => Self::CloseRequested,
+            WindowEvent::Destroyed => Self::Destroyed,
+            WindowEvent::DroppedFile(path) => Self::DroppedFile(path),
+            WindowEvent::HoveredFile(path) => Self::HoveredFile(path),
+            WindowEvent::HoveredFileCancelled => Self::HoveredFileCancelled,
+            WindowEvent::Focused(true) => Self::Focused,
+            WindowEvent::Focused(false) => Self::Unfocused,
+            WindowEvent::CursorEntered { .. } => Self::CursorEntered,
+            WindowEvent::CursorLeft { .. } => Self::CursorExited,
+            WindowEvent::PinchGesture { delta, .. } => Self::PinchGesture(delta),
+            WindowEvent::PanGesture { delta, .. } => Self::PanGesture(Vector2 {
+                x: delta.x,
+                y: delta.y,
+            }),
+            WindowEvent::DoubleTapGesture { .. } => Self::DoubleTapGesture,
+            WindowEvent::RotationGesture { delta, .. } => Self::RotationGesture(delta),
+            WindowEvent::TouchpadPressure {
+                pressure, stage, ..
+            } => Self::TouchpadPressure(pressure, stage),
+            WindowEvent::Touch(touch) => Self::Touch(Vector2 {
+                x: touch.location.x as f32,
+                y: touch.location.y as f32,
+            }),
+            WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
+                Self::ScaleChanged(scale_factor)
+            }
+            WindowEvent::Occluded(true) => Self::Occluded,
+            WindowEvent::Occluded(false) => Self::Visible,
+            WindowEvent::RedrawRequested => Self::RedrawRequested,
+            WindowEvent::KeyboardInput { event, .. } => match event.physical_key {
+                PhysicalKey::Code(code) => Self::KeyboardInput(code.into(), event.state.into()),
+                PhysicalKey::Unidentified(_) => Self::Unknown,
+            },
+            _ => Self::Unknown,
+        }
     }
 }

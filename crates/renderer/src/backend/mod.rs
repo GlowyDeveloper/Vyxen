@@ -3,7 +3,6 @@ use vyxen_math::{Matrix4, Vector2};
 mod gpu_texture;
 pub mod shape_geometry;
 mod state;
-pub mod winit_reexports;
 
 pub use gpu_texture::GpuTexture;
 pub use state::State;

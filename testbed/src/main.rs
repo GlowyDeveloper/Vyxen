@@ -1,4 +1,4 @@
-use vyxen::prelude::*;
+use vyxen::{input::KeyCode, prelude::*};
 
 fn main() {
     /*let mut game = Game::new();
@@ -104,5 +104,16 @@ fn main() {
 
     game.set_config(config);
 
-    let _ = game.run_without_callback();
+    game.run(|game, _, _| {
+        if game.is_just_pressed(KeyCode::ArrowUp) {
+            println!("just pressed");
+        }
+        if game.is_just_released(KeyCode::ArrowUp) {
+            println!("just released");
+        }
+        if game.is_held(KeyCode::ArrowUp) {
+            println!("held");
+        }
+    })
+    .unwrap();
 }

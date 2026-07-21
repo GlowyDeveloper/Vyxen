@@ -21,6 +21,7 @@ mod texture;
 pub use crate::backend::Camera;
 pub use color::Color;
 pub use texture::Texture;
+pub use winit::event::WindowEvent;
 
 /// Defines the draw types for a sprite
 ///

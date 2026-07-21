@@ -1845,6 +1845,7 @@ version = "0.1.0"
 dependencies = [
  "vyxen-core",
  "vyxen-geometry",
+ "vyxen-input",
  "vyxen-math",
  "vyxen-physics2d",
  "vyxen-renderer",
@@ -1857,9 +1858,11 @@ dependencies = [
  "anyhow",
  "pollster",
  "vyxen-geometry",
+ "vyxen-input",
  "vyxen-math",
  "vyxen-physics2d",
  "vyxen-renderer",
+ "winit",
 ]
 
 [[package]]
@@ -1867,6 +1870,13 @@ name = "vyxen-geometry"
 version = "0.1.0"
 dependencies = [
  "vyxen-math",
+]
+
+[[package]]
+name = "vyxen-input"
+version = "0.1.0"
+dependencies = [
+ "winit",
 ]
 
 [[package]]

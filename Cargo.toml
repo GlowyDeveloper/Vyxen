@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/geometry","crates/math", "crates/physics2d","crates/vyxen", "crates/core", "testbed", "crates/renderer"]
+members = ["crates/geometry","crates/math", "crates/physics2d","crates/vyxen", "crates/core", "crates/renderer", "crates/input", "testbed"]
 
 [workspace.package]
 version = "0.1.0"
@@ -19,6 +19,7 @@ vyxen-math = { path = "crates/math" }
 vyxen-geometry = { path = "crates/geometry" }
 vyxen-physics2d = { path = "crates/physics2d" }
 vyxen-renderer = { path = "crates/renderer" }
+vyxen-input = { path = "crates/input" }
 vyxen-core = { path = "crates/core" }
 vyxen = { path = "crates/vyxen" }
 

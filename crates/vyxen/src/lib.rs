@@ -26,4 +26,9 @@ pub mod renderer {
     pub use vyxen_renderer::*;
 }
 
+/// Input system and input types.
+pub mod input {
+    pub use vyxen_input::*;
+}
+
 pub use vyxen_core::*;

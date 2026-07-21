@@ -20,3 +20,4 @@ vyxen-geometry.workspace = true
 vyxen-physics2d.workspace = true
 vyxen-core.workspace = true
 vyxen-renderer.workspace = true
+vyxen-input.workspace = true
