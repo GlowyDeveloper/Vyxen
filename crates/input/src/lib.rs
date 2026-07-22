@@ -27,6 +27,7 @@ mod keycode;
 /// assert!(inputs.just_released(KeyCode::KeyH));
 /// assert!(!inputs.held(KeyCode::KeyH));
 /// ```
+#[derive(Clone)]
 pub struct Inputs {
     held: HashSet<KeyCode>,
     just_pressed: HashSet<KeyCode>,

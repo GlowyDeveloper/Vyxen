@@ -4,13 +4,28 @@ fn main() {
     let mut game = Game::new();
     let mut scene = Scene::new();
 
+    scene.set_gravity(Vector2::zero());
+
     let mut sprite = Sprite::new();
     sprite.set_shape(Box::new(20.0, 2.0));
     sprite.set_draw_type(DrawType::Color(Color::from_rgb(0.2, 0.8, 0.3)));
 
     let mut node = Node::new("Foo".to_string());
     node.add_component(sprite);
-    node.set_is_static(true);
+    node.set_physics_process(move |node, _, _, ctx| {
+        if ctx.is_held(KeyCode::KeyW) {
+            node.add_force(Vector2 { x: 0.0, y: 0.2 });
+        }
+        if ctx.is_held(KeyCode::KeyA) {
+            node.add_force(Vector2 { x: -0.2, y: 0.0 });
+        }
+        if ctx.is_held(KeyCode::KeyS) {
+            node.add_force(Vector2 { x: 0.0, y: -0.2 });
+        }
+        if ctx.is_held(KeyCode::KeyD) {
+            node.add_force(Vector2 { x: 0.2, y: 0.0 });
+        }
+    });
     scene.add_node(node);
 
     game.load_scene(scene);
@@ -24,15 +39,5 @@ fn main() {
 
     game.set_config(config);
 
-    println!("{:?}", game.get_mouse_position());
-    game.run(|_, _, e| match e {
-        Event::MouseInput(i, _, _) => {
-            println!("{:?}", i);
-        },
-        Event::MouseWheel(v, t) => {
-            println!("{:?} {:?}", v, t);
-        }
-        _ => {}
-    })
-    .unwrap();
+    game.run_without_callback().unwrap();
 }

@@ -387,10 +387,12 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Node};
+    /// use vyxen_core::{Scene, Node, Context};
     /// use vyxen_math::Vector2;
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
+    /// use vyxen_input::Inputs;
+    /// use vyxen_renderer::WindowConfig;
     ///
     /// let mut scene = Scene::new();
     ///
@@ -398,24 +400,29 @@ impl Scene {
     /// node.add_component(RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4));
     /// scene.add_node(node);
     ///
-    /// scene.step(0.1);
+    /// scene.step(
+    ///     0.1,
+    ///     Context {
+    ///         inputs: Inputs::new(),
+    ///         cursor_pos: Vector2::zero(),
+    ///         config: WindowConfig::new()
+    ///     }
+    /// );
     /// ```
-    pub fn step(&mut self, dt: f32) {
+    pub fn step(&mut self, dt: f32, ctx: Context) {
         let ids_snapshot: Vec<u64> = self.nodes.keys().cloned().collect();
 
         for id in ids_snapshot.iter() {
             if let Some(mut node) = self.nodes.remove(id) {
-                let mut scripts = std::mem::take(&mut node.script);
-
-                for script in scripts.iter_mut() {
-                    script.physics_process(&mut node, self, dt);
-                }
-
-                if scripts.is_empty() {
+                if let Some(mut callback) = node.physics_process.take() {
+                    callback(&mut node, self, dt, ctx.clone());
+                    node.physics_process = Some(callback);
+                    if node.physics_process_default {
+                        node.physics_process_default(self.gravity, dt);
+                    }
+                } else {
                     node.physics_process_default(self.gravity, dt);
                 }
-
-                node.script = scripts;
                 self.nodes.insert(*id, node);
             }
         }
@@ -457,34 +464,20 @@ impl Scene {
 
                 let mut called = false;
 
-                let mut scripts_a = std::mem::take(&mut node_a.script);
-                for script in scripts_a.iter_mut() {
-                    script.on_collision(&mut node_a, &mut node_b, manifold, self);
+                if let Some(mut callback) = node_a.on_collision.take() {
                     called = true;
+                    callback(&mut node_a, &mut node_b, manifold, self, ctx.clone());
+                    node_a.on_collision = Some(callback);
                 }
 
-                let mut scripts_b = std::mem::take(&mut node_b.script);
-                for script in scripts_b.iter_mut() {
-                    script.on_collision(&mut node_b, &mut node_a, manifold, self);
+                if let Some(mut callback) = node_b.on_collision.take() {
                     called = true;
+                    callback(&mut node_b, &mut node_a, manifold, self, ctx.clone());
+                    node_b.on_collision = Some(callback);
                 }
 
-                if !called {
+                if !called || (node_a.on_collision_default && node_b.on_collision_default) {
                     Node::on_collision_default(&mut node_a, &mut node_b, manifold);
-                }
-
-                if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(id_a) {
-                    node_a.script.extend(scripts_a);
-                    e.insert(node_a);
-                } else if let Some(n) = self.nodes.get_mut(&id_a) {
-                    n.script.extend(scripts_a);
-                }
-
-                if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(id_b) {
-                    node_b.script.extend(scripts_b);
-                    e.insert(node_b);
-                } else if let Some(n) = self.nodes.get_mut(&id_b) {
-                    n.script.extend(scripts_b);
                 }
             }
         }
@@ -652,9 +645,7 @@ pub struct Game {
     loaded_scene: Option<Scene>,
     state: Option<State>,
     callback: Option<Callback>,
-    config: WindowConfig,
-    inputs: Inputs,
-    cursor_pos: Vector2,
+    ctx: Context,
 }
 
 impl Default for Game {
@@ -681,9 +672,11 @@ impl Game {
             loaded_scene: None,
             state: None,
             callback: None,
-            config: WindowConfig::new(),
-            inputs: Inputs::new(),
-            cursor_pos: Vector2::zero(),
+            ctx: Context {
+                inputs: Inputs::new(),
+                cursor_pos: Vector2::zero(),
+                config: WindowConfig::new()
+            }
         }
     }
 
@@ -705,7 +698,7 @@ impl Game {
     /// ```
     pub fn step(&mut self, dt: f32) {
         if let Some(scene) = &mut self.loaded_scene {
-            scene.step(dt);
+            scene.step(dt, self.ctx.clone());
         }
     }
 
@@ -778,7 +771,7 @@ impl Game {
     /// game.set_config(conf);
     /// ```
     pub fn set_config(&mut self, config: WindowConfig) {
-        self.config = config;
+        self.ctx.config = config;
     }
 
     /// Updates the sprites for the renderer.
@@ -890,7 +883,7 @@ impl Game {
     ///
     /// For `is_just_pressed` to be processed correctly, the game must be first ran from `run` or `run_without_callback`.
     pub fn is_just_pressed(&self, keycode: KeyCode) -> bool {
-        self.inputs.just_pressed(keycode)
+        self.ctx.inputs.just_pressed(keycode)
     }
 
     /// If a key has been released between the current frame and the last.
@@ -909,7 +902,7 @@ impl Game {
     ///
     /// For `is_just_released` to be processed correctly, the game must be first ran from `run` or `run_without_callback`.
     pub fn is_just_released(&self, keycode: KeyCode) -> bool {
-        self.inputs.just_released(keycode)
+        self.ctx.inputs.just_released(keycode)
     }
 
     /// If a key is currently held.
@@ -928,7 +921,7 @@ impl Game {
     ///
     /// For `is_held` to be processed correctly, the game must be first ran from `run` or `run_without_callback`.
     pub fn is_held(&self, keycode: KeyCode) -> bool {
-        self.inputs.held(keycode)
+        self.ctx.inputs.held(keycode)
     }
 
     /// The current mouse position.
@@ -949,7 +942,7 @@ impl Game {
     ///  - the game must be first ran from `run` or `run_without_callback`. If not, `Vector2::zero()` will be returned.
     ///  - the cursor position will only be updated when the cursor is in the window. If not, the most recent reported mouse position will be returned.
     pub fn get_mouse_position(&self) -> Vector2 {
-        self.cursor_pos
+        self.ctx.cursor_pos
     }
 }
 
@@ -957,11 +950,11 @@ impl ApplicationHandler for Game {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window = Arc::new(
             event_loop
-                .create_window(self.config.clone().into())
+                .create_window(self.ctx.config.clone().into())
                 .unwrap(),
         );
 
-        let mut state = pollster::block_on(State::new(window, self.config.clone())).unwrap();
+        let mut state = pollster::block_on(State::new(window, self.ctx.config.clone())).unwrap();
 
         state.resize(
             state.get_window().inner_size().width,
@@ -980,7 +973,7 @@ impl ApplicationHandler for Game {
         if let Some(mut callback) = self.callback.take() {
             let into: Event = match event {
                 WindowEvent::MouseInput { state, button, .. } => {
-                    Event::MouseInput(button.into(), state.into(), self.cursor_pos)
+                    Event::MouseInput(button.into(), state.into(), self.ctx.cursor_pos)
                 }
                 _ => event.clone().into(),
             };
@@ -1002,7 +995,7 @@ impl ApplicationHandler for Game {
                 self.update_sprites();
 
                 if let Some(state) = &mut self.state {
-                    state.set_config(self.config.clone());
+                    state.set_config(self.ctx.config.clone());
                     state.update();
                     state.render().unwrap();
                 }
@@ -1010,13 +1003,13 @@ impl ApplicationHandler for Game {
             WindowEvent::KeyboardInput { event, .. } => {
                 if let PhysicalKey::Code(code) = event.physical_key {
                     match event.state {
-                        ElementState::Pressed => self.inputs.key_pressed(code.into()),
-                        ElementState::Released => self.inputs.key_released(code.into()),
+                        ElementState::Pressed => self.ctx.inputs.key_pressed(code.into()),
+                        ElementState::Released => self.ctx.inputs.key_released(code.into()),
                     }
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
-                self.cursor_pos = Vector2 {
+                self.ctx.cursor_pos = Vector2 {
                     x: position.x as f32,
                     y: position.y as f32,
                 }
@@ -1029,7 +1022,7 @@ impl ApplicationHandler for Game {
     }
 
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
-        self.inputs.begin_frame();
+        self.ctx.inputs.begin_frame();
 
         if let Some(state) = &self.state {
             state.get_window().request_redraw();
@@ -1048,7 +1041,6 @@ impl ApplicationHandler for Game {
 pub struct Node {
     name: String,
     id: u64,
-    script: Vec<Box<dyn Script>>,
     components: Vec<Box<dyn Component>>,
     children: Vec<u64>,
 
@@ -1065,6 +1057,13 @@ pub struct Node {
     last_linear_velocity: Vector2,
     last_rotation: f32,
     last_rotational_velocity: f32,
+
+    on_ready: Option<Box<dyn FnMut(&mut Node, &mut Scene, Context)>>,
+    physics_process: Option<Box<dyn FnMut(&mut Node, &mut Scene, f32, Context)>>,
+    on_collision: Option<Box<dyn FnMut(&mut Node, &mut Node, Manifold, &mut Scene, Context)>>,
+
+    physics_process_default: bool,
+    on_collision_default: bool,
 }
 
 impl Node {
@@ -1178,79 +1177,6 @@ impl Node {
         &self.name
     }
 
-    /// Returns the script of the node
-    ///
-    /// If you want the mutable version, refer to `get_script_mut()`
-    ///
-    /// # Examples
-    /// ```rust
-    /// use vyxen_core::{Node, Script, Scene};
-    ///
-    /// struct TestScript;
-    /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut Scene) {
-    ///        println!("Processing...");
-    ///     }
-    /// }
-    ///
-    /// let mut parent = Node::new("Parent".to_string());
-    /// parent.set_script(TestScript);
-    ///
-    /// let script = parent.get_script(0);
-    /// assert!(script.is_some());
-    /// ```
-    pub fn get_script(&self, index: usize) -> Option<&dyn Script> {
-        self.script.get(index).map(|script| script.as_ref())
-    }
-
-    /// Returns the script of the node
-    ///
-    /// # Examples
-    /// ```rust
-    /// use vyxen_core::{Node, Script, Scene};
-    ///
-    /// struct TestScript;
-    /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut Scene) {
-    ///        println!("Processing...");
-    ///     }
-    /// }
-    ///
-    /// let mut parent = Node::new("Parent".to_string());
-    /// parent.set_script(TestScript);
-    ///
-    /// let script = parent.get_script_mut(0);
-    /// assert!(script.is_some());
-    /// ```
-    pub fn get_script_mut(&mut self, index: usize) -> Option<&mut dyn Script> {
-        self.script.get_mut(index).map(|script| script.as_mut())
-    }
-
-    /// Returns the script of the node
-    ///
-    /// # Examples
-    /// ```rust
-    /// use vyxen_core::{Node, Script, Scene};
-    ///
-    /// struct TestScript;
-    /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut Scene) {
-    ///        println!("Processing...");
-    ///     }
-    /// }
-    ///
-    /// let mut parent = Node::new("Parent".to_string());
-    ///
-    /// assert_eq!(0, parent.get_script_len());
-    ///
-    /// parent.set_script(TestScript);
-    ///
-    /// assert_eq!(1, parent.get_script_len());
-    /// ```
-    pub fn get_script_len(&self) -> usize {
-        self.script.len()
-    }
-
     /// Gets the children's ids of the node
     ///
     /// # Examples
@@ -1304,44 +1230,135 @@ impl Node {
         self.is_static
     }
 
-    /// Sets the script of the node
+    /// Sets the `on_ready` function of the node
+    /// 
+    /// Fields are:
+    ///  - `Node` (the current node)
+    ///  - `Scene` (the scene that the node is in)
+    ///  - `Context` (the information of the current game)
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Script, Scene};
+    /// use vyxen_core::Node;
     ///
-    /// struct TestScript;
-    /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut Scene) {
-    ///        println!("Processing...");
-    ///     }
-    /// }
-    ///
-    /// let mut parent = Node::new("Parent".to_string());
-    /// parent.set_script(TestScript);
+    /// let mut node = Node::new("Node".to_string());
+    /// node.set_on_ready(|node, scene, context| {
+    ///     println!("{}", node.get_name());
+    /// });
     /// ```
-    pub fn set_script<T: Script + 'static>(&mut self, script: T) {
-        self.script.push(Box::new(script));
+    pub fn set_on_ready<F>(&mut self, script: F)
+    where
+        F: FnMut(&mut Node, &mut Scene, Context) + 'static,
+    {
+        self.on_ready = Some(Box::new(script));
     }
 
-    /// Sets the script of the node
+    /// Resets the `on_ready` function of the node
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Script, Scene};
+    /// use vyxen_core::Node;
     ///
-    /// struct TestScript;
-    /// impl Script for TestScript {
-    ///     fn process(&mut self, _: &mut Scene) {
-    ///        println!("Processing...");
-    ///     }
-    /// }
-    ///
-    /// let mut parent = Node::new("Parent".to_string());
-    /// parent.set_script_box(Box::new(TestScript));
+    /// let mut node = Node::new("Node".to_string());
+    /// node.set_on_ready(|node, scene, context| {
+    ///     println!("{}", node.get_name());
+    /// });
+    /// node.reset_on_ready();
     /// ```
-    pub fn set_script_box(&mut self, script: Box<dyn Script>) {
-        self.script.push(script);
+    pub fn reset_on_ready(&mut self) {
+        self.on_ready = None;
+    }
+
+    /// Sets the `physics_process` function of the node
+    /// 
+    /// Fields are:
+    ///  - `Node` (the current node)
+    ///  - `Scene` (the scene that the node is in)
+    ///  - `f32` (the time between the last two frames)
+    ///  - `Context` (the information of the current game)
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::Node;
+    ///
+    /// let mut node = Node::new("Node".to_string());
+    /// node.set_on_ready(|node, scene, context| {
+    ///     println!("{}", node.get_name());
+    /// });
+    /// ```
+    pub fn set_physics_process<F>(&mut self, script: F)
+    where
+        F: FnMut(&mut Node, &mut Scene, f32, Context) + 'static,
+    {
+        self.physics_process = Some(Box::new(script));
+    }
+
+    /// Resets the `physics_process` function of the node
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::Node;
+    ///
+    /// let mut node = Node::new("Node".to_string());
+    /// node.set_physics_process(|node, scene, dt, context| {
+    ///     println!("{} | dt: {}", node.get_name(), dt);
+    /// });
+    /// node.reset_physics_process();
+    /// ```
+    pub fn reset_physics_process(&mut self) {
+        self.physics_process = None;
+    }
+
+    /// Sets the `on_collision` function of the node
+    /// 
+    /// Fields are:
+    ///  - `Node` (the current node)
+    ///  - `Node` (the other node that was collided with)
+    ///  - `Manifold` (all information about the collision)
+    ///  -  Scene` (the scene that the node is in)
+    ///  - `Context` (the information of the current game)
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::Node;
+    ///
+    /// let mut node = Node::new("Node".to_string());
+    /// node.set_on_collision(|node, other, manifold, scene, context| {
+    ///     println!("{} collided with {}", node.get_name(), other.get_name());
+    /// });
+    /// node.reset_on_collision();
+    /// ```
+    pub fn set_on_collision<F>(&mut self, script: F)
+    where
+        F: FnMut(&mut Node, &mut Node, Manifold, &mut Scene, Context) + 'static,
+    {
+        self.on_collision = Some(Box::new(script));
+    }
+
+    /// Resets the `on_collision` function of the node
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::Node;
+    ///
+    /// let mut node = Node::new("Node".to_string());
+    /// node.set_on_collision(|node, other, manifold, scene, context| {
+    ///     println!("{} collided with {}", node.get_name(), other.get_name());
+    /// });
+    /// node.reset_on_collision();
+    /// ```
+    pub fn reset_on_collision(&mut self) {
+        self.on_collision = None;
+    }
+
+    /// Turns on and off if the default function for physics processing should be ran, even with an override.
+    pub fn set_physics_process_default(&mut self, set: bool) {
+        self.physics_process_default = set;
+    }
+
+    /// Turns on and off if the default function for collision resolving should be ran, even with an override.
+    pub fn set_on_collision_default(&mut self, set: bool) {
+        self.on_collision_default = set;
     }
 
     /// Sets the name of the node
@@ -1483,7 +1500,6 @@ impl Node {
         Self {
             name,
             id: Random::from_time().next_u64(),
-            script: Vec::new(),
             components: Vec::new(),
             children: Vec::new(),
             position: Vector2::zero(),
@@ -1497,6 +1513,11 @@ impl Node {
             last_linear_velocity: Vector2::zero(),
             last_rotation: 0.0,
             last_rotational_velocity: 0.0,
+            on_ready: None,
+            physics_process: None,
+            on_collision: None,
+            physics_process_default: true,
+            on_collision_default: true
         }
     }
 
@@ -1512,20 +1533,6 @@ impl Node {
     /// ```
     pub fn add_component<T: Component + 'static>(&mut self, comp: T) {
         self.components.push(Box::new(comp));
-    }
-
-    /// Add a boxed component.
-    ///
-    /// # Examples
-    /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Circle;
-    ///
-    /// let mut node = Node::new("Foo".to_string());
-    /// node.add_component_box(Box::new(Collider::new(Circle::new(2.0))));
-    /// ```
-    pub fn add_component_box(&mut self, comp: Box<dyn Component>) {
-        self.components.push(comp);
     }
 
     /// Remove the first component of type `T`.
@@ -2720,7 +2727,7 @@ impl Node {
             self.last_linear_velocity = self.linear_velocity;
         }
 
-        let new_pos = self.position + self.linear_velocity * dt;
+        let new_pos = self.position + self.force + self.linear_velocity * dt;
         if !new_pos.x.is_finite() || !new_pos.y.is_finite() {
             if !self.nan_logged {
                 self.nan_logged = true;
@@ -3061,43 +3068,6 @@ impl Component for Collider {
     }
 }
 
-/// Script trait used for scripting nodes
-///
-/// # Examples
-/// ```rust
-/// use vyxen_core::{Script, Scene};
-///
-/// struct TestScript;
-/// impl Script for TestScript {
-///     fn process(&mut self, _: &mut Scene) {
-///        println!("Processing...");
-///     }
-/// }
-///
-/// let mut script = TestScript;
-/// script.process(&mut Scene::new());
-/// ```
-pub trait Script: 'static {
-    /// Called when the script is first added to a node
-    fn on_ready(&mut self, _: &mut Scene) {}
-    /// Called every frame
-    fn process(&mut self, _: &mut Scene) {}
-    /// Called every physics frame
-    fn physics_process(&mut self, this: &mut Node, scene: &mut Scene, dt: f32) {
-        this.physics_process_default(scene.gravity, dt);
-    }
-    /// Called when the node collides with another node
-    fn on_collision(
-        &mut self,
-        this: &mut Node,
-        other: &mut Node,
-        manifold: Manifold,
-        _: &mut Scene,
-    ) {
-        Node::on_collision_default(this, other, manifold)
-    }
-}
-
 /// Window Events.
 /// Retuned from a callback in `Game`.
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -3224,5 +3194,30 @@ impl From<WindowEvent> for Event {
             ),
             _ => Self::Unknown,
         }
+    }
+}
+
+/// The context of the game.
+#[derive(Clone)]
+pub struct Context {
+    pub inputs: Inputs,
+    pub cursor_pos: Vector2,
+    pub config: WindowConfig,
+}
+
+impl Context {
+    /// If a key is currently held.
+    pub fn is_held(&self, keycode: KeyCode) -> bool {
+        self.inputs.held(keycode)
+    }
+
+    /// If a key has been pressed between the current frame and the last.
+    pub fn is_just_pressed(&self, keycode: KeyCode) -> bool {
+        self.inputs.just_pressed(keycode)
+    }
+
+    /// If a key has been released between the current frame and the last.
+    pub fn is_just_released(&self, keycode: KeyCode) -> bool {
+        self.inputs.just_released(keycode)
     }
 }

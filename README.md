@@ -92,15 +92,10 @@ The overridable methods are:
 ```rust
 use vyxen::prelude::*;
 
-struct ExampleScript;
-impl Script for ExampleScript {
-    fn physics_process(&mut self, _: &mut Node, _: &mut Scene, _: f32) {
-        println!("Processing...");
-    }
-}
-
 let mut node = Node::new("Foo".to_string());
-node.set_script(ExampleScript);
+node.set_physics_process(|_, _, _, _| {
+    println!("Processing...");
+});
 ```
 
 ## Rendering
