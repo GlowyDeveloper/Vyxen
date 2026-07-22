@@ -20,8 +20,6 @@ use winit::{
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::EventLoopExtWebSys;
 
-type Callback = Box<dyn FnMut(&mut Game, &ActiveEventLoop, Event)>;
-
 /// Scene to hold nodes in the game
 ///
 /// # Examples
@@ -629,6 +627,8 @@ impl Scene {
     }
 }
 
+type Callback = Box<dyn FnMut(&mut Game, &ActiveEventLoop, Event)>;
+
 /// Game struct to hold everything
 ///
 /// # Examples
@@ -675,8 +675,8 @@ impl Game {
             ctx: Context {
                 inputs: Inputs::new(),
                 cursor_pos: Vector2::zero(),
-                config: WindowConfig::new()
-            }
+                config: WindowConfig::new(),
+            },
         }
     }
 
@@ -1030,6 +1030,10 @@ impl ApplicationHandler for Game {
     }
 }
 
+type ReadyOption = Option<Box<dyn FnMut(&mut Node, &mut Scene, Context)>>;
+type PhysicsOption = Option<Box<dyn FnMut(&mut Node, &mut Scene, f32, Context)>>;
+type CollisionOption = Option<Box<dyn FnMut(&mut Node, &mut Node, Manifold, &mut Scene, Context)>>;
+
 /// Node struct for the scene
 ///
 /// # Examples
@@ -1058,9 +1062,9 @@ pub struct Node {
     last_rotation: f32,
     last_rotational_velocity: f32,
 
-    on_ready: Option<Box<dyn FnMut(&mut Node, &mut Scene, Context)>>,
-    physics_process: Option<Box<dyn FnMut(&mut Node, &mut Scene, f32, Context)>>,
-    on_collision: Option<Box<dyn FnMut(&mut Node, &mut Node, Manifold, &mut Scene, Context)>>,
+    on_ready: ReadyOption,
+    physics_process: PhysicsOption,
+    on_collision: CollisionOption,
 
     physics_process_default: bool,
     on_collision_default: bool,
@@ -1231,7 +1235,7 @@ impl Node {
     }
 
     /// Sets the `on_ready` function of the node
-    /// 
+    ///
     /// Fields are:
     ///  - `Node` (the current node)
     ///  - `Scene` (the scene that the node is in)
@@ -1270,7 +1274,7 @@ impl Node {
     }
 
     /// Sets the `physics_process` function of the node
-    /// 
+    ///
     /// Fields are:
     ///  - `Node` (the current node)
     ///  - `Scene` (the scene that the node is in)
@@ -1310,7 +1314,7 @@ impl Node {
     }
 
     /// Sets the `on_collision` function of the node
-    /// 
+    ///
     /// Fields are:
     ///  - `Node` (the current node)
     ///  - `Node` (the other node that was collided with)
@@ -1517,7 +1521,7 @@ impl Node {
             physics_process: None,
             on_collision: None,
             physics_process_default: true,
-            on_collision_default: true
+            on_collision_default: true,
         }
     }
 

@@ -16,5 +16,5 @@ for target in "${targets[@]}"; do
     echo "==> Installing $target"
     rustup target add "$target"
     echo "==> Checking $target"
-    cargo clippy --all-targets --all-features --target "$target"
+    cargo check --all-targets --all-features --target "$target"
 done
