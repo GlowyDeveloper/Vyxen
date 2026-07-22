@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 pub use keycode::KeyCode;
-use winit::event::ElementState;
+use winit::event::{ElementState, MouseButton, TouchPhase as WinitTouchPhase};
 
 mod keycode;
 
@@ -201,6 +201,50 @@ impl From<ElementState> for KeyState {
         match value {
             ElementState::Pressed => KeyState::Pressed,
             ElementState::Released => KeyState::Released,
+        }
+    }
+}
+
+/// The current state of a touch input.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum TouchPhase {
+    Started,
+    Moved,
+    Ended,
+    Cancelled,
+}
+
+impl From<WinitTouchPhase> for TouchPhase {
+    fn from(value: WinitTouchPhase) -> Self {
+        match value {
+            WinitTouchPhase::Started => Self::Started,
+            WinitTouchPhase::Moved => Self::Moved,
+            WinitTouchPhase::Ended => Self::Ended,
+            WinitTouchPhase::Cancelled => Self::Cancelled,
+        }
+    }
+}
+
+/// All mouse inputs that can be captured
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum MouseInput {
+    Left,
+    Right,
+    Middle,
+    Back,
+    Forward,
+    Unknown(u16),
+}
+
+impl From<MouseButton> for MouseInput {
+    fn from(value: MouseButton) -> Self {
+        match value {
+            MouseButton::Left => Self::Left,
+            MouseButton::Right => Self::Right,
+            MouseButton::Middle => Self::Middle,
+            MouseButton::Back => Self::Back,
+            MouseButton::Forward => Self::Forward,
+            MouseButton::Other(id) => Self::Unknown(id),
         }
     }
 }

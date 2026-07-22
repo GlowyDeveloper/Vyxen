@@ -4,14 +4,14 @@
 use std::{any::Any, collections::HashMap, path::PathBuf, sync::Arc};
 
 use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
-use vyxen_input::{Inputs, KeyCode, KeyState};
+use vyxen_input::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase};
 use vyxen_math::{Random, Vector2};
 use vyxen_physics2d::{Collision, ContactPoints, Manifold, RigidBody, SoftBody};
 use vyxen_renderer::{Sprite, WindowConfig, WindowEvent, backend::State};
 
 use winit::{
     application::ApplicationHandler,
-    event::ElementState,
+    event::{ElementState, MouseScrollDelta},
     event_loop::{ActiveEventLoop, EventLoop},
     keyboard::PhysicalKey,
     window::WindowId,
@@ -654,6 +654,7 @@ pub struct Game {
     callback: Option<Callback>,
     config: WindowConfig,
     inputs: Inputs,
+    cursor_pos: Vector2,
 }
 
 impl Default for Game {
@@ -682,6 +683,7 @@ impl Game {
             callback: None,
             config: WindowConfig::new(),
             inputs: Inputs::new(),
+            cursor_pos: Vector2::zero(),
         }
     }
 
@@ -928,6 +930,27 @@ impl Game {
     pub fn is_held(&self, keycode: KeyCode) -> bool {
         self.inputs.held(keycode)
     }
+
+    /// The current mouse position.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::Game;
+    /// use vyxen_math::Vector2;
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// assert_eq!(game.get_mouse_position(), Vector2::zero());
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// For `get_mouse_position` to be processed correctly,
+    ///  - the game must be first ran from `run` or `run_without_callback`. If not, `Vector2::zero()` will be returned.
+    ///  - the cursor position will only be updated when the cursor is in the window. If not, the most recent reported mouse position will be returned.
+    pub fn get_mouse_position(&self) -> Vector2 {
+        self.cursor_pos
+    }
 }
 
 impl ApplicationHandler for Game {
@@ -955,7 +978,12 @@ impl ApplicationHandler for Game {
         event: WindowEvent,
     ) {
         if let Some(mut callback) = self.callback.take() {
-            let into: Event = event.clone().into();
+            let into: Event = match event {
+                WindowEvent::MouseInput { state, button, .. } => {
+                    Event::MouseInput(button.into(), state.into(), self.cursor_pos)
+                }
+                _ => event.clone().into(),
+            };
             if into != Event::Unknown {
                 callback(self, event_loop, into);
             }
@@ -987,10 +1015,15 @@ impl ApplicationHandler for Game {
                     }
                 }
             }
+            WindowEvent::CursorMoved { position, .. } => {
+                self.cursor_pos = Vector2 {
+                    x: position.x as f32,
+                    y: position.y as f32,
+                }
+            }
             WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
-
             _ => {}
         }
     }
@@ -3089,13 +3122,16 @@ pub enum Event {
     Unfocused,
     /// Keyboard input
     KeyboardInput(KeyCode, KeyState),
-    // CursorMoved(Vector2),            // Will be implemented next
+    /// Cursor movement
+    CursorMoved(Vector2),
     /// Cursor entered the window
     CursorEntered,
     /// Cursor exited the window
     CursorExited,
-    // MouseWheel,                      // Will be implemented next
-    // MouseInput,                      // Will be implemented next
+    /// Cursor mouse wheel movement
+    MouseWheel(Vector2, TouchPhase),
+    /// Cursor input
+    MouseInput(MouseInput, KeyState, Vector2),
     /// Two-finger pinch gesture
     /// MacOS and iOS only.
     PinchGesture(f64),
@@ -3112,7 +3148,7 @@ pub enum Event {
     /// MacOS only.
     TouchpadPressure(f32, i64),
     /// Touch input
-    Touch(Vector2),
+    Touch(Vector2, TouchPhase),
     /// Window moved across screens with different DPIs.
     ScaleChanged(f64),
     /// Window hidden behind another.
@@ -3155,10 +3191,13 @@ impl From<WindowEvent> for Event {
             WindowEvent::TouchpadPressure {
                 pressure, stage, ..
             } => Self::TouchpadPressure(pressure, stage),
-            WindowEvent::Touch(touch) => Self::Touch(Vector2 {
-                x: touch.location.x as f32,
-                y: touch.location.y as f32,
-            }),
+            WindowEvent::Touch(touch) => Self::Touch(
+                Vector2 {
+                    x: touch.location.x as f32,
+                    y: touch.location.y as f32,
+                },
+                touch.phase.into(),
+            ),
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                 Self::ScaleChanged(scale_factor)
             }
@@ -3169,6 +3208,20 @@ impl From<WindowEvent> for Event {
                 PhysicalKey::Code(code) => Self::KeyboardInput(code.into(), event.state.into()),
                 PhysicalKey::Unidentified(_) => Self::Unknown,
             },
+            WindowEvent::CursorMoved { position, .. } => Self::CursorMoved(Vector2 {
+                x: position.x as f32,
+                y: position.y as f32,
+            }),
+            WindowEvent::MouseWheel { delta, phase, .. } => Self::MouseWheel(
+                match delta {
+                    MouseScrollDelta::LineDelta(x, y) => Vector2 { x, y },
+                    MouseScrollDelta::PixelDelta(pos) => Vector2 {
+                        x: pos.x as f32,
+                        y: pos.y as f32,
+                    },
+                },
+                phase.into(),
+            ),
             _ => Self::Unknown,
         }
     }

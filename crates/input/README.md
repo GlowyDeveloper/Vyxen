@@ -10,5 +10,7 @@ vyxen-input exposes multiple types such as
  - KeyCode
  - KeyState
  - Inputs
+ - MouseInput
+ - TouchPhase
 
 This library is included automatically when you import Vyxen.
