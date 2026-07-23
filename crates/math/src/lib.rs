@@ -905,4 +905,55 @@ mod tests {
 
         assert!(!is_nearly_equal(f3, f4));
     }
+
+    #[test]
+    fn test_matrix() {
+        assert_eq!(Matrix4::new(), Matrix4 { m: [[0.0; 4]; 4] });
+
+        let m1 = Matrix4::identity();
+        let m2 = Matrix4::identity();
+        assert_eq!(m1, m2);
+
+        let m3 = Matrix4::rotate(180.0);
+        assert_ne!(m1, m3);
+
+        let m4 = Matrix4::scale(5.0, 2.0, 1.0);
+        assert_eq!(
+            m4,
+            Matrix4 {
+                m: [
+                    [5.0, 0.0, 0.0, 0.0],
+                    [0.0, 2.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            }
+        );
+
+        let m5 = Matrix4::translation(2.0, 4.0, 6.0);
+        assert_eq!(
+            m5,
+            Matrix4 {
+                m: [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [2.0, 4.0, 6.0, 1.0],
+                ],
+            }
+        );
+
+        let m6 = Matrix4::orthographic(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+        assert_eq!(
+            m6,
+            Matrix4 {
+                m: [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, -1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ],
+            }
+        );
+    }
 }

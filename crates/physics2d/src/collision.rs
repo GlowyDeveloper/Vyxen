@@ -889,6 +889,7 @@ impl ContactPoints {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use vyxen_geometry::{Box, Circle};
     use vyxen_math::Vector2;
 
     #[test]
@@ -948,5 +949,64 @@ mod tests {
             Vector2 { x: 0.5, y: 0.5 },
         );
         assert!(!collision.is_empty());
+    }
+
+    #[test]
+    fn test_circle_contact_points() {
+        let center1 = Vector2 { x: 0.0, y: 0.0 };
+        let radius1 = 1.0;
+        let center2 = Vector2 { x: 0.5, y: 0.5 };
+        let radius2 = 0.5;
+
+        let contact_points = ContactPoints::find_contact_points(
+            &mut ShapeType::Circle(Circle::new(radius1)),
+            center1,
+            0.0,
+            &mut ShapeType::Circle(Circle::new(radius2)),
+            center2,
+            0.0,
+        );
+        assert!(contact_points.contact_1.is_some());
+        assert!(contact_points.contact_2.is_none());
+    }
+
+    #[test]
+    fn test_box_contact_points() {
+        let center1 = Vector2 { x: 0.0, y: 0.0 };
+        let center2 = Vector2 { x: 0.5, y: 0.5 };
+
+        let contact_points = ContactPoints::find_contact_points(
+            &mut ShapeType::Box(Box::new(10.0, 10.0)),
+            center1,
+            0.0,
+            &mut ShapeType::Box(Box::new(10.0, 10.0)),
+            center2,
+            0.0,
+        );
+        assert!(contact_points.contact_1.is_some());
+        assert!(contact_points.contact_2.is_some());
+    }
+
+    #[test]
+    fn test_polygon_contact_points() {
+        let vertices = vec![
+            Vector2 { x: 0.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 1.0 },
+            Vector2 { x: 0.0, y: 1.0 },
+        ];
+        let center1 = Vector2 { x: 0.0, y: 0.0 };
+        let center2 = Vector2 { x: 0.5, y: 0.5 };
+
+        let contact_points = ContactPoints::find_contact_points(
+            &mut ShapeType::Polygon(Polygon::new(&vertices)),
+            center1,
+            0.0,
+            &mut ShapeType::Polygon(Polygon::new(&vertices)),
+            center2,
+            0.0,
+        );
+        assert!(contact_points.contact_1.is_some());
+        assert!(contact_points.contact_2.is_some());
     }
 }

@@ -3225,3 +3225,129 @@ impl Context {
         self.inputs.just_released(keycode)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vyxen_geometry::Circle;
+    use vyxen_math::Vector2;
+
+    #[test]
+    fn test_scene_initialization() {
+        let scene = Scene::new();
+        // The scene should always start with a root node at ID 0
+        assert_eq!(scene.get_nodes_len(), 1);
+        assert_eq!(scene.get_root().get_name(), "Root");
+        assert_eq!(scene.get_gravity(), Vector2 { x: 0.0, y: -9.81 });
+    }
+
+    #[test]
+    fn test_scene_node_management() {
+        let mut scene = Scene::new();
+        let node = Node::new("Player".to_string());
+        let id = node.get_id();
+
+        scene.add_node(node);
+        assert_eq!(scene.get_nodes_len(), 2);
+        assert!(scene.get_node(id).is_some());
+
+        // Test removal
+        scene.remove_node_by_id(id).unwrap();
+        assert_eq!(scene.get_nodes_len(), 1);
+        assert!(scene.get_node(id).is_none());
+    }
+
+    #[test]
+    fn test_node_creation_and_movement() {
+        let mut node = Node::new("Entity".to_string());
+        assert_eq!(node.get_name(), "Entity");
+        assert_eq!(node.get_position(), Vector2 { x: 0.0, y: 0.0 });
+
+        // Test absolute movement
+        node.move_to(Vector2 { x: 10.0, y: 5.0 });
+        assert_eq!(node.get_position(), Vector2 { x: 10.0, y: 5.0 });
+
+        // Test relative movement
+        node.move_by(Vector2 { x: -2.0, y: 3.0 });
+        assert_eq!(node.get_position(), Vector2 { x: 8.0, y: 8.0 });
+    }
+
+    #[test]
+    fn test_node_rotation() {
+        let mut node = Node::new("Rotator".to_string());
+        assert_eq!(node.get_rotation(), 0.0);
+
+        node.rotate_to(90.0);
+        assert_eq!(node.get_rotation(), 90.0);
+
+        node.rotate_by(45.0);
+        assert_eq!(node.get_rotation(), 135.0);
+    }
+
+    #[test]
+    fn test_node_hierarchy() {
+        let mut parent = Node::new("Parent".to_string());
+        let child1 = Node::new("Child1".to_string());
+        let child2 = Node::new("Child2".to_string());
+
+        let c1_id = child1.get_id();
+        let c2_id = child2.get_id();
+
+        parent.add_child(c1_id);
+        parent.add_child(c2_id);
+
+        assert_eq!(parent.get_children_len(), 2);
+
+        let children_ids = parent.get_children_ids();
+        assert!(children_ids.contains(&c1_id));
+        assert!(children_ids.contains(&c2_id));
+
+        parent.remove_child(c1_id);
+        assert_eq!(parent.get_children_len(), 1);
+        assert!(!parent.get_children_ids().contains(&c1_id));
+    }
+
+    #[test]
+    fn test_component_system() {
+        let mut node = Node::new("Collidable".to_string());
+        let collider = Collider::new(Circle::new(5.0));
+
+        node.add_component(collider);
+
+        // Component should exist
+        assert!(node.get_component::<Collider>().is_some());
+
+        // Removing component
+        node.remove_component::<Collider>();
+        assert!(node.get_component::<Collider>().is_none());
+    }
+
+    #[test]
+    fn test_node_physics_properties() {
+        let mut node = Node::new("PhysicsNode".to_string());
+
+        node.set_linear_velocity(Vector2 { x: 5.0, y: -2.0 });
+        assert_eq!(node.get_linear_velocity(), Vector2 { x: 5.0, y: -2.0 });
+
+        node.set_rotational_velocity(15.0);
+        assert_eq!(node.get_rotational_velocity(), 15.0);
+
+        let force = Vector2 { x: 10.0, y: 10.0 };
+        node.add_force(force);
+        assert_eq!(node.get_force(), force);
+
+        node.set_is_static(true);
+        assert!(node.is_static());
+    }
+
+    #[test]
+    fn test_game_scene_management() {
+        let mut game = Game::new();
+        assert!(game.get_scene().is_none());
+
+        let scene = Scene::new();
+        game.load_scene(scene);
+
+        assert!(game.get_scene().is_some());
+    }
+}

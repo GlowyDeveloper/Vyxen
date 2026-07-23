@@ -580,3 +580,92 @@ impl AABB {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_intersect_aabb() {
+        let a = AABB::new(Vector2 { x: 0.0, y: 0.0 }, Vector2 { x: 1.0, y: 1.0 });
+        let b = AABB::new(Vector2 { x: 0.5, y: 0.5 }, Vector2 { x: 1.5, y: 1.5 });
+        assert!(AABB::intersect_aabb(a, b));
+    }
+
+    #[test]
+    fn test_shape_type_from_shape() {
+        let circle = Circle { radius: 1.0 };
+        assert_eq!(
+            shape_type_from_shape(circle),
+            ShapeType::Circle(Circle { radius: 1.0 })
+        );
+
+        let bx = Box::new(1.0, 1.0);
+        assert_eq!(
+            shape_type_from_shape(bx),
+            ShapeType::Box(Box::new(1.0, 1.0))
+        );
+
+        let polygon = Polygon::new(&[
+            Vector2 { x: 0.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 1.0 },
+            Vector2 { x: 0.0, y: 1.0 },
+        ]);
+        assert_eq!(
+            shape_type_from_shape(polygon),
+            ShapeType::Polygon(Polygon::new(&[
+                Vector2 { x: 0.0, y: 0.0 },
+                Vector2 { x: 1.0, y: 0.0 },
+                Vector2 { x: 1.0, y: 1.0 },
+                Vector2 { x: 0.0, y: 1.0 }
+            ]))
+        );
+
+        let concave = Polygon::new(&[
+            Vector2 { x: 0.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 1.0 },
+            Vector2 { x: 0.0, y: 1.0 },
+            Vector2 { x: 0.5, y: 0.5 },
+        ]);
+        match shape_type_from_shape(concave) {
+            ShapeType::Concave(concave) => {
+                assert_eq!(concave.len(), 3);
+            }
+            _ => panic!("Expected Concave shape"),
+        }
+    }
+
+    #[test]
+    fn test_triangulation() {
+        let triangles = Polygon::triangulate(&[
+            Vector2 { x: 0.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 1.0 },
+            Vector2 { x: 0.0, y: 1.0 },
+            Vector2 { x: 0.5, y: 0.5 },
+        ]);
+        assert_eq!(triangles.len(), 3);
+    }
+
+    #[test]
+    fn test_convex() {
+        let polygon1 = Polygon::new(&[
+            Vector2 { x: 0.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 1.0 },
+            Vector2 { x: 0.0, y: 1.0 },
+        ]);
+        assert!(polygon1.is_convex());
+
+        let polygon2 = Polygon::new(&[
+            Vector2 { x: 0.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 0.0 },
+            Vector2 { x: 1.0, y: 1.0 },
+            Vector2 { x: 0.0, y: 1.0 },
+            Vector2 { x: 0.5, y: 0.5 },
+        ]);
+        assert!(!polygon2.is_convex());
+    }
+}

@@ -249,3 +249,76 @@ impl From<MouseButton> for MouseInput {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_inputs() {
+        let mut inputs = Inputs::new();
+        assert!(inputs.just_pressed.is_empty());
+        assert!(inputs.just_released.is_empty());
+        assert!(inputs.held.is_empty());
+
+        inputs.key_pressed(KeyCode::KeyA);
+        inputs.key_pressed(KeyCode::KeyB);
+
+        assert!(inputs.just_pressed.contains(&KeyCode::KeyA));
+        assert!(inputs.just_pressed.contains(&KeyCode::KeyB));
+        assert!(inputs.held.contains(&KeyCode::KeyA));
+        assert!(inputs.held.contains(&KeyCode::KeyB));
+
+        inputs.key_released(KeyCode::KeyB);
+
+        assert!(inputs.just_released.contains(&KeyCode::KeyB));
+        assert!(inputs.held.contains(&KeyCode::KeyA));
+        assert!(!inputs.held.contains(&KeyCode::KeyB));
+
+        inputs.begin_frame();
+
+        assert!(inputs.just_pressed.is_empty());
+        assert!(inputs.just_released.is_empty());
+        assert!(inputs.held.contains(&KeyCode::KeyA));
+        assert!(!inputs.held.contains(&KeyCode::KeyB));
+    }
+
+    #[test]
+    fn test_key_state_convertion() {
+        let element_state_1 = ElementState::Pressed;
+        let element_state_2 = ElementState::Released;
+
+        assert_eq!(KeyState::Pressed, element_state_1.into());
+        assert_eq!(KeyState::Released, element_state_2.into());
+    }
+
+    #[test]
+    fn test_touch_phase_convertion() {
+        let touch_phase_1 = WinitTouchPhase::Started;
+        let touch_phase_2 = WinitTouchPhase::Ended;
+        let touch_phase_3 = WinitTouchPhase::Cancelled;
+        let touch_phase_4 = WinitTouchPhase::Moved;
+
+        assert_eq!(TouchPhase::Started, touch_phase_1.into());
+        assert_eq!(TouchPhase::Ended, touch_phase_2.into());
+        assert_eq!(TouchPhase::Cancelled, touch_phase_3.into());
+        assert_eq!(TouchPhase::Moved, touch_phase_4.into());
+    }
+
+    #[test]
+    fn test_mouse_input_convertion() {
+        let mouse_input_1 = MouseButton::Left;
+        let mouse_input_2 = MouseButton::Right;
+        let mouse_input_3 = MouseButton::Middle;
+        let mouse_input_4 = MouseButton::Back;
+        let mouse_input_5 = MouseButton::Forward;
+        let mouse_input_6 = MouseButton::Other(5);
+
+        assert_eq!(MouseInput::Left, mouse_input_1.into());
+        assert_eq!(MouseInput::Right, mouse_input_2.into());
+        assert_eq!(MouseInput::Middle, mouse_input_3.into());
+        assert_eq!(MouseInput::Back, mouse_input_4.into());
+        assert_eq!(MouseInput::Forward, mouse_input_5.into());
+        assert_eq!(MouseInput::Unknown(5), mouse_input_6.into());
+    }
+}
