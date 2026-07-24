@@ -10,9 +10,9 @@ homepage.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-readme.workspace = true
 
 description = "A Godot-style game engine library written in Rust."
+readme = "README.md"
 
 [dependencies]
 vyxen-math.workspace = true

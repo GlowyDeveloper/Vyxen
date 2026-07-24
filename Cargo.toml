@@ -12,16 +12,15 @@ homepage = "https://github.com/GlowyDeveloper/Vyxen"
 repository = "https://github.com/GlowyDeveloper/Vyxen"
 keywords = ["game", "engine", "gamedev", "gui"]
 categories = ["gui", "game-development", "game-engines", "graphics"]
-readme = "README.md"
 
 [workspace.dependencies]
-vyxen-math = { path = "crates/math" }
-vyxen-geometry = { path = "crates/geometry" }
-vyxen-physics2d = { path = "crates/physics2d" }
-vyxen-renderer = { path = "crates/renderer" }
-vyxen-input = { path = "crates/input" }
-vyxen-core = { path = "crates/core" }
-vyxen = { path = "crates/vyxen" }
+vyxen-math = { version = "0.1.0", path = "crates/math" }
+vyxen-geometry = { version = "0.1.0", path = "crates/geometry" }
+vyxen-physics2d = { version = "0.1.0", path = "crates/physics2d" }
+vyxen-renderer = { version = "0.1.0", path = "crates/renderer" }
+vyxen-input = { version = "0.1.0", path = "crates/input" }
+vyxen-core = { version = "0.1.0", path = "crates/core" }
+vyxen = { version = "0.1.0", path = "crates/vyxen" }
 
 winit = { version = "0.30", features = ["android-native-activity"] }
 wgpu = "28.0"

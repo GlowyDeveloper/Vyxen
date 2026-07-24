@@ -6,12 +6,10 @@
 
 </div>
 
-**Vyxen isn't on <https://crates.io> yet!**
-
-If you to install it into you're project, add this into the Cargo.toml:
+To get started, add the following to your `Cargo.toml` file:
 
 ```toml
-vyxen = { git = "https://github.com/GlowyDeveloper/Vyxen/tree/master/crates/vyxen" }
+vyxen = "0.1.0"
 ```
 
 ## Creating a game

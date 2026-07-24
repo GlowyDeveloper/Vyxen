@@ -10,9 +10,9 @@ homepage.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-readme.workspace = true
 
 description = "Renders the game for the Vyxen library"
+readme = "README.md"
 
 [dependencies]
 vyxen-math.workspace = true

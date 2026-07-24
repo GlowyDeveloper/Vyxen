@@ -10,9 +10,9 @@ homepage.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-readme.workspace = true
 
 description = "Physics types for the Vyxen library in 2d development"
+readme = "README.md"
 
 [dependencies]
 vyxen-math.workspace = true

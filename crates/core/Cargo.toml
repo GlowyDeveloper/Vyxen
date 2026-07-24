@@ -10,9 +10,9 @@ homepage.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-readme.workspace = true
 
 description = "Many generic types to assist development with the Vyxen library"
+readme = "README.md"
 
 [dependencies]
 vyxen-math.workspace = true

@@ -139,9 +139,10 @@ impl State {
         });
 
         let texture_shader =
-            device.create_shader_module(wgpu::include_wgsl!("../../../../shaders/texture.wgsl"));
+            device.create_shader_module(wgpu::include_wgsl!("../../shaders/texture.wgsl"));
+        
         let color_shader =
-            device.create_shader_module(wgpu::include_wgsl!("../../../../shaders/color.wgsl"));
+            device.create_shader_module(wgpu::include_wgsl!("../../shaders/color.wgsl"));
 
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

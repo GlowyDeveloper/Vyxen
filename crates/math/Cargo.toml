@@ -10,8 +10,8 @@ homepage.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-readme.workspace = true
 
 description = "Math types for the Vyxen library"
+readme = "README.md"
 
 [dependencies]
