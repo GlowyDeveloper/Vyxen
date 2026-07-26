@@ -1,5 +1,6 @@
-use image::GenericImageView as _;
+use vyxen_resource::Texture;
 
+#[allow(unused)]
 pub struct GpuTexture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
@@ -12,15 +13,16 @@ impl GpuTexture {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         layout: &wgpu::BindGroupLayout,
-        img: &image::DynamicImage,
-        label: &str,
+        texture: &Texture,
     ) -> anyhow::Result<Self> {
-        let rgba = img.to_rgba8();
-        let dimensions = img.dimensions();
+        let rgba = texture.get_rgba();
+        let dimensions = texture.get_dimensions();
+        let id = texture.get_id().to_string();
+        let label = id.as_str();
 
         let size = wgpu::Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
+            width: dimensions.x as u32,
+            height: dimensions.y as u32,
             depth_or_array_layers: 1,
         };
 
@@ -45,8 +47,8 @@ impl GpuTexture {
             &rgba,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * dimensions.0),
-                rows_per_image: Some(dimensions.1),
+                bytes_per_row: Some(4 * dimensions.x as u32),
+                rows_per_image: Some(dimensions.y as u32),
             },
             size,
         );

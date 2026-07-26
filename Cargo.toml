@@ -1,9 +1,9 @@
 [workspace]
 resolver = "3"
-members = ["crates/geometry","crates/math", "crates/physics2d","crates/vyxen", "crates/core", "crates/renderer", "crates/input", "testbed"]
+members = ["crates/geometry","crates/math", "crates/physics2d","crates/vyxen", "crates/core", "crates/renderer", "crates/input", "crates/resource", "testbed"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 license = "MIT OR Apache-2.0"
 edition = "2024"
 rust-version = "1.86"
@@ -14,13 +14,14 @@ keywords = ["game", "engine", "gamedev", "gui"]
 categories = ["gui", "game-development", "game-engines", "graphics"]
 
 [workspace.dependencies]
-vyxen-math = { version = "0.1.0", path = "crates/math" }
-vyxen-geometry = { version = "0.1.0", path = "crates/geometry" }
-vyxen-physics2d = { version = "0.1.0", path = "crates/physics2d" }
-vyxen-renderer = { version = "0.1.0", path = "crates/renderer" }
-vyxen-input = { version = "0.1.0", path = "crates/input" }
-vyxen-core = { version = "0.1.0", path = "crates/core" }
-vyxen = { version = "0.1.0", path = "crates/vyxen" }
+vyxen-math = { version = "0.2.0", path = "crates/math" }
+vyxen-geometry = { version = "0.2.0", path = "crates/geometry" }
+vyxen-physics2d = { version = "0.2.0", path = "crates/physics2d" }
+vyxen-resource = { version = "0.2.0", path = "crates/resource" }
+vyxen-renderer = { version = "0.2.0", path = "crates/renderer" }
+vyxen-input = { version = "0.2.0", path = "crates/input" }
+vyxen-core = { version = "0.2.0", path = "crates/core" }
+vyxen = { version = "0.2.0", path = "crates/vyxen" }
 
 winit = { version = "0.30", features = ["android-native-activity"] }
 wgpu = "28.0"

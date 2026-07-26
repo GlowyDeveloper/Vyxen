@@ -5,6 +5,7 @@ use crate::backend::SpriteRaw;
 use image::GenericImageView as _;
 use vyxen_geometry::{Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::{Matrix4, Vector2};
+use vyxen_resource::{Color, Texture};
 use winit::{
     dpi::{LogicalPosition, LogicalSize, Position, Size},
     window::{Fullscreen, Icon, Window, WindowAttributes},
@@ -13,14 +14,12 @@ use winit::{
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowAttributesExtWindows;
 
-/// Backend components for the renderer. Not recommended for use, may be short of documentation.
-pub mod backend;
-mod color;
-mod texture;
+mod backend;
 
 pub use crate::backend::Camera;
-pub use color::Color;
-pub use texture::Texture;
+pub use crate::backend::{
+    MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE, MAX_SPRITES, State,
+};
 pub use winit::event::WindowEvent;
 
 /// Defines the draw types for a sprite
@@ -36,7 +35,8 @@ pub use winit::event::WindowEvent;
 /// ```
 /// ## Color
 /// ```rust
-/// use vyxen_renderer::{DrawType, Color};
+/// use vyxen_renderer::DrawType;
+/// use vyxen_resource::Color;
 ///
 /// let color = DrawType::Color(
 ///     Color::from_rgba(0.2, 0.1, 0.9, 1.0)
@@ -64,7 +64,8 @@ pub enum DrawType {
 /// ```
 /// ## Color
 /// ```rust
-/// use vyxen_renderer::{Color, Sprite};
+/// use vyxen_renderer::Sprite;
+/// use vyxen_resource::Color;
 /// use vyxen_geometry::Box;
 ///
 /// let mut sprite = Sprite::with_color(
@@ -104,7 +105,8 @@ impl Sprite {
     /// ```
     /// ## Color
     /// ```rust
-    /// use vyxen_renderer::{DrawType, Color, Sprite};
+    /// use vyxen_renderer::{DrawType, Sprite};
+    /// use vyxen_resource::Color;
     /// use vyxen_geometry::Box;
     ///
     /// let mut sprite = Sprite::new();
@@ -127,7 +129,8 @@ impl Sprite {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::{Color, Sprite};
+    /// use vyxen_renderer::Sprite;
+    /// use vyxen_resource::Color;
     /// use vyxen_geometry::Box;
     ///
     /// let mut sprite = Sprite::with_color(
@@ -173,7 +176,8 @@ impl Sprite {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::{Color, DrawType, Sprite};
+    /// use vyxen_renderer::{DrawType, Sprite};
+    /// use vyxen_resource::Color;
     ///
     /// let mut sprite = Sprite::new();
     /// sprite.set_draw_type(DrawType::Color(Color::from_rgba(0.2, 0.1, 0.9, 1.0)));
@@ -243,8 +247,13 @@ impl Sprite {
         &self.draw_type
     }
 
+    /// Sets the z-index of this sprite.
+    pub fn set_z(&mut self, z: f32) {
+        self.z = z;
+    }
+
     /// Converts this sprite into the raw equivalent. Used mainly in the backend.
-    pub fn to_raw(&self) -> SpriteRaw {
+    pub(crate) fn to_raw(&self) -> SpriteRaw {
         let color: [f32; 4] = match &self.draw_type {
             DrawType::Texture(_) => [1.0, 1.0, 1.0, 1.0],
             DrawType::Color(color) => (*color).into(),
@@ -281,7 +290,8 @@ impl Sprite {
 /// # Examples
 ///
 /// ```rust
-/// use vyxen_renderer::{WindowConfig, Color};
+/// use vyxen_renderer::WindowConfig;
+/// use vyxen_resource::Color;
 /// use vyxen_math::Vector2;
 ///
 /// let mut config = WindowConfig::new();
@@ -320,7 +330,8 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::{WindowConfig, Color};
+    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen_resource::Color;
     /// use vyxen_math::Vector2;
     ///
     /// let mut config = WindowConfig::new();
@@ -531,7 +542,8 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::{WindowConfig, Color};
+    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen_resource::Color;
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_background_color(Color::from_rgb(0.2, 0.3, 0.4));

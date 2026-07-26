@@ -12,6 +12,7 @@ use crate::{
     },
 };
 
+/// The main state struct for the renderer backend.
 pub struct State {
     surface: wgpu::Surface<'static>,
     device: wgpu::Device,
@@ -29,7 +30,7 @@ pub struct State {
     camera_bind_group: wgpu::BindGroup,
     empty_bind_group: wgpu::BindGroup,
     texture_bind_group_layout: wgpu::BindGroupLayout,
-    texture_cache: HashMap<&'static str, GpuTexture>,
+    texture_cache: HashMap<u64, GpuTexture>,
     sprites: Vec<Sprite>,
     sprite_buffer: wgpu::Buffer,
     custom_config: WindowConfig,
@@ -140,7 +141,7 @@ impl State {
 
         let texture_shader =
             device.create_shader_module(wgpu::include_wgsl!("../../shaders/texture.wgsl"));
-        
+
         let color_shader =
             device.create_shader_module(wgpu::include_wgsl!("../../shaders/color.wgsl"));
 
@@ -343,19 +344,16 @@ impl State {
 
         for sprite in &self.sprites {
             if let crate::DrawType::Texture(texture) = &sprite.get_draw_type() {
-                let label = texture.get_label();
-
-                if !self.texture_cache.contains_key(label) {
+                if !self.texture_cache.contains_key(&texture.get_id()) {
                     let gpu_tex = GpuTexture::from_image(
                         &self.device,
                         &self.queue,
                         &self.texture_bind_group_layout,
-                        texture.get_image(),
-                        label,
+                        texture,
                     )
                     .expect("Failed to create GpuTexture");
 
-                    self.texture_cache.insert(label, gpu_tex);
+                    self.texture_cache.insert(texture.get_id(), gpu_tex);
                 }
             }
         }
@@ -461,11 +459,11 @@ impl State {
 
                 match &sprite.draw_type {
                     crate::DrawType::Texture(texture) => {
-                        let label = texture.get_label();
-                        let gpu_texture = match self.texture_cache.get(label) {
+                        let id = texture.get_id();
+                        let gpu_texture = match self.texture_cache.get(&id) {
                             Some(g) => g,
                             None => {
-                                anyhow::bail!("GpuTexture not found in cache for label: {}", label)
+                                anyhow::bail!("GpuTexture not found in cache for id: {}", id)
                             }
                         };
 
@@ -506,14 +504,6 @@ impl State {
         output.present();
 
         Ok(())
-    }
-
-    pub fn get_sprites(&self) -> &Vec<Sprite> {
-        &self.sprites
-    }
-
-    pub fn get_sprites_mut(&mut self) -> &mut Vec<Sprite> {
-        &mut self.sprites
     }
 
     pub fn set_sprites(&mut self, sprites: Vec<Sprite>) {

@@ -1,4 +1,4 @@
-use vyxen_renderer::Color;
+use vyxen_resource::Color;
 
 /// #000000 / 0, 0, 0
 pub const BLACK: Color = Color::from_rgb(0.0, 0.0, 0.0);

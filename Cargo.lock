@@ -1693,7 +1693,7 @@ dependencies = [
 
 [[package]]
 name = "testbed"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "vyxen",
 ]
@@ -1841,7 +1841,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vyxen"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "vyxen-core",
  "vyxen-geometry",
@@ -1849,11 +1849,12 @@ dependencies = [
  "vyxen-math",
  "vyxen-physics2d",
  "vyxen-renderer",
+ "vyxen-resource",
 ]
 
 [[package]]
 name = "vyxen-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "pollster",
@@ -1867,25 +1868,25 @@ dependencies = [
 
 [[package]]
 name = "vyxen-geometry"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "vyxen-math",
 ]
 
 [[package]]
 name = "vyxen-input"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "winit",
 ]
 
 [[package]]
 name = "vyxen-math"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "vyxen-physics2d"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "vyxen-geometry",
  "vyxen-math",
@@ -1893,15 +1894,25 @@ dependencies = [
 
 [[package]]
 name = "vyxen-renderer"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bytemuck",
  "image",
  "vyxen-geometry",
  "vyxen-math",
+ "vyxen-resource",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "vyxen-resource"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "image",
+ "vyxen-math",
 ]
 
 [[package]]

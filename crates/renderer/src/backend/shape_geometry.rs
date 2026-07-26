@@ -5,10 +5,12 @@ use crate::{Sprite, backend::Vertex};
 
 pub const CIRCLE_SEGMENTS: usize = 32;
 
+#[inline]
 pub fn sprite_geometry(sprite: &Sprite) -> Option<(Vec<Vertex>, Vec<u16>)> {
     sprite.get_vertices().map(shape_geometry)
 }
 
+#[inline]
 pub fn shape_geometry(shape_type: &ShapeType) -> (Vec<Vertex>, Vec<u16>) {
     match shape_type {
         ShapeType::Circle(circle) => circle_geometry(circle.get_radius()),
@@ -18,6 +20,7 @@ pub fn shape_geometry(shape_type: &ShapeType) -> (Vec<Vertex>, Vec<u16>) {
     }
 }
 
+#[inline]
 pub fn circle_geometry(radius: f32) -> (Vec<Vertex>, Vec<u16>) {
     let mut vertices = Vec::with_capacity(CIRCLE_SEGMENTS + 1);
     let mut indices = Vec::with_capacity(CIRCLE_SEGMENTS * 3);
@@ -46,6 +49,7 @@ pub fn circle_geometry(radius: f32) -> (Vec<Vertex>, Vec<u16>) {
     (vertices, indices)
 }
 
+#[inline]
 pub fn box_geometry(bx: &vyxen_geometry::Box) -> (Vec<Vertex>, Vec<u16>) {
     let vertex_positions = bx.get_vertices();
     let bounds = compute_bounds(vertex_positions);
@@ -62,6 +66,7 @@ pub fn box_geometry(bx: &vyxen_geometry::Box) -> (Vec<Vertex>, Vec<u16>) {
     (vertices, indices)
 }
 
+#[inline]
 pub fn polygon_geometry(poly: &Polygon) -> (Vec<Vertex>, Vec<u16>) {
     let positions = poly.get_vertices();
     if positions.len() < 3 {
@@ -86,6 +91,7 @@ pub fn polygon_geometry(poly: &Polygon) -> (Vec<Vertex>, Vec<u16>) {
     (vertices, indices)
 }
 
+#[inline]
 pub fn concave_geometry(polygons: &[Polygon]) -> (Vec<Vertex>, Vec<u16>) {
     let mut all_positions = Vec::new();
     for polygon in polygons {
@@ -137,5 +143,8 @@ pub fn uv_from_position(position: Vector2, bounds: (Vector2, Vector2)) -> [f32; 
     let width = (max.x - min.x).max(0.0001);
     let height = (max.y - min.y).max(0.0001);
 
-    [(position.x - min.x) / width, (position.y - min.y) / height]
+    [
+        (position.x - min.x) / width,
+        1.0 - (position.y - min.y) / height,
+    ]
 }

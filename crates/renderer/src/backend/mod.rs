@@ -16,8 +16,11 @@ pub const OPENGL_TO_WGPU_MATRIX: Matrix4 = Matrix4 {
     ],
 };
 
+/// Maximum size of the sprite vertex buffer.
 pub const MAX_SPRITE_VERTEX_BUFFER_SIZE: u64 = 1 << 20;
+/// Maximum size of the sprite index buffer.
 pub const MAX_SPRITE_INDEX_BUFFER_SIZE: u64 = 1 << 20;
+/// Maximum number of sprites.
 pub const MAX_SPRITES: usize = 8192;
 
 #[repr(C)]

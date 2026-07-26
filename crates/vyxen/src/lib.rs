@@ -31,4 +31,9 @@ pub mod input {
     pub use vyxen_input::*;
 }
 
+/// Resource loading and management.
+pub mod resource {
+    pub use vyxen_resource::*;
+}
+
 pub use vyxen_core::*;

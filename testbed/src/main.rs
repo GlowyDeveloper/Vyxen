@@ -4,14 +4,13 @@ fn main() {
     let mut game = Game::new();
     let mut scene = Scene::new();
 
-    let mut sprite = Sprite::new();
-    sprite.set_shape(Box::new(20.0, 2.0));
-    sprite.set_draw_type(DrawType::Color(Color::from_rgb(0.2, 0.8, 0.3)));
+    let mut sprite1 = Sprite::with_texture(load_path("testbed/src/test-img.png").unwrap());
+    sprite1.set_shape(Box::new(20.0, 20.0));
 
-    let mut node = Node::new("Foo".to_string());
-    node.add_component(sprite);
-    node.set_is_static(true);
-    node.set_physics_process(move |node, _, _, ctx| {
+    let mut node1 = Node::new("Foo".to_string());
+    node1.add_component(sprite1);
+    node1.set_is_static(true);
+    node1.set_physics_process(move |node, _, _, ctx| {
         if ctx.is_held(KeyCode::KeyW) {
             node.move_by(Vector2 { x: 0.0, y: 0.2 });
         }
@@ -25,7 +24,29 @@ fn main() {
             node.move_by(Vector2 { x: 0.2, y: 0.0 });
         }
     });
-    scene.add_node(node);
+    scene.add_node(node1);
+
+    let mut sprite2 = Sprite::with_texture(load_data(include_bytes!("test-img.png")).unwrap());
+    sprite2.set_shape(Box::new(10.0, 10.0));
+
+    let mut node2 = Node::new("Foo".to_string());
+    node2.add_component(sprite2);
+    node2.set_is_static(true);
+    node2.set_physics_process(move |node, _, _, ctx| {
+        if ctx.is_held(KeyCode::ArrowUp) {
+            node.move_by(Vector2 { x: 0.0, y: 0.2 });
+        }
+        if ctx.is_held(KeyCode::ArrowLeft) {
+            node.move_by(Vector2 { x: -0.2, y: 0.0 });
+        }
+        if ctx.is_held(KeyCode::ArrowDown) {
+            node.move_by(Vector2 { x: 0.0, y: -0.2 });
+        }
+        if ctx.is_held(KeyCode::ArrowRight) {
+            node.move_by(Vector2 { x: 0.2, y: 0.0 });
+        }
+    });
+    scene.add_node(node2);
 
     game.load_scene(scene);
 

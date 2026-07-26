@@ -7,7 +7,7 @@ use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
 use vyxen_input::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase};
 use vyxen_math::{Random, Vector2};
 use vyxen_physics2d::{Collision, ContactPoints, Manifold, RigidBody, SoftBody};
-use vyxen_renderer::{Sprite, WindowConfig, WindowEvent, backend::State};
+use vyxen_renderer::{Sprite, State, WindowConfig, WindowEvent};
 
 use winit::{
     application::ApplicationHandler,
