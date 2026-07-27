@@ -1,4 +1,5 @@
 use vyxen_math::{Matrix4, Vector2};
+use vyxen_ui::UiElement;
 
 mod gpu_texture;
 pub mod shape_geometry;
@@ -22,6 +23,8 @@ pub const MAX_SPRITE_VERTEX_BUFFER_SIZE: u64 = 1 << 20;
 pub const MAX_SPRITE_INDEX_BUFFER_SIZE: u64 = 1 << 20;
 /// Maximum number of sprites.
 pub const MAX_SPRITES: usize = 8192;
+/// Maximum number of UI elements.
+pub const MAX_UI_ELEMENTS: usize = 8192;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
@@ -338,22 +341,6 @@ impl Camera {
     pub fn set_rotation(&mut self, rotation: f32) {
         self.rotation = rotation;
     }
-
-    fn build_view_projection_matrix(&self) -> Matrix4 {
-        let view = Matrix4::translation(-self.position.x, -self.position.y, 0.0);
-
-        let half_width = self.width / self.zoom / 2.0;
-        let half_height = self.height / self.zoom / 2.0;
-
-        let left = -half_width;
-        let right = half_width;
-        let bottom = -half_height;
-        let top = half_height;
-
-        let projection = Matrix4::orthographic(left, right, bottom, top, -1.0, 1.0);
-
-        OPENGL_TO_WGPU_MATRIX * projection * view
-    }
 }
 
 #[repr(C)]
@@ -370,6 +357,108 @@ impl CameraUniform {
     }
 
     fn update_view_proj(&mut self, camera: &Camera) {
-        self.view_proj = camera.build_view_projection_matrix().into();
+        let view = Matrix4::translation(-camera.position.x, -camera.position.y, 0.0);
+
+        let half_width = camera.width / camera.zoom / 2.0;
+        let half_height = camera.height / camera.zoom / 2.0;
+
+        let left = -half_width;
+        let right = half_width;
+        let bottom = -half_height;
+        let top = half_height;
+
+        let projection = Matrix4::orthographic(left, right, bottom, top, -1.0, 1.0);
+
+        let proj = OPENGL_TO_WGPU_MATRIX * projection * view;
+        self.view_proj = proj.into();
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct UiCameraUniform {
+    view_proj: [[f32; 4]; 4],
+}
+
+impl UiCameraUniform {
+    fn new() -> Self {
+        Self {
+            view_proj: Matrix4::identity().into(),
+        }
+    }
+
+    fn update_view_proj(&mut self, camera: &Camera) {
+        let view = Matrix4::identity();
+
+        let left = 0.0;
+        let right = camera.width / camera.zoom;
+        let bottom = 0.0;
+        let top = camera.height / camera.zoom;
+
+        let projection = Matrix4::orthographic(left, right, bottom, top, -1.0, 1.0);
+
+        let proj = OPENGL_TO_WGPU_MATRIX * projection * view;
+        self.view_proj = proj.into();
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct UiRaw {
+    pub matrix: [[f32; 4]; 4],
+    pub color: [f32; 4],
+}
+
+impl UiRaw {
+    fn desc() -> wgpu::VertexBufferLayout<'static> {
+        use std::mem;
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<UiRaw>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 5,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
+                    shader_location: 6,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
+                    shader_location: 7,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
+                    shader_location: 8,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[[f32; 4]; 4]>() as wgpu::BufferAddress,
+                    shader_location: 9,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+            ],
+        }
+    }
+
+    fn gen_raw(ui: &UiElement) -> UiRaw {
+        let color: [f32; 4] = match &ui.get_ui_type() {
+            //UiType::Image(_) => [1.0, 1.0, 1.0, 1.0],
+            //UiType::Color(color) => (*color).into(),
+            //UiType::None => [1.0, 1.0, 1.0, 1.0],
+            _ => [1.0, 1.0, 1.0, 1.0],
+        };
+
+        let pos = ui.get_position();
+        let rot = ui.get_rotation();
+
+        UiRaw {
+            matrix: (Matrix4::translation(pos.x, pos.y, ui.get_z()) * Matrix4::rotate(rot)).into(),
+            color,
+        }
     }
 }

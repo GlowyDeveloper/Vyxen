@@ -7,7 +7,8 @@ use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
 use vyxen_input::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase};
 use vyxen_math::{Random, Vector2};
 use vyxen_physics2d::{Collision, ContactPoints, Manifold, RigidBody, SoftBody};
-use vyxen_renderer::{Sprite, State, WindowConfig, WindowEvent};
+use vyxen_renderer::{Camera, Sprite, State, WindowConfig, WindowEvent};
+use vyxen_ui::UiElement;
 
 use winit::{
     application::ApplicationHandler,
@@ -756,6 +757,39 @@ impl Game {
         self.loaded_scene = Some(scene);
     }
 
+    /// Returns the camera of the game.
+    ///
+    /// If you want the mutable version, refer to `get_camera_mut()`
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::{Scene, Game};
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// let camera = game.get_camera();
+    /// assert!(camera.is_none());
+    /// ```
+    pub fn get_camera(&self) -> Option<&Camera> {
+        self.state.as_ref().map(|s| s.get_camera())
+    }
+
+    /// Returns the camera of the game mutably.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::{Scene, Game};
+    /// use vyxen_math::Vector2;
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// let camera = game.get_camera_mut();
+    /// assert!(camera.is_none());
+    /// ```
+    pub fn get_camera_mut(&mut self) -> Option<&mut Camera> {
+        self.state.as_mut().map(|s| s.get_camera_mut())
+    }
+
     /// Sets a new config
     ///
     /// # Examples
@@ -779,25 +813,44 @@ impl Game {
     /// Called automatically by `run()`.
     pub fn update_sprites(&mut self) {
         if let Some(scene) = &mut self.loaded_scene {
-            let sprites = scene
-                .get_nodes_mut()
-                .iter_mut()
-                .filter_map(|(_, node)| {
-                    let pos = node.get_position();
-                    let rot = node.get_rotation();
-
-                    if let Some(sprite) = node.get_component_mut::<Sprite>() {
-                        sprite.set_position(pos);
-                        sprite.set_rotation(rot);
-                        Some(sprite.clone())
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<Sprite>>();
-
             if let Some(state) = self.state.as_mut() {
+                let sprites = scene
+                    .get_nodes_mut()
+                    .iter_mut()
+                    .filter_map(|(_, node)| {
+                        let pos = node.get_position();
+                        let rot = node.get_rotation();
+
+                        if let Some(sprite) = node.get_component_mut::<Sprite>() {
+                            sprite.set_position(pos);
+                            sprite.set_rotation(rot);
+                            Some(sprite.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<Sprite>>();
+
                 state.set_sprites(sprites);
+
+                let ui = scene
+                    .get_nodes_mut()
+                    .iter_mut()
+                    .filter_map(|(_, node)| {
+                        let pos = node.get_position();
+                        let rot = node.get_rotation();
+
+                        if let Some(sprite) = node.get_component_mut::<UiElement>() {
+                            sprite.set_position(pos);
+                            sprite.set_rotation(rot);
+                            Some(sprite.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<UiElement>>();
+
+                state.set_ui_elements(ui);
             }
         }
     }
@@ -986,6 +1039,10 @@ impl ApplicationHandler for Game {
 
         match event {
             WindowEvent::Resized(physical_size) => {
+                if physical_size.width == 0 || physical_size.height == 0 {
+                    return;
+                }
+
                 if let Some(state) = &mut self.state {
                     state.resize(physical_size.width, physical_size.height);
                 }
@@ -995,7 +1052,6 @@ impl ApplicationHandler for Game {
                 self.update_sprites();
 
                 if let Some(state) = &mut self.state {
-                    state.set_config(self.ctx.config.clone());
                     state.update();
                     state.render().unwrap();
                 }
@@ -2828,6 +2884,15 @@ impl Component for SoftBody {
 }
 
 impl Component for Sprite {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
+impl Component for UiElement {
     fn as_any(&self) -> &dyn Any {
         self
     }

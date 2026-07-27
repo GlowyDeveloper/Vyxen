@@ -18,6 +18,7 @@ readme = "README.md"
 vyxen-math.workspace = true
 vyxen-geometry.workspace = true
 vyxen-resource.workspace = true
+vyxen-ui.workspace = true
 
 winit.workspace = true
 wgpu.workspace = true

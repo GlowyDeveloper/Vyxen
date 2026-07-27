@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
-
 use vyxen_math::Vector2;
+use vyxen_ui::{UiElement, UiType};
 use wgpu::util::DeviceExt as _;
 use winit::window::Window;
 
@@ -8,7 +8,8 @@ use crate::{
     Camera, Sprite, WindowConfig,
     backend::{
         CameraUniform, GpuTexture, MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE,
-        MAX_SPRITES, SpriteRaw, Vertex, shape_geometry::sprite_geometry,
+        MAX_SPRITES, MAX_UI_ELEMENTS, SpriteRaw, UiCameraUniform, UiRaw, Vertex,
+        shape_geometry::sprite_geometry,
     },
 };
 
@@ -20,8 +21,8 @@ pub struct State {
     config: wgpu::SurfaceConfiguration,
     is_surface_configured: bool,
     window: Arc<Window>,
-    render_pipeline_texture: wgpu::RenderPipeline,
-    render_pipeline_color: wgpu::RenderPipeline,
+    world_pipeline_texture: wgpu::RenderPipeline,
+    world_pipeline_color: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     camera: Camera,
@@ -32,11 +33,20 @@ pub struct State {
     texture_bind_group_layout: wgpu::BindGroupLayout,
     texture_cache: HashMap<u64, GpuTexture>,
     sprites: Vec<Sprite>,
+    raw_sprites: Vec<SpriteRaw>,
     sprite_buffer: wgpu::Buffer,
+    ui_elements: Vec<UiElement>,
+    ui_element_buffer: wgpu::Buffer,
+    raw_ui_elements: Vec<UiRaw>,
+    ui_pipeline_texture: wgpu::RenderPipeline,
+    ui_camera_uniform: UiCameraUniform,
+    ui_camera_buffer: wgpu::Buffer,
+    ui_camera_bind_group: wgpu::BindGroup,
     custom_config: WindowConfig,
 }
 
 impl State {
+    /// Creates a new state.
     pub async fn new(window: Arc<Window>, custom_config: WindowConfig) -> anyhow::Result<State> {
         let size = window.inner_size();
 
@@ -95,8 +105,8 @@ impl State {
             position: Vector2 { x: 0.0, y: 0.0 },
             rotation: 0.0,
             zoom: 10.0,
-            height: config.height as f32,
-            width: config.width as f32,
+            height: config.height.max(1) as f32,
+            width: config.width.max(1) as f32,
         };
 
         let mut camera_uniform = CameraUniform::new();
@@ -139,11 +149,21 @@ impl State {
             mapped_at_creation: false,
         });
 
+        let ui_element_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("UI Element Buffer"),
+            size: (std::mem::size_of::<UiRaw>() * MAX_UI_ELEMENTS) as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let texture_shader =
             device.create_shader_module(wgpu::include_wgsl!("../../shaders/texture.wgsl"));
 
         let color_shader =
             device.create_shader_module(wgpu::include_wgsl!("../../shaders/color.wgsl"));
+
+        let ui_texture_shader =
+            device.create_shader_module(wgpu::include_wgsl!("../../shaders/ui_texture.wgsl"));
 
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -182,21 +202,21 @@ impl State {
 
         let texture_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Texture Render Pipeline Layout"),
+                label: Some("Texture World Pipeline Layout"),
                 bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout],
                 immediate_size: 0,
             });
 
         let color_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Color Render Pipeline Layout"),
+                label: Some("Color World Pipeline Layout"),
                 bind_group_layouts: &[&empty_bind_group_layout, &camera_bind_group_layout],
                 immediate_size: 0,
             });
 
-        let render_pipeline_texture =
+        let world_pipeline_texture =
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Render Pipeline Texture"),
+                label: Some("World Pipeline Texture"),
                 layout: Some(&texture_pipeline_layout),
                 vertex: wgpu::VertexState {
                     module: &texture_shader,
@@ -233,44 +253,121 @@ impl State {
                 cache: None,
             });
 
-        let render_pipeline_color =
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Render Pipeline Color"),
-                layout: Some(&color_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &color_shader,
-                    entry_point: Some("vs_main"),
-                    buffers: &[Vertex::desc(), SpriteRaw::desc()],
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &color_shader,
-                    entry_point: Some("fs_main"),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: config.format,
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: None,
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    unclipped_depth: false,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview_mask: None,
-                cache: None,
+        let world_pipeline_color = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("World Pipeline Color"),
+            layout: Some(&color_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &color_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[Vertex::desc(), SpriteRaw::desc()],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &color_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview_mask: None,
+            cache: None,
+        });
+
+        let mut ui_camera_uniform = UiCameraUniform::new();
+        ui_camera_uniform.update_view_proj(&camera);
+
+        let ui_camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Camera Buffer"),
+            contents: bytemuck::cast_slice(&[ui_camera_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let ui_camera_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: Some("ui_camera_bind_group_layout"),
             });
+
+        let ui_camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &ui_camera_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: ui_camera_buffer.as_entire_binding(),
+            }],
+            label: Some("camera_bind_group"),
+        });
+
+        let ui_texture_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Texture Ui Pipeline Layout"),
+                bind_group_layouts: &[&texture_bind_group_layout, &ui_camera_bind_group_layout],
+                immediate_size: 0,
+            });
+
+        let ui_pipeline_texture = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Ui Pipeline Texture"),
+            layout: Some(&ui_texture_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &ui_texture_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[Vertex::desc(), UiRaw::desc()],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &ui_texture_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview_mask: None,
+            cache: None,
+        });
 
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Vertex Buffer"),
@@ -293,8 +390,8 @@ impl State {
             config,
             is_surface_configured: false,
             window,
-            render_pipeline_texture,
-            render_pipeline_color,
+            world_pipeline_texture,
+            world_pipeline_color,
             vertex_buffer,
             index_buffer,
             camera,
@@ -305,28 +402,39 @@ impl State {
             texture_bind_group_layout,
             texture_cache: HashMap::new(),
             sprites: Vec::new(),
+            raw_sprites: Vec::new(),
             sprite_buffer,
+            ui_elements: Vec::new(),
+            raw_ui_elements: Vec::new(),
+            ui_camera_uniform,
+            ui_camera_buffer,
+            ui_camera_bind_group,
+            ui_pipeline_texture,
+            ui_element_buffer,
             custom_config,
         })
     }
 
+    /// Resizes the renderer to the given width and height.
     pub fn resize(&mut self, width: u32, height: u32) {
         if width > 0 && height > 0 {
             self.config.width = if cfg!(target_arch = "wasm32") {
-                width
-            } else {
                 width.min(2048)
+            } else {
+                width
             };
             self.config.height = if cfg!(target_arch = "wasm32") {
-                height
-            } else {
                 height.min(2048)
+            } else {
+                height
             };
+
             self.surface.configure(&self.device, &self.config);
             self.is_surface_configured = true;
         }
     }
 
+    /// Updates the state of the renderer.
     pub fn update(&mut self) {
         self.camera_uniform.update_view_proj(&self.camera);
         self.queue.write_buffer(
@@ -335,11 +443,27 @@ impl State {
             bytemuck::cast_slice(&[self.camera_uniform]),
         );
 
-        let sprite_data: Vec<SpriteRaw> = self.sprites.iter().map(Sprite::to_raw).collect();
+        self.ui_camera_uniform.update_view_proj(&self.camera);
+        self.queue.write_buffer(
+            &self.ui_camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.ui_camera_uniform]),
+        );
 
-        if !sprite_data.is_empty() {
-            self.queue
-                .write_buffer(&self.sprite_buffer, 0, bytemuck::cast_slice(&sprite_data));
+        if !self.raw_sprites.is_empty() {
+            self.queue.write_buffer(
+                &self.sprite_buffer,
+                0,
+                bytemuck::cast_slice(&self.raw_sprites),
+            );
+        }
+
+        if !self.raw_ui_elements.is_empty() {
+            self.queue.write_buffer(
+                &self.ui_element_buffer,
+                0,
+                bytemuck::cast_slice(&self.raw_ui_elements),
+            );
         }
 
         for sprite in &self.sprites {
@@ -357,8 +481,24 @@ impl State {
                 }
             }
         }
+        for ui in &self.ui_elements {
+            if let UiType::Image(texture) = &ui.get_ui_type() {
+                if !self.texture_cache.contains_key(&texture.get_id()) {
+                    let gpu_tex = GpuTexture::from_image(
+                        &self.device,
+                        &self.queue,
+                        &self.texture_bind_group_layout,
+                        texture,
+                    )
+                    .expect("Failed to create GpuTexture");
+
+                    self.texture_cache.insert(texture.get_id(), gpu_tex);
+                }
+            }
+        }
     }
 
+    /// Renders the scene to the screen.
     pub fn render(&mut self) -> anyhow::Result<()> {
         self.window.request_redraw();
 
@@ -401,8 +541,6 @@ impl State {
             });
 
         {
-            self.sprites.sort_by(|a, b| a.z.partial_cmp(&b.z).unwrap());
-
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -435,7 +573,7 @@ impl State {
                     continue;
                 }
 
-                let (vertices, indices) = match sprite_geometry(sprite) {
+                let (vertices, indices) = match sprite_geometry(sprite.get_vertices()) {
                     Some((v, i)) => (v, i),
                     None => anyhow::bail!(
                         "Failed to get geometry for sprite at index {}",
@@ -467,12 +605,12 @@ impl State {
                             }
                         };
 
-                        render_pass.set_pipeline(&self.render_pipeline_texture);
+                        render_pass.set_pipeline(&self.world_pipeline_texture);
                         render_pass.set_bind_group(0, &gpu_texture.bind_group, &[]);
                         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
                     }
                     crate::DrawType::Color(_) => {
-                        render_pass.set_pipeline(&self.render_pipeline_color);
+                        render_pass.set_pipeline(&self.world_pipeline_color);
                         render_pass.set_bind_group(0, &self.empty_bind_group, &[]);
                         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
                     }
@@ -498,6 +636,77 @@ impl State {
                 vertex_offset += vertex_bytes.len() as u64;
                 index_offset += index_bytes.len() as u64;
             }
+
+            vertex_offset = 0;
+            index_offset = 0;
+
+            render_pass.set_vertex_buffer(1, self.ui_element_buffer.slice(..));
+
+            for (ui_index, ui_element) in self.ui_elements.iter().enumerate() {
+                if let UiType::Text = ui_element.get_ui_type() {
+                    continue;
+                }
+                if let UiType::Button = ui_element.get_ui_type() {
+                    continue;
+                }
+
+                let (vertices, indices) = match sprite_geometry(ui_element.get_vertices()) {
+                    Some((v, i)) => (v, i),
+                    None => {
+                        anyhow::bail!("Failed to get geometry for sprite at index {}", ui_index)
+                    }
+                };
+                let vertex_bytes = bytemuck::cast_slice(&vertices);
+                let index_bytes = bytemuck::cast_slice(&indices);
+
+                if vertex_offset + vertex_bytes.len() as u64 > MAX_SPRITE_VERTEX_BUFFER_SIZE {
+                    anyhow::bail!("Sprite vertex buffer overflow");
+                }
+                if index_offset + index_bytes.len() as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
+                    anyhow::bail!("Sprite index buffer overflow");
+                }
+
+                self.queue
+                    .write_buffer(&self.vertex_buffer, vertex_offset, vertex_bytes);
+                self.queue
+                    .write_buffer(&self.index_buffer, index_offset, index_bytes);
+
+                match &ui_element.get_ui_type() {
+                    UiType::Image(texture) => {
+                        let id = texture.get_id();
+                        let gpu_texture = match self.texture_cache.get(&id) {
+                            Some(g) => g,
+                            None => {
+                                anyhow::bail!("GpuTexture not found in cache for id: {}", id)
+                            }
+                        };
+
+                        render_pass.set_pipeline(&self.ui_pipeline_texture);
+                        render_pass.set_bind_group(0, &gpu_texture.bind_group, &[]);
+                        render_pass.set_bind_group(1, &self.ui_camera_bind_group, &[]);
+                    }
+                    _ => continue,
+                }
+
+                render_pass.set_vertex_buffer(
+                    0,
+                    self.vertex_buffer
+                        .slice(vertex_offset..vertex_offset + vertex_bytes.len() as u64),
+                );
+                render_pass.set_index_buffer(
+                    self.index_buffer
+                        .slice(index_offset..index_offset + index_bytes.len() as u64),
+                    wgpu::IndexFormat::Uint16,
+                );
+                render_pass.draw_indexed(
+                    0..indices.len() as u32,
+                    0,
+                    ui_index as u32..ui_index as u32 + 1,
+                );
+
+                vertex_offset += vertex_bytes.len() as u64;
+                index_offset += index_bytes.len() as u64;
+            }
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -506,10 +715,25 @@ impl State {
         Ok(())
     }
 
+    /// Sets the sprites to be rendered.
     pub fn set_sprites(&mut self, sprites: Vec<Sprite>) {
+        let mut sprites = sprites;
+        sprites.sort_by(|a, b| a.z.partial_cmp(&b.z).unwrap());
         self.sprites = sprites;
+
+        self.raw_sprites = self.sprites.iter().map(Sprite::to_raw).collect();
     }
 
+    /// Sets the UI elements to be rendered.
+    pub fn set_ui_elements(&mut self, elements: Vec<UiElement>) {
+        let mut elements = elements;
+        elements.sort_by(|a, b| a.get_z().partial_cmp(&b.get_z()).unwrap());
+        self.ui_elements = elements;
+
+        self.raw_ui_elements = self.ui_elements.iter().map(UiRaw::gen_raw).collect();
+    }
+
+    /// Sets the camera to be used for rendering.
     pub fn set_camera(&mut self, camera: Camera) {
         self.camera = camera;
         self.camera_uniform.update_view_proj(&self.camera);
@@ -518,13 +742,31 @@ impl State {
             0,
             bytemuck::cast_slice(&[self.camera_uniform]),
         );
+        self.ui_camera_uniform.update_view_proj(&self.camera);
+        self.queue.write_buffer(
+            &self.ui_camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.ui_camera_uniform]),
+        );
     }
 
+    /// Returns a reference to the window.
     pub fn get_window(&self) -> &Arc<Window> {
         &self.window
     }
 
+    /// Sets the window configuration.
     pub fn set_config(&mut self, config: WindowConfig) {
         self.custom_config = config;
+    }
+
+    /// Returns a reference to the camera.
+    pub fn get_camera(&self) -> &Camera {
+        &self.camera
+    }
+
+    /// Returns a mutable reference to the camera.
+    pub fn get_camera_mut(&mut self) -> &mut Camera {
+        &mut self.camera
     }
 }

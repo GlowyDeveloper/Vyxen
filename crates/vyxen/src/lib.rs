@@ -36,4 +36,9 @@ pub mod resource {
     pub use vyxen_resource::*;
 }
 
+/// UI types and utilities.
+pub mod ui {
+    pub use vyxen_ui::*;
+}
+
 pub use vyxen_core::*;

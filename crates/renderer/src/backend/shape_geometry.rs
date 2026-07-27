@@ -1,13 +1,12 @@
 use vyxen_geometry::{Polygon, ShapeType};
 use vyxen_math::Vector2;
 
-use crate::{Sprite, backend::Vertex};
+use crate::backend::Vertex;
 
 pub const CIRCLE_SEGMENTS: usize = 32;
 
-#[inline]
-pub fn sprite_geometry(sprite: &Sprite) -> Option<(Vec<Vertex>, Vec<u16>)> {
-    sprite.get_vertices().map(shape_geometry)
+pub fn sprite_geometry(vertices: Option<&ShapeType>) -> Option<(Vec<Vertex>, Vec<u16>)> {
+    vertices.map(shape_geometry)
 }
 
 #[inline]

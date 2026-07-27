@@ -1850,6 +1850,7 @@ dependencies = [
  "vyxen-physics2d",
  "vyxen-renderer",
  "vyxen-resource",
+ "vyxen-ui",
 ]
 
 [[package]]
@@ -1863,6 +1864,7 @@ dependencies = [
  "vyxen-math",
  "vyxen-physics2d",
  "vyxen-renderer",
+ "vyxen-ui",
  "winit",
 ]
 
@@ -1902,6 +1904,7 @@ dependencies = [
  "vyxen-geometry",
  "vyxen-math",
  "vyxen-resource",
+ "vyxen-ui",
  "wgpu",
  "winit",
 ]
@@ -1913,6 +1916,15 @@ dependencies = [
  "anyhow",
  "image",
  "vyxen-math",
+]
+
+[[package]]
+name = "vyxen-ui"
+version = "0.2.0"
+dependencies = [
+ "vyxen-geometry",
+ "vyxen-math",
+ "vyxen-resource",
 ]
 
 [[package]]

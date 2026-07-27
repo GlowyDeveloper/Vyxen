@@ -4,11 +4,19 @@
 
 ### New Features
 
-- Resource loading
+- Resource loader
+- Ui elements
+  - Images
+- Ui rendering
 
 ### Fixes
 
-- Textures being rendered 180 degrees
+- Textured being rendered 180 degrees
+
+### Other
+
+- Privatized renderer backend
+- Small optimizations on renderer sorting and copying sprites
 
 ## v0.1.0 (24/07/2026)
 

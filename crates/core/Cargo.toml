@@ -20,6 +20,7 @@ vyxen-geometry.workspace = true
 vyxen-physics2d.workspace = true
 vyxen-renderer.workspace = true
 vyxen-input.workspace = true
+vyxen-ui.workspace = true
 
 anyhow.workspace = true
 

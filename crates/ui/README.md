@@ -1,15 +1,17 @@
 <div align="center">
 
-# vyxen-renderer
+# vyxen-ui
 
-**Renders the game for the Vyxen library**
+**Provides UI for the Vyxen library**
 
 </div>
 
-vyxen-renderer exposes multiple types such as
+vyxen-ui exposes multiple types such as
  - DrawType
  - Sprite
  - Camera
+ - Color
+ - Texture
  - WindowConfig
 
 This library relies heavily off vyxen-core
