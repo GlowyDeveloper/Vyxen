@@ -571,11 +571,9 @@ impl From<WindowConfig> for WindowAttributes {
             None
         };
 
-        #[allow(unused_mut)]
         let mut attr = Window::default_attributes()
             .with_inner_size(inner_size)
             .with_min_inner_size(min_size)
-            .with_max_inner_size(max_size)
             .with_title(value.title)
             .with_resizable(value.resizable)
             .with_maximized(value.maximized)
@@ -589,13 +587,17 @@ impl From<WindowConfig> for WindowAttributes {
             attr = attr.with_taskbar_icon(value.icon);
         }
 
+        if value.max_size.x.is_finite() && value.max_size.y.is_finite() {
+            attr = attr.with_max_inner_size(max_size);
+        }
+
         if let Some(vector) = value.position {
             let position =
                 Position::Logical(LogicalPosition::new(vector.x.into(), vector.y.into()));
-            attr.with_position(position)
-        } else {
-            attr
+            attr = attr.with_position(position);
         }
+
+        attr
     }
 }
 

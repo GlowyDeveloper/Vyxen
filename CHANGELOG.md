@@ -12,6 +12,7 @@
 ### Fixes
 
 - Textured being rendered 180 degrees
+- Window resizing becoming 0 pixels
 
 ### Other
 
