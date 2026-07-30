@@ -4,6 +4,11 @@
 
 **A Godot-style game engine library written in Rust**
 
+[![Documentation](https://docs.rs/vyxen/badge.svg)](https://docs.rs/vyxen)
+[![Crates.io](https://img.shields.io/crates/v/vyxen.svg)](https://crates.io/crates/vyxen)
+[![License](https://img.shields.io/crates/l/vyxen.svg)](#license)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+
 </div>
 
 To get started, add the following to your `Cargo.toml` file:
