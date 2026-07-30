@@ -25,6 +25,8 @@ pub const MAX_SPRITE_INDEX_BUFFER_SIZE: u64 = 1 << 20;
 pub const MAX_SPRITES: usize = 8192;
 /// Maximum number of UI elements.
 pub const MAX_UI_ELEMENTS: usize = 8192;
+/// Maximum number of glyph instances.
+pub const MAX_GLYPH_INSTANCES: usize = 65536;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
@@ -459,6 +461,35 @@ impl UiRaw {
         UiRaw {
             matrix: (Matrix4::translation(pos.x, pos.y, ui.get_z()) * Matrix4::rotate(rot)).into(),
             color,
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct GlyphRaw {
+    pub rect: [f32; 4],
+    pub uv_rect: [f32; 4],
+}
+
+impl GlyphRaw {
+    fn desc() -> wgpu::VertexBufferLayout<'static> {
+        use std::mem;
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<GlyphRaw>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+            ],
         }
     }
 }

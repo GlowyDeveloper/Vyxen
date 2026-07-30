@@ -18,8 +18,8 @@ mod backend;
 
 pub use crate::backend::Camera;
 pub use crate::backend::{
-    MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE, MAX_SPRITES, MAX_UI_ELEMENTS,
-    State,
+    MAX_GLYPH_INSTANCES, MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE, MAX_SPRITES,
+    MAX_UI_ELEMENTS, State,
 };
 pub use winit::event::WindowEvent;
 

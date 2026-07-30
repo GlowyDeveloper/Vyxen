@@ -1,12 +1,12 @@
+use crate::backend::{GlyphRaw, Vertex};
 use vyxen_geometry::{Polygon, ShapeType};
 use vyxen_math::Vector2;
-
-use crate::backend::Vertex;
+use vyxen_resource::GlyphMap;
 
 pub const CIRCLE_SEGMENTS: usize = 32;
 
-pub fn sprite_geometry(vertices: Option<&ShapeType>) -> Option<(Vec<Vertex>, Vec<u16>)> {
-    vertices.map(shape_geometry)
+pub fn sprite_geometry(vertices: Option<&ShapeType>) -> (Vec<Vertex>, Vec<u16>) {
+    vertices.map_or(circle_geometry(1.0), shape_geometry)
 }
 
 #[inline]
@@ -146,4 +146,76 @@ pub fn uv_from_position(position: Vector2, bounds: (Vector2, Vector2)) -> [f32; 
         (position.x - min.x) / width,
         1.0 - (position.y - min.y) / height,
     ]
+}
+
+#[inline]
+pub fn text_geometry(glyph_map: &GlyphMap, text: &str) -> Vec<GlyphRaw> {
+    struct Placed {
+        left: f32,
+        right: f32,
+        top: f32,
+        bottom: f32,
+        uv_min: (f32, f32),
+        uv_max: (f32, f32),
+    }
+
+    let mut placed = Vec::new();
+    let mut pen_x: f32 = 0.0;
+    let mut min_x = f32::MAX;
+    let mut max_x = f32::MIN;
+    let mut min_y = f32::MAX;
+    let mut max_y = f32::MIN;
+
+    for c in text.chars() {
+        let Some(g) = glyph_map.glyphs().get(&c) else {
+            continue;
+        };
+
+        if g.width() > 0.0 && g.height() > 0.0 {
+            let left = pen_x + g.bearing_x();
+            let right = left + g.width();
+            let top = g.bearing_y();
+            let bottom = top - g.height();
+
+            min_x = min_x.min(left);
+            max_x = max_x.max(right);
+            min_y = min_y.min(bottom);
+            max_y = max_y.max(top);
+
+            placed.push(Placed {
+                left,
+                right,
+                top,
+                bottom,
+                uv_min: g.uv_min(),
+                uv_max: g.uv_max(),
+            });
+        }
+
+        pen_x += g.advance();
+    }
+
+    if placed.is_empty() {
+        return Vec::new();
+    }
+
+    let center_x = (min_x + max_x) / 2.0;
+    let center_y = (min_y + max_y) / 2.0;
+
+    placed
+        .iter()
+        .map(|p| {
+            let (u_min, v_min) = p.uv_min;
+            let (u_max, v_max) = p.uv_max;
+            GlyphRaw {
+                rect: [
+                    p.left - center_x,
+                    p.top - center_y,
+                    p.right - center_x,
+                    p.bottom - center_y,
+                ],
+                uv_rect: [u_min, v_min, u_max, v_max],
+            }
+        })
+        .collect()
 }

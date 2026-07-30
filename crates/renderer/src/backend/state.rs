@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 use vyxen_math::Vector2;
+use vyxen_resource::{GlyphMap, Texture};
 use vyxen_ui::{UiElement, UiType};
 use wgpu::util::DeviceExt as _;
 use winit::window::Window;
@@ -7,9 +8,10 @@ use winit::window::Window;
 use crate::{
     Camera, Sprite, WindowConfig,
     backend::{
-        CameraUniform, GpuTexture, MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE,
-        MAX_SPRITES, MAX_UI_ELEMENTS, SpriteRaw, UiCameraUniform, UiRaw, Vertex,
-        shape_geometry::sprite_geometry,
+        CameraUniform, GlyphRaw, GpuTexture, MAX_GLYPH_INSTANCES, MAX_SPRITE_INDEX_BUFFER_SIZE,
+        MAX_SPRITE_VERTEX_BUFFER_SIZE, MAX_SPRITES, MAX_UI_ELEMENTS, SpriteRaw, UiCameraUniform,
+        UiRaw, Vertex,
+        shape_geometry::{sprite_geometry, text_geometry},
     },
 };
 
@@ -42,6 +44,14 @@ pub struct State {
     ui_camera_uniform: UiCameraUniform,
     ui_camera_buffer: wgpu::Buffer,
     ui_camera_bind_group: wgpu::BindGroup,
+    ui_pipeline_text: wgpu::RenderPipeline,
+    glyph_instance_buffer: wgpu::Buffer,
+    text_uniform_buffer: wgpu::Buffer,
+    text_uniform_bind_group: wgpu::BindGroup,
+    text_uniform_stride: u64,
+    raw_glyph_instances: Vec<GlyphRaw>,
+    text_draw_ranges: Vec<Option<(u32, u32)>>,
+    glyph_atlas_cache: HashMap<(u64, u32, String), (GpuTexture, GlyphMap)>,
     custom_config: WindowConfig,
 }
 
@@ -104,7 +114,7 @@ impl State {
         let camera = Camera {
             position: Vector2 { x: 0.0, y: 0.0 },
             rotation: 0.0,
-            zoom: 10.0,
+            zoom: 1.0,
             height: config.height.max(1) as f32,
             width: config.width.max(1) as f32,
         };
@@ -164,6 +174,9 @@ impl State {
 
         let ui_texture_shader =
             device.create_shader_module(wgpu::include_wgsl!("../../shaders/ui_texture.wgsl"));
+
+        let ui_text_shader =
+            device.create_shader_module(wgpu::include_wgsl!("../../shaders/ui_text.wgsl"));
 
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -369,6 +382,105 @@ impl State {
             cache: None,
         });
 
+        let text_uniform_alignment = device.limits().min_uniform_buffer_offset_alignment as u64;
+        let text_uniform_stride = (std::mem::size_of::<UiRaw>() as u64 + text_uniform_alignment
+            - 1)
+            / text_uniform_alignment
+            * text_uniform_alignment;
+
+        let text_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Text Uniform Buffer"),
+            size: text_uniform_stride * MAX_UI_ELEMENTS as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let text_uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: std::num::NonZeroU64::new(
+                            std::mem::size_of::<UiRaw>() as u64
+                        ),
+                    },
+                    count: None,
+                }],
+                label: Some("text_uniform_bind_group_layout"),
+            });
+
+        let text_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &text_uniform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &text_uniform_buffer,
+                    offset: 0,
+                    size: std::num::NonZeroU64::new(std::mem::size_of::<UiRaw>() as u64),
+                }),
+            }],
+            label: Some("text_uniform_bind_group"),
+        });
+
+        let glyph_instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Glyph Instance Buffer"),
+            size: (std::mem::size_of::<GlyphRaw>() * MAX_GLYPH_INSTANCES) as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let ui_text_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Text Ui Pipeline Layout"),
+                bind_group_layouts: &[
+                    &texture_bind_group_layout,
+                    &ui_camera_bind_group_layout,
+                    &text_uniform_bind_group_layout,
+                ],
+                immediate_size: 0,
+            });
+
+        let ui_pipeline_text = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Ui Pipeline Text"),
+            layout: Some(&ui_text_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &ui_text_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[GlyphRaw::desc()],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &ui_text_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview_mask: None,
+            cache: None,
+        });
+
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Vertex Buffer"),
             size: MAX_SPRITE_VERTEX_BUFFER_SIZE,
@@ -411,6 +523,14 @@ impl State {
             ui_camera_bind_group,
             ui_pipeline_texture,
             ui_element_buffer,
+            ui_pipeline_text,
+            glyph_instance_buffer,
+            text_uniform_buffer,
+            text_uniform_bind_group,
+            text_uniform_stride,
+            raw_glyph_instances: Vec::new(),
+            glyph_atlas_cache: HashMap::new(),
+            text_draw_ranges: Vec::new(),
             custom_config,
         })
     }
@@ -481,21 +601,100 @@ impl State {
                 }
             }
         }
-        for ui in &self.ui_elements {
-            if let UiType::Image(texture) = &ui.get_ui_type() {
-                if !self.texture_cache.contains_key(&texture.get_id()) {
-                    let gpu_tex = GpuTexture::from_image(
-                        &self.device,
-                        &self.queue,
-                        &self.texture_bind_group_layout,
-                        texture,
-                    )
-                    .expect("Failed to create GpuTexture");
 
-                    self.texture_cache.insert(texture.get_id(), gpu_tex);
+        for ui in &self.ui_elements {
+            match ui.get_ui_type() {
+                UiType::Image(texture) => {
+                    if !self.texture_cache.contains_key(&texture.get_id()) {
+                        let gpu_tex = GpuTexture::from_image(
+                            &self.device,
+                            &self.queue,
+                            &self.texture_bind_group_layout,
+                            texture,
+                        )
+                        .expect("Failed to create GpuTexture");
+
+                        self.texture_cache.insert(texture.get_id(), gpu_tex);
+                    }
                 }
+                UiType::Text(text) => {
+                    let key = (
+                        text.font().id(),
+                        text.size() as u32,
+                        text.text().to_string(),
+                    );
+                    if !self.glyph_atlas_cache.contains_key(&key) {
+                        let glyph_map = text
+                            .font()
+                            .generate_glyph_map(text.text().to_string(), text.size())
+                            .expect("Failed to generate glyph map");
+
+                        let atlas_texture = Texture::from_raw(
+                            Vector2 {
+                                x: glyph_map.atlas_width() as f32,
+                                y: glyph_map.atlas_height() as f32,
+                            },
+                            glyph_map.rgba().clone(),
+                        );
+
+                        let gpu_tex = GpuTexture::from_image(
+                            &self.device,
+                            &self.queue,
+                            &self.texture_bind_group_layout,
+                            &atlas_texture,
+                        )
+                        .expect("Failed to create GpuTexture");
+
+                        self.glyph_atlas_cache.insert(key, (gpu_tex, glyph_map));
+                    }
+                }
+                _ => {}
             }
         }
+
+        self.raw_glyph_instances.clear();
+        self.text_draw_ranges.clear();
+
+        for ui in &self.ui_elements {
+            match ui.get_ui_type() {
+                UiType::Text(text) => {
+                    let key = (
+                        text.font().id(),
+                        text.size() as u32,
+                        text.text().to_string(),
+                    );
+                    let (_, glyph_map) = self.glyph_atlas_cache.get(&key).expect(&format!(
+                        "glyph atlas has not been built for: {}",
+                        text.font().id()
+                    ));
+
+                    let glyphs = text_geometry(glyph_map, text.text());
+                    let first = self.raw_glyph_instances.len() as u32;
+                    let count = glyphs.len() as u32;
+                    self.raw_glyph_instances.extend(glyphs);
+                    self.text_draw_ranges.push(Some((first, count)));
+                }
+                _ => self.text_draw_ranges.push(None),
+            }
+        }
+
+        if !self.raw_glyph_instances.is_empty() {
+            self.queue.write_buffer(
+                &self.glyph_instance_buffer,
+                0,
+                bytemuck::cast_slice(&self.raw_glyph_instances),
+            );
+        }
+
+        let mut padded =
+            vec![0u8; (self.text_uniform_stride as usize) * self.raw_ui_elements.len().max(1)];
+        for (i, raw) in self.raw_ui_elements.iter().enumerate() {
+            let bytes = bytemuck::bytes_of(raw);
+            let offset = i * self.text_uniform_stride as usize;
+            padded[offset..offset + bytes.len()].copy_from_slice(bytes);
+        }
+        self.queue
+            .write_buffer(&self.text_uniform_buffer, 0, &padded);
     }
 
     /// Renders the scene to the screen.
@@ -573,13 +772,7 @@ impl State {
                     continue;
                 }
 
-                let (vertices, indices) = match sprite_geometry(sprite.get_vertices()) {
-                    Some((v, i)) => (v, i),
-                    None => anyhow::bail!(
-                        "Failed to get geometry for sprite at index {}",
-                        sprite_index
-                    ),
-                };
+                let (vertices, indices) = sprite_geometry(sprite.get_vertices());
                 let vertex_bytes = bytemuck::cast_slice(&vertices);
                 let index_bytes = bytemuck::cast_slice(&indices);
 
@@ -643,69 +836,90 @@ impl State {
             render_pass.set_vertex_buffer(1, self.ui_element_buffer.slice(..));
 
             for (ui_index, ui_element) in self.ui_elements.iter().enumerate() {
-                if let UiType::Text = ui_element.get_ui_type() {
-                    continue;
-                }
                 if let UiType::Button = ui_element.get_ui_type() {
                     continue;
                 }
 
-                let (vertices, indices) = match sprite_geometry(ui_element.get_vertices()) {
-                    Some((v, i)) => (v, i),
-                    None => {
-                        anyhow::bail!("Failed to get geometry for sprite at index {}", ui_index)
-                    }
-                };
-                let vertex_bytes = bytemuck::cast_slice(&vertices);
-                let index_bytes = bytemuck::cast_slice(&indices);
-
-                if vertex_offset + vertex_bytes.len() as u64 > MAX_SPRITE_VERTEX_BUFFER_SIZE {
-                    anyhow::bail!("Sprite vertex buffer overflow");
-                }
-                if index_offset + index_bytes.len() as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
-                    anyhow::bail!("Sprite index buffer overflow");
-                }
-
-                self.queue
-                    .write_buffer(&self.vertex_buffer, vertex_offset, vertex_bytes);
-                self.queue
-                    .write_buffer(&self.index_buffer, index_offset, index_bytes);
-
-                match &ui_element.get_ui_type() {
+                match ui_element.get_ui_type() {
                     UiType::Image(texture) => {
                         let id = texture.get_id();
-                        let gpu_texture = match self.texture_cache.get(&id) {
-                            Some(g) => g,
-                            None => {
-                                anyhow::bail!("GpuTexture not found in cache for id: {}", id)
-                            }
-                        };
+                        let gpu_texture = self.texture_cache.get(&id).ok_or_else(|| {
+                            anyhow::anyhow!("GpuTexture not found in cache for id: {}", id)
+                        })?;
+
+                        let (vertices, indices) = sprite_geometry(ui_element.get_vertices());
+                        let vertex_bytes = bytemuck::cast_slice(&vertices);
+                        let index_bytes = bytemuck::cast_slice(&indices);
+
+                        if vertex_offset + vertex_bytes.len() as u64 > MAX_SPRITE_VERTEX_BUFFER_SIZE
+                        {
+                            anyhow::bail!("Sprite vertex buffer overflow");
+                        }
+                        if index_offset + index_bytes.len() as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
+                            anyhow::bail!("Sprite index buffer overflow");
+                        }
+
+                        self.queue
+                            .write_buffer(&self.vertex_buffer, vertex_offset, vertex_bytes);
+                        self.queue
+                            .write_buffer(&self.index_buffer, index_offset, index_bytes);
 
                         render_pass.set_pipeline(&self.ui_pipeline_texture);
                         render_pass.set_bind_group(0, &gpu_texture.bind_group, &[]);
                         render_pass.set_bind_group(1, &self.ui_camera_bind_group, &[]);
+                        render_pass.set_vertex_buffer(
+                            0,
+                            self.vertex_buffer
+                                .slice(vertex_offset..vertex_offset + vertex_bytes.len() as u64),
+                        );
+                        render_pass.set_index_buffer(
+                            self.index_buffer
+                                .slice(index_offset..index_offset + index_bytes.len() as u64),
+                            wgpu::IndexFormat::Uint16,
+                        );
+                        render_pass.draw_indexed(
+                            0..indices.len() as u32,
+                            0,
+                            ui_index as u32..ui_index as u32 + 1,
+                        );
+
+                        vertex_offset += vertex_bytes.len() as u64;
+                        index_offset += index_bytes.len() as u64;
+                    }
+                    UiType::Text(text) => {
+                        let key = (
+                            text.font().id(),
+                            text.size() as u32,
+                            text.text().to_string(),
+                        );
+                        let (gpu_texture, _glyph_map) =
+                            self.glyph_atlas_cache.get(&key).ok_or_else(|| {
+                                anyhow::anyhow!(
+                                    "Glyph atlas not found for font: {}",
+                                    text.font().id()
+                                )
+                            })?;
+
+                        let Some((first, count)) = self.text_draw_ranges[ui_index] else {
+                            continue;
+                        };
+                        if count == 0 {
+                            continue;
+                        }
+
+                        render_pass.set_pipeline(&self.ui_pipeline_text);
+                        render_pass.set_bind_group(0, &gpu_texture.bind_group, &[]);
+                        render_pass.set_bind_group(1, &self.ui_camera_bind_group, &[]);
+                        render_pass.set_bind_group(
+                            2,
+                            &self.text_uniform_bind_group,
+                            &[(ui_index as u32) * self.text_uniform_stride as u32],
+                        );
+                        render_pass.set_vertex_buffer(0, self.glyph_instance_buffer.slice(..));
+                        render_pass.draw(0..6, first..first + count);
                     }
                     _ => continue,
                 }
-
-                render_pass.set_vertex_buffer(
-                    0,
-                    self.vertex_buffer
-                        .slice(vertex_offset..vertex_offset + vertex_bytes.len() as u64),
-                );
-                render_pass.set_index_buffer(
-                    self.index_buffer
-                        .slice(index_offset..index_offset + index_bytes.len() as u64),
-                    wgpu::IndexFormat::Uint16,
-                );
-                render_pass.draw_indexed(
-                    0..indices.len() as u32,
-                    0,
-                    ui_index as u32..ui_index as u32 + 1,
-                );
-
-                vertex_offset += vertex_bytes.len() as u64;
-                index_offset += index_bytes.len() as u64;
             }
         }
 

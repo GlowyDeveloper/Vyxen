@@ -7,7 +7,9 @@
 - Resource loader
 - Ui elements
   - Images
+  - Text
 - Ui rendering
+- Font rendering
 
 ### Fixes
 

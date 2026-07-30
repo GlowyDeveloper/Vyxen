@@ -17,3 +17,5 @@ readme = "README.md"
 vyxen-math.workspace = true
 vyxen-geometry.workspace = true
 vyxen-resource.workspace = true
+
+anyhow.workspace = true

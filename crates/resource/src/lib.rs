@@ -1,9 +1,11 @@
-use std::any::Any;
+use std::{any::Any, path::Path};
 
 mod color;
+mod font;
 mod texture;
 
 pub use color::Color;
+pub use font::{Font, GlyphMap, GlyphRect};
 pub use texture::Texture;
 
 /// Represents a resource that can be loaded.
@@ -24,7 +26,7 @@ pub trait Resource: Sized {
 /// # Errors
 ///
 /// Returns an error if the file could not be read or the data could not be parsed.
-pub fn load_path<T: Resource>(path: &str) -> anyhow::Result<T> {
+pub fn load_path<T: Resource, P: AsRef<Path>>(path: P) -> anyhow::Result<T> {
     let data = std::fs::read(path)?;
     load_data::<T>(&data)
 }

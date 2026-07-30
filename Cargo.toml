@@ -28,7 +28,9 @@ winit = { version = "0.30", features = ["android-native-activity"] }
 wgpu = "28.0"
 pollster = "0.3"
 bytemuck = { version = "1.24", features = [ "derive" ] }
-image = { version = "0.24", default-features = false, features = ["png", "jpeg"] }
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }
+skrifa = "0.45.1"
+zeno = "0.3.3"
 
 anyhow = "1.0"
 

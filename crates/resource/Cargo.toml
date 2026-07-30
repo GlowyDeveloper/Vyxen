@@ -17,5 +17,7 @@ readme = "README.md"
 vyxen-math.workspace = true
 
 image.workspace = true
+skrifa.workspace = true
+zeno.workspace = true
 
 anyhow.workspace = true

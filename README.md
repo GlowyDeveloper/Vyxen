@@ -163,6 +163,10 @@ After you'll get this window:
 
 <img width="50%" src="https://raw.githubusercontent.com/GlowyDeveloper/Vyxen/refs/heads/master/docs/Example-1.png">
 
+Please note that,
+ - (0, 0) is the center of the window
+ - The position of the node is in the center of the node.
+
 ## Window Config
 
 You can change many things by a single type.

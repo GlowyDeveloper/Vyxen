@@ -1,12 +1,12 @@
 use vyxen_geometry::{Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::Vector2;
-use vyxen_resource::Texture;
+use vyxen_resource::{Font, Texture};
 
 /// The type of UI element.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum UiType {
     Button,
-    Text,
+    Text(Text),
     Image(Texture),
     None,
 }
@@ -21,7 +21,7 @@ pub enum UiType {
 /// let mut element = UiElement::with_button();
 /// element.set_shape(Box::new(100.0, 20.0));
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct UiElement {
     position_ref: Vector2,
     rotation_ref: f32,
@@ -74,18 +74,20 @@ impl UiElement {
     /// Short for `UiElement::new().set_ui_type(UiType::Text)`
     ///
     /// # Examples
-    /// ```rust
+    /// ```rust, ignore
     /// use vyxen_ui::{UiElement, UiType};
     /// use vyxen_geometry::Box;
+    /// use vyxen_resource::{Font, load_path};
     ///
-    /// let mut element = UiElement::with_text();
+    /// let font = load_path::<Font>("path/to/font.ttf");
+    /// let mut element = UiElement::with_text("Hello World!", font, 32.0);
     /// element.set_shape(Box::new(100.0, 20.0));
     /// ```
-    pub fn with_text() -> Self {
+    pub fn with_text(text: String, font: Font, size: f32) -> Self {
         Self {
             position_ref: Vector2::zero(),
             rotation_ref: 0.0,
-            ui_type: UiType::Text,
+            ui_type: UiType::Text(Text { text, font, size }),
             vertices: None,
             z: 0.0,
         }
@@ -202,5 +204,51 @@ impl UiElement {
         T: Shape,
     {
         self.vertices = Some(shape_type_from_shape(shape));
+    }
+}
+
+/// Represents a text element to be rendered on the UI.
+///
+/// ```rust, ignore
+/// use vyxen_resources::{Font, load_path};
+/// use vyxen_ui::Text;
+///
+/// let font = load_path("path/to/font.ttf").unwrap();
+/// let text = Text::new("Hello, World!", font, 16.0);
+/// ```
+#[derive(Debug, Clone)]
+pub struct Text {
+    text: String,
+    font: Font,
+    size: f32,
+}
+
+impl Text {
+    /// Creates a new `Text` element.
+    ///
+    /// ```rust, ignore
+    /// use vyxen_resources::{Font, load_path};
+    /// use vyxen_ui::Text;
+    ///
+    /// let font = load_path("path/to/font.ttf").unwrap();
+    /// let text = Text::new("Hello, World!", font, 16.0);
+    /// ```
+    pub fn new(text: String, font: Font, size: f32) -> Self {
+        Self { text, font, size }
+    }
+
+    /// Returns the text of this `Text`.
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    /// Returns the font of this `Text`.
+    pub fn font(&self) -> &Font {
+        &self.font
+    }
+
+    /// Returns the size of this `Text`.
+    pub fn size(&self) -> f32 {
+        self.size
     }
 }

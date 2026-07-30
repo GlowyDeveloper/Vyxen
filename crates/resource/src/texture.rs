@@ -47,6 +47,24 @@ impl Resource for Texture {
 }
 
 impl Texture {
+    /// Creates a new texture from raw RGBA data.
+    ///
+    /// # Examples
+    ///
+    /// ```rust, ignore
+    /// let texture = Texture::from_raw(Vector2::new(2.0, 1.0), vec![0,0,0,255, 0,0,0,255]);
+    ///
+    /// assert_eq!(texture.get_dimensions(), Vector2::new(2.0, 1.0));
+    /// assert_eq!(texture.get_rgba(), &[0,0,0,255, 0,0,0,255]);
+    /// ```
+    pub fn from_raw(dim: Vector2, rgba: Vec<u8>) -> Self {
+        Self {
+            id: Random::from_time().next_u64(),
+            dim,
+            rgba,
+        }
+    }
+
     /// Returns the texture's ID.
     pub fn get_id(&self) -> u64 {
         self.id
@@ -105,6 +123,19 @@ mod tests {
         ];
 
         let texture = Texture::load(&bytes).unwrap();
+        assert_eq!(texture.get_dimensions(), Vector2 { x: 3.0, y: 3.0 });
+        assert_eq!(texture.get_rgba(), &expected_bytes);
+    }
+
+    #[test]
+    fn test_from_raw() {
+        let expected_bytes = [
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        ];
+
+        let texture = Texture::from_raw(Vector2 { x: 3.0, y: 3.0 }, expected_bytes.to_vec());
         assert_eq!(texture.get_dimensions(), Vector2 { x: 3.0, y: 3.0 });
         assert_eq!(texture.get_rgba(), &expected_bytes);
     }
