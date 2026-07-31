@@ -1,12 +1,40 @@
 use vyxen::prelude::*;
 
+fn test_load() {
+    for _ in 0..=100 {
+        load_path::<Texture>("testbed/src/test-img.jpg").unwrap();
+    }
+    println!("-------------------------------------------");
+    for _ in 0..=100 {
+        load_path::<Texture>("testbed/src/test-img.png").unwrap();
+    }
+    println!("-------------------------------------------");
+    for _ in 0..=100 {
+        load_path::<Texture>("testbed/src/test2.jpg").unwrap();
+    }
+    println!("-------------------------------------------");
+    for _ in 0..=100 {
+        load_path::<Texture>("testbed/src/test2.png").unwrap();
+    }
+    println!("-------------------------------------------");
+    for _ in 0..=100 {
+        load_path::<Texture>("testbed/src/test3.png").unwrap();
+    }
+    println!("-------------------------------------------");
+    for _ in 0..=100 {
+        load_path::<Texture>("testbed/src/test3.jpg").unwrap();
+    }
+}
+
 fn main() {
-    let speed = 2.0;
+    test_load();
+    
+    /*let speed = 2.0;
 
     let mut game = Game::new();
     let mut scene = Scene::new();
 
-    let mut sprite1 = Sprite::with_texture(load_path("testbed/src/test-img.png").unwrap());
+    let mut sprite1 = Sprite::with_texture(load_path("testbed/src/test-img.jpg").unwrap());
     sprite1.set_shape(Box::new(200.0, 200.0));
 
     let mut node1 = Node::new("Foo".to_string());
@@ -84,5 +112,5 @@ fn main() {
                 .unwrap()
                 .set_position(cam_pos + Vector2 { x: speed, y: 0.0 });
         }
-    });
+    });*/
 }

@@ -16,8 +16,10 @@ readme = "README.md"
 [dependencies]
 vyxen-math.workspace = true
 
-image.workspace = true
 skrifa.workspace = true
 zeno.workspace = true
+
+zune-jpeg.workspace = true
+png.workspace = true
 
 anyhow.workspace = true

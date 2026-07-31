@@ -2,7 +2,6 @@
 #![doc = include_str!("../README.md")]
 
 use crate::backend::SpriteRaw;
-use image::GenericImageView as _;
 use vyxen_geometry::{Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::{Matrix4, Vector2};
 use vyxen_resource::{Color, Texture};
@@ -501,13 +500,11 @@ impl WindowConfig {
     /// use vyxen_renderer::WindowConfig;
     ///
     /// let mut config = WindowConfig::new();
-    /// let icon = image::open("assets/icon.png")?;
+    /// let icon = load_path("assets/icon.png").unwrap();
     /// config.set_icon(&icon);
     /// ```
-    pub fn set_icon(&mut self, icon: &image::DynamicImage) {
-        let (width, height) = icon.dimensions();
-        let rgba = icon.to_rgba8().into_vec();
-        self.icon = Some(Icon::from_rgba(rgba, width, height).unwrap());
+    pub fn set_icon(&mut self, icon: Texture) {
+        self.icon = Some(Icon::from_rgba(icon.get_rgba().to_vec(), icon.get_dimensions().x as u32, icon.get_dimensions().y as u32).unwrap());
     }
 
     /// Enables or disables borderless fullscreen mode.

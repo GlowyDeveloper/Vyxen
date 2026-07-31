@@ -26,7 +26,7 @@ pub trait Resource: Sized {
 /// # Errors
 ///
 /// Returns an error if the file could not be read or the data could not be parsed.
-pub fn load_path<T: Resource, P: AsRef<Path>>(path: P) -> anyhow::Result<T> {
+pub fn load_path<T: Resource>(path: impl AsRef<Path>) -> anyhow::Result<T> {
     let data = std::fs::read(path)?;
     load_data::<T>(&data)
 }

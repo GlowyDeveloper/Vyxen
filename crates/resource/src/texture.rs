@@ -1,6 +1,8 @@
 use std::any::Any;
 use vyxen_math::{Random, Vector2};
-
+use zune_jpeg::zune_core::{options::DecoderOptions, bytestream::ZCursor, colorspace::ColorSpace};
+use png::{Decoder, ColorType, Transformations};
+use std::io::Cursor;
 use crate::Resource;
 
 /// Texture/Image type
@@ -29,16 +31,95 @@ pub struct Texture {
 
 impl Resource for Texture {
     fn load(data: &[u8]) -> anyhow::Result<Self> {
-        let id = Random::from_time().next_u64();
+        if data.len() < 8 {
+            return Err(anyhow::anyhow!("Invalid data length"));
+        }
 
-        let image = image::load_from_memory(data)?;
-        let dim = Vector2 {
-            x: image.width() as f32,
-            y: image.height() as f32,
-        };
-        let rgba = image.into_rgba8().into_raw();
+        if data.starts_with(b"\x89PNG\r\n\x1a\n") {
+            let mut decoder = Decoder::new(Cursor::new(data));
+            decoder.set_transformations(Transformations::EXPAND | Transformations::STRIP_16);
+        
+            let mut reader = decoder.read_info()?;
+        
+            let mut buf = vec![
+                0;
+                reader
+                    .output_buffer_size()
+                    .ok_or_else(|| anyhow::anyhow!("Unknown PNG output size"))?
+            ];
+        
+            let info = reader.next_frame(&mut buf)?;
+        
+            let width = info.width;
+            let height = info.height;
+        
+            buf.truncate(info.buffer_size());
+        
+            let rgba = match info.color_type {
+                ColorType::Rgba => buf,
+        
+                ColorType::Rgb => {
+                    let mut out = Vec::with_capacity((width * height * 4) as usize);
+        
+                    for rgb in buf.chunks_exact(3) {
+                        out.push(rgb[0]);
+                        out.push(rgb[1]);
+                        out.push(rgb[2]);
+                        out.push(255);
+                    }
+        
+                    out
+                }
+        
+                ColorType::Grayscale => {
+                    let mut out = Vec::with_capacity((width * height * 4) as usize);
+        
+                    for &g in &buf {
+                        out.push(g);
+                        out.push(g);
+                        out.push(g);
+                        out.push(255);
+                    }
+        
+                    out
+                }
+        
+                ColorType::GrayscaleAlpha => {
+                    let mut out = Vec::with_capacity((width * height * 4) as usize);
+        
+                    for ga in buf.chunks_exact(2) {
+                        let g = ga[0];
+                        let a = ga[1];
+        
+                        out.push(g);
+                        out.push(g);
+                        out.push(g);
+                        out.push(a);
+                    }
+        
+                    out
+                }
+        
+                ColorType::Indexed => {
+                    anyhow::bail!("PNG should've been expanded by EXPAND transformation")
+                }
+            };
 
-        Ok(Self { id, dim, rgba })
+            let id = Random::from_time().next_u64();
+
+            Ok(Self { id, dim: Vector2 { x: width as f32, y: height as f32 }, rgba })
+        } else if data.starts_with(b"\xff\xd8\xff") {
+            let id = Random::from_time().next_u64();
+
+            let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGBA);
+            let mut decoder = zune_jpeg::JpegDecoder::new_with_options(ZCursor::new(data), options);
+            let pixels = decoder.decode().map_err(|e| anyhow::anyhow!("{e:?}"))?;
+            let (width, height) = decoder.dimensions().unwrap();
+            
+            Ok(Self { id, dim: Vector2 { x: width as f32, y: height as f32 }, rgba: pixels })
+        } else {
+            Err(anyhow::anyhow!("Unsupported image format"))
+        }
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -138,5 +219,20 @@ mod tests {
         let texture = Texture::from_raw(Vector2 { x: 3.0, y: 3.0 }, expected_bytes.to_vec());
         assert_eq!(texture.get_dimensions(), Vector2 { x: 3.0, y: 3.0 });
         assert_eq!(texture.get_rgba(), &expected_bytes);
+    }
+
+    #[test]
+    fn test_magic_numbers() {
+        let png_chunk = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48];
+        let png = Texture::load(&png_chunk);
+        assert_ne!(png.err().unwrap().to_string(), "Unsupported image format");
+
+        let jpeg_chunk = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00, 0x60];
+        let jpeg = Texture::load(&jpeg_chunk);
+        assert_ne!(jpeg.err().unwrap().to_string(), "Unsupported image format");
+
+        let webp_chunk = [0x52, 0x49, 0x46, 0x46, 0x88, 0x0D, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x58];
+        let webp = Texture::load(&webp_chunk);
+        assert_eq!(webp.err().unwrap().to_string(), "Unsupported image format");
     }
 }

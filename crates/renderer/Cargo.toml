@@ -25,7 +25,6 @@ wgpu.workspace = true
 
 anyhow.workspace = true
 bytemuck.workspace = true
-image.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wgpu = { version = "28.0", features = ["webgl"] }
