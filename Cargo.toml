@@ -26,7 +26,7 @@ vyxen = { version = "0.2.0", path = "crates/vyxen" }
 
 winit = { version = "0.30", features = ["android-native-activity"] }
 wgpu = "28.0"
-pollster = "0.3"
+pollster = "1.0.1"
 bytemuck = { version = "1.24", features = ["derive"] }
 skrifa = "0.45.1"
 zeno = "0.3.3"
@@ -37,9 +37,5 @@ png = { version = "0.18.1", default-features = false, features = ["zlib-rs"] }
 anyhow = "1.0"
 
 wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4.30"
-web-sys = { version = "0.3", features = [
-    "Document",
-    "Window",
-    "Element",
-]}
+wasm-bindgen-futures = "0.4"
+web-time = "1"

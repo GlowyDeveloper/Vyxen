@@ -112,7 +112,7 @@ The currently supported OS:
 |DirectX 12|✅    |             |         |   |
 |OpenGL    |✅    |✅           |2️⃣      |   |
 |WebGPU    |       |             |         |✅|
-|Tested    |✅    |✅           |         |   |
+|Tested    |✅    |✅           |         |✅|
 
 ✅ = Works
 1️⃣ = MoltenVK required
@@ -241,16 +241,16 @@ node.set_is_static(true);
 node.set_physics_process(move |node, _, dt, ctx| {
     let speed = 2.0 * dt;
     if ctx.is_held(KeyCode::KeyW) {
-        node.move_by(Vector2 { x: 0.0, y: speed });
+        node.move_by(Vector2 { x: 0.0, y: speed * dt });
     }
     if ctx.is_held(KeyCode::KeyA) {
-        node.move_by(Vector2 { x: -speed, y: 0.0 });
+        node.move_by(Vector2 { x: -speed * dt, y: 0.0 });
     }
     if ctx.is_held(KeyCode::KeyS) {
-        node.move_by(Vector2 { x: 0.0, y: -speed });
+        node.move_by(Vector2 { x: 0.0, y: -speed * dt });
     }
     if ctx.is_held(KeyCode::KeyD) {
-        node.move_by(Vector2 { x: speed, y: 0.0 });
+        node.move_by(Vector2 { x: speed * dt, y: 0.0 });
     }
 });
 scene.add_node(node);

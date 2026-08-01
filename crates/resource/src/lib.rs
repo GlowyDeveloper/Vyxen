@@ -26,7 +26,11 @@ pub trait Resource: Sized {
 /// # Errors
 ///
 /// Returns an error if the file could not be read or the data could not be parsed.
+#[allow(unused)]
 pub fn load_path<T: Resource>(path: impl AsRef<Path>) -> anyhow::Result<T> {
+    #[cfg(target_arch = "wasm32")]
+    anyhow::bail!("wasm32 does not support file systems.");
+
     let data = std::fs::read(path)?;
     load_data::<T>(&data)
 }

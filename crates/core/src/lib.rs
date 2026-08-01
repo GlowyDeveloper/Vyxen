@@ -1,11 +1,17 @@
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
-use std::{any::Any, collections::HashMap, path::PathBuf, sync::Arc, time::Instant};
+use std::{
+    any::Any,
+    collections::HashMap,
+    path::PathBuf,
+    sync::Arc,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
 use vyxen_input::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase};
-use vyxen_math::{Random, Vector2};
+use vyxen_math::Vector2;
 use vyxen_physics2d::{Collision, ContactPoints, Manifold, RigidBody, SoftBody};
 use vyxen_renderer::{Camera, Sprite, State, WindowConfig, WindowEvent};
 use vyxen_ui::UiElement;
@@ -20,6 +26,13 @@ use winit::{
 
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::EventLoopExtWebSys;
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
+
+static NEXT_NODE_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Scene to hold nodes in the game
 ///
@@ -649,6 +662,9 @@ pub struct Game {
     ctx: Context,
     last_redraw: Instant,
     dt: f32,
+
+    #[cfg(target_arch = "wasm32")]
+    proxy: Option<winit::event_loop::EventLoopProxy<State>>,
 }
 
 impl Default for Game {
@@ -682,6 +698,9 @@ impl Game {
             },
             last_redraw: Instant::now(),
             dt: 0.0,
+
+            #[cfg(target_arch = "wasm32")]
+            proxy: None,
         }
     }
 
@@ -884,7 +903,14 @@ impl Game {
     where
         F: FnMut(&mut Game, Event, f32) + 'static,
     {
-        let event_loop = EventLoop::new()?;
+        let event_loop: EventLoop<State> = EventLoop::with_user_event().build()?;
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            let proxy = Some(event_loop.create_proxy());
+            self.proxy = proxy;
+        }
+
         self.callback = Some(Box::new(callback));
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -915,7 +941,13 @@ impl Game {
     /// ```
     #[allow(unused_mut)]
     pub fn run_without_callback(mut self) -> anyhow::Result<()> {
-        let event_loop = EventLoop::new()?;
+        let event_loop: EventLoop<State> = EventLoop::with_user_event().build()?;
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            let proxy = Some(event_loop.create_proxy());
+            self.proxy = proxy;
+        }
 
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -1040,7 +1072,7 @@ impl Game {
     }
 }
 
-impl ApplicationHandler for Game {
+impl ApplicationHandler<State> for Game {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window = Arc::new(
             event_loop
@@ -1048,14 +1080,28 @@ impl ApplicationHandler for Game {
                 .unwrap(),
         );
 
-        let mut state = pollster::block_on(State::new(window, self.ctx.config.clone())).unwrap();
-
-        state.resize(
-            state.get_window().inner_size().width,
-            state.get_window().inner_size().height,
-        );
-
-        self.state = Some(state);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let mut state =
+                pollster::block_on(State::new(window, self.ctx.config.clone())).unwrap();
+            state.resize(
+                state.get_window().inner_size().width,
+                state.get_window().inner_size().height,
+            );
+            self.state = Some(state);
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            let config = self.ctx.config.clone();
+            let proxy = self.proxy.clone().unwrap();
+            wasm_bindgen_futures::spawn_local(async move {
+                assert!(
+                    proxy
+                        .send_event(State::new(window, config.clone()).await.unwrap())
+                        .is_ok()
+                )
+            });
+        }
     }
 
     fn window_event(
@@ -1129,6 +1175,15 @@ impl ApplicationHandler for Game {
         if let Some(state) = &self.state {
             state.get_window().request_redraw();
         }
+    }
+
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: State) {
+        event.get_window().request_redraw();
+        event.resize(
+            event.get_window().inner_size().width,
+            event.get_window().inner_size().height,
+        );
+        self.state = Some(event);
     }
 }
 
@@ -1605,7 +1660,7 @@ impl Node {
     pub fn new(name: String) -> Self {
         Self {
             name,
-            id: Random::from_time().next_u64(),
+            id: NEXT_NODE_ID.fetch_add(1, Ordering::Relaxed),
             components: Vec::new(),
             children: Vec::new(),
             position: Vector2::zero(),

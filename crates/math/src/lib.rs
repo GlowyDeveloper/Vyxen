@@ -1,10 +1,12 @@
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
-use std::{
-    ops::{Add, Div, Mul, Neg, Range, Sub},
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::ops::{Add, Div, Mul, Neg, Range, Sub};
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::{SystemTime, UNIX_EPOCH};
+#[cfg(target_arch = "wasm32")]
+use web_time::{SystemTime, UNIX_EPOCH};
 
 /// A 2D vector with x and y components.
 ///
@@ -461,7 +463,8 @@ impl Random {
         self.state = self
             .state
             .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
+            .wrapping_add(1442695040888963407)
+            .wrapping_mul(self.state);
 
         let mut x = self.state;
 

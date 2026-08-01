@@ -1,8 +1,11 @@
 use crate::Resource;
 use png::{ColorType, Decoder, Transformations};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::{any::Any, io::Cursor};
-use vyxen_math::{Random, Vector2};
+use vyxen_math::Vector2;
 use zune_jpeg::zune_core::{bytestream::ZCursor, colorspace::ColorSpace, options::DecoderOptions};
+
+static NEXT_TEXTURE_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Texture/Image type
 ///
@@ -104,10 +107,8 @@ impl Resource for Texture {
                 }
             };
 
-            let id = Random::from_time().next_u64();
-
             Ok(Self {
-                id,
+                id: NEXT_TEXTURE_ID.fetch_add(1, Ordering::Relaxed),
                 dim: Vector2 {
                     x: width as f32,
                     y: height as f32,
@@ -115,15 +116,13 @@ impl Resource for Texture {
                 rgba,
             })
         } else if data.starts_with(b"\xff\xd8\xff") {
-            let id = Random::from_time().next_u64();
-
             let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGBA);
             let mut decoder = zune_jpeg::JpegDecoder::new_with_options(ZCursor::new(data), options);
             let pixels = decoder.decode().map_err(|e| anyhow::anyhow!("{e:?}"))?;
             let (width, height) = decoder.dimensions().unwrap();
 
             Ok(Self {
-                id,
+                id: NEXT_TEXTURE_ID.fetch_add(1, Ordering::Relaxed),
                 dim: Vector2 {
                     x: width as f32,
                     y: height as f32,
@@ -153,7 +152,7 @@ impl Texture {
     /// ```
     pub fn from_raw(dim: Vector2, rgba: Vec<u8>) -> Self {
         Self {
-            id: Random::from_time().next_u64(),
+            id: NEXT_TEXTURE_ID.fetch_add(1, Ordering::Relaxed),
             dim,
             rgba,
         }

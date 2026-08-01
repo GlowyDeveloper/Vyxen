@@ -5,6 +5,11 @@ use vyxen_ui::{UiElement, UiType};
 use wgpu::util::DeviceExt as _;
 use winit::window::Window;
 
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
+
 use crate::{
     Camera, Sprite, WindowConfig,
     backend::{
@@ -53,7 +58,7 @@ pub struct State {
     text_draw_ranges: Vec<Option<(u32, u32)>>,
     glyph_atlas_cache: HashMap<(u64, u32, String), (GpuTexture, GlyphMap)>,
     custom_config: WindowConfig,
-    last_frame_instant: std::time::Instant,
+    last_frame_instant: Instant,
     fps: f32,
     frame_accum_time: f32,
     frame_accum_count: u32,
@@ -536,7 +541,7 @@ impl State {
             glyph_atlas_cache: HashMap::new(),
             text_draw_ranges: Vec::new(),
             custom_config,
-            last_frame_instant: std::time::Instant::now(),
+            last_frame_instant: Instant::now(),
             fps: 0.0,
             frame_accum_time: 0.0,
             frame_accum_count: 0,
@@ -559,6 +564,9 @@ impl State {
 
             self.surface.configure(&self.device, &self.config);
             self.is_surface_configured = true;
+
+            self.camera.set_width(self.config.width as f32);
+            self.camera.set_height(self.config.height as f32);
         }
     }
 
@@ -709,7 +717,7 @@ impl State {
     pub fn render(&mut self) -> anyhow::Result<()> {
         self.window.request_redraw();
 
-        let now = std::time::Instant::now();
+        let now = Instant::now();
         let dt = (now - self.last_frame_instant).as_secs_f32();
         self.last_frame_instant = now;
 

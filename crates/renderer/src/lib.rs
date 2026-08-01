@@ -601,6 +601,23 @@ impl From<WindowConfig> for WindowAttributes {
             attr = attr.with_position(position);
         }
 
+        #[cfg(target_arch = "wasm32")]
+        {
+            use wasm_bindgen::JsCast;
+            use wasm_bindgen::UnwrapThrowExt;
+            use winit::platform::web::WindowAttributesExtWebSys;
+
+            const CANVAS_ID: &str = "canvas";
+
+            let window = wgpu::web_sys::window().unwrap_throw();
+            let document = window.document().unwrap_throw();
+            let canvas = document
+                .get_element_by_id(CANVAS_ID)
+                .expect_throw("expected a <canvas id=\"canvas\"> element in the DOM");
+            let html_canvas_element = canvas.unchecked_into();
+            attr = attr.with_canvas(Some(html_canvas_element));
+        }
+
         attr
     }
 }

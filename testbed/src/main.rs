@@ -6,7 +6,8 @@ fn main() {
     let mut game = Game::new();
     let mut scene = Scene::new();
 
-    let mut sprite1 = Sprite::with_texture(load_path("testbed/src/test-img.png").unwrap());
+    //let mut sprite1 = Sprite::with_texture(load_path("testbed/src/test-img.png").unwrap());
+    let mut sprite1 = Sprite::with_texture(load_data(include_bytes!("test-img.png")).unwrap());
     sprite1.set_shape(Box::new(200.0, 200.0));
 
     let mut node1 = Node::new("Foo".to_string());
@@ -57,6 +58,14 @@ fn main() {
     node4.move_to(Vector2 { x: 200.0, y: 200.0 });
     node4.set_is_static(true);
     scene.add_node(node4);
+
+    let mut sprite5 = Sprite::with_color(CYAN);
+    sprite5.set_shape(Circle::new(10.0));
+    let mut node5 = Node::new("Bar3".to_string());
+    node5.move_to(Vector2 { x: 300.0, y: 100.0 });
+    node5.add_component(sprite5);
+    node5.set_is_static(true);
+    scene.add_node(node5);
 
     game.load_scene(scene);
 

@@ -6,11 +6,13 @@ use skrifa::{
 use std::{
     any::Any,
     collections::{HashMap, HashSet},
+    sync::atomic::{AtomicU64, Ordering},
 };
-use vyxen_math::Random;
 use zeno::{Command, Mask, PathBuilder, Transform};
 
 use crate::Resource;
+
+static NEXT_TEXT_ID: AtomicU64 = AtomicU64::new(1);
 
 /// A font resource loaded from a TTF file.
 ///
@@ -35,7 +37,7 @@ impl Resource for Font {
     fn load(data: &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
             data: data.to_vec(),
-            id: Random::from_time().next_u64(),
+            id: NEXT_TEXT_ID.fetch_add(1, Ordering::Relaxed),
         })
     }
 }

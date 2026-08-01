@@ -1310,9 +1310,9 @@ dependencies = [
 
 [[package]]
 name = "pollster"
-version = "0.3.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22686f4785f02a4fcc856d3b3bb19bf6c8160d103f7a99cc258bddd0251dc7f2"
+checksum = "bc6355899e1c9462875b6757c79f3caa011a1fdae12bbb1a2e72dd1f234f8336"
 
 [[package]]
 name = "portable-atomic"
@@ -1864,6 +1864,8 @@ dependencies = [
  "vyxen-physics2d",
  "vyxen-renderer",
  "vyxen-ui",
+ "wasm-bindgen-futures",
+ "web-time",
  "winit",
 ]
 
@@ -1884,6 +1886,9 @@ dependencies = [
 [[package]]
 name = "vyxen-math"
 version = "0.2.0"
+dependencies = [
+ "web-time",
+]
 
 [[package]]
 name = "vyxen-physics2d"
@@ -1903,6 +1908,8 @@ dependencies = [
  "vyxen-math",
  "vyxen-resource",
  "vyxen-ui",
+ "wasm-bindgen",
+ "web-time",
  "wgpu",
  "winit",
 ]
