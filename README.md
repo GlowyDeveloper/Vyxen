@@ -238,18 +238,19 @@ sprite.set_draw_type(DrawType::Color(Color::from_rgb(0.2, 0.8, 0.3)));
 let mut node = Node::new("Foo".to_string());
 node.add_component(sprite);
 node.set_is_static(true);
-node.set_physics_process(move |node, _, _, ctx| {
+node.set_physics_process(move |node, _, dt, ctx| {
+    let speed = 2.0 * dt;
     if ctx.is_held(KeyCode::KeyW) {
-        node.move_by(Vector2 { x: 0.0, y: 0.2 });
+        node.move_by(Vector2 { x: 0.0, y: speed });
     }
     if ctx.is_held(KeyCode::KeyA) {
-        node.move_by(Vector2 { x: -0.2, y: 0.0 });
+        node.move_by(Vector2 { x: -speed, y: 0.0 });
     }
     if ctx.is_held(KeyCode::KeyS) {
-        node.move_by(Vector2 { x: 0.0, y: -0.2 });
+        node.move_by(Vector2 { x: 0.0, y: -speed });
     }
     if ctx.is_held(KeyCode::KeyD) {
-        node.move_by(Vector2 { x: 0.2, y: 0.0 });
+        node.move_by(Vector2 { x: speed, y: 0.0 });
     }
 });
 scene.add_node(node);
@@ -270,7 +271,7 @@ use vyxen::prelude::*;
 
 let mut game = Game::new();
 
-let _ = game.run(|_, _, event| {
+let _ = game.run(|_, event, _| {
     match event {
         Event::MouseInput(button, state, position) => {
             println!("Button: {:?}", button);

@@ -1,40 +1,12 @@
 use vyxen::prelude::*;
 
-fn test_load() {
-    for _ in 0..=100 {
-        load_path::<Texture>("testbed/src/test-img.jpg").unwrap();
-    }
-    println!("-------------------------------------------");
-    for _ in 0..=100 {
-        load_path::<Texture>("testbed/src/test-img.png").unwrap();
-    }
-    println!("-------------------------------------------");
-    for _ in 0..=100 {
-        load_path::<Texture>("testbed/src/test2.jpg").unwrap();
-    }
-    println!("-------------------------------------------");
-    for _ in 0..=100 {
-        load_path::<Texture>("testbed/src/test2.png").unwrap();
-    }
-    println!("-------------------------------------------");
-    for _ in 0..=100 {
-        load_path::<Texture>("testbed/src/test3.png").unwrap();
-    }
-    println!("-------------------------------------------");
-    for _ in 0..=100 {
-        load_path::<Texture>("testbed/src/test3.jpg").unwrap();
-    }
-}
-
 fn main() {
-    test_load();
-    
-    /*let speed = 2.0;
+    let speed = 200.0;
 
     let mut game = Game::new();
     let mut scene = Scene::new();
 
-    let mut sprite1 = Sprite::with_texture(load_path("testbed/src/test-img.jpg").unwrap());
+    let mut sprite1 = Sprite::with_texture(load_path("testbed/src/test-img.png").unwrap());
     sprite1.set_shape(Box::new(200.0, 200.0));
 
     let mut node1 = Node::new("Foo".to_string());
@@ -48,7 +20,8 @@ fn main() {
     let mut node2 = Node::new("Foo2".to_string());
     node2.add_component(sprite2);
     node2.set_is_static(true);
-    node2.set_physics_process(move |node, _, _, ctx| {
+    node2.set_physics_process(move |node, _, dt, ctx| {
+        let speed = speed * dt;
         if ctx.is_held(KeyCode::ArrowUp) {
             node.move_by(Vector2 { x: 0.0, y: speed });
         }
@@ -81,13 +54,14 @@ fn main() {
     );
     let mut node4 = Node::new("Bar2".to_string());
     node4.add_component(ui4);
-    node4.move_to(Vector2 { x: 200.0, y: 540.0 });
+    node4.move_to(Vector2 { x: 200.0, y: 200.0 });
     node4.set_is_static(true);
     scene.add_node(node4);
 
     game.load_scene(scene);
 
-    let _ = game.run(move |game, _, _| {
+    let _ = game.run(move |game, _, dt| {
+        let speed = speed * dt;
         if game.is_held(KeyCode::KeyW) {
             let cam_pos = game.get_camera().unwrap().get_position();
             game.get_camera_mut()
@@ -112,5 +86,28 @@ fn main() {
                 .unwrap()
                 .set_position(cam_pos + Vector2 { x: speed, y: 0.0 });
         }
-    });*/
+
+        if game.is_held(KeyCode::KeyL) {
+            for i in 0..10_000_u64 {
+                for j in 0..10_000_u64 {
+                    std::hint::black_box(i.wrapping_mul(j));
+                }
+            }
+        }
+
+        game.get_scene_mut().unwrap().remove_node_by_id(50).unwrap();
+
+        let ui_fps2 = UiElement::with_text(
+            format!("FPS: {}", game.get_fps().unwrap_or_default().round()),
+            load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
+            32.0,
+        );
+        let mut fps2 = Node::new("FPS".to_string());
+        fps2.add_component(ui_fps2);
+        fps2.move_to(Vector2 { x: 100.0, y: 560.0 });
+        fps2.set_is_static(true);
+        fps2.set_id(50);
+
+        game.get_scene_mut().unwrap().add_node(fps2);
+    });
 }

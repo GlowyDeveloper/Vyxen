@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
-use std::{any::Any, collections::HashMap, path::PathBuf, sync::Arc};
+use std::{any::Any, collections::HashMap, path::PathBuf, sync::Arc, time::Instant};
 
 use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
 use vyxen_input::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase};
@@ -628,7 +628,7 @@ impl Scene {
     }
 }
 
-type Callback = Box<dyn FnMut(&mut Game, &ActiveEventLoop, Event)>;
+type Callback = Box<dyn FnMut(&mut Game, Event, f32)>;
 
 /// Game struct to hold everything
 ///
@@ -647,6 +647,8 @@ pub struct Game {
     state: Option<State>,
     callback: Option<Callback>,
     ctx: Context,
+    last_redraw: Instant,
+    dt: f32,
 }
 
 impl Default for Game {
@@ -678,6 +680,8 @@ impl Game {
                 cursor_pos: Vector2::zero(),
                 config: WindowConfig::new(),
             },
+            last_redraw: Instant::now(),
+            dt: 0.0,
         }
     }
 
@@ -857,6 +861,11 @@ impl Game {
 
     /// Runs the game.
     ///
+    /// Fields are:
+    ///  - `Game` (the current game)
+    ///  - `Event` (the event that triggered the callback)
+    ///  - `f32` (the delta time since the last frame redraw)
+    ///
     /// # Examples
     /// ```rust, no_run
     /// use vyxen_core::{Scene, Game};
@@ -873,7 +882,7 @@ impl Game {
     /// ```
     pub fn run<F>(mut self, callback: F) -> anyhow::Result<()>
     where
-        F: FnMut(&mut Game, &ActiveEventLoop, Event) + 'static,
+        F: FnMut(&mut Game, Event, f32) + 'static,
     {
         let event_loop = EventLoop::new()?;
         self.callback = Some(Box::new(callback));
@@ -997,6 +1006,38 @@ impl Game {
     pub fn get_mouse_position(&self) -> Vector2 {
         self.ctx.cursor_pos
     }
+
+    /// Returns the delta time.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::Game;
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// assert_eq!(game.get_last_dt(), 0.0); // initial value is 0.0
+    /// ```
+    pub fn get_last_dt(&self) -> f32 {
+        self.dt
+    }
+
+    /// Returns the frames per second.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen_core::Game;
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// assert_eq!(game.get_fps(), None); // initial value is None
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// Returns `None` if the state is not initialized.
+    pub fn get_fps(&self) -> Option<f32> {
+        self.state.as_ref().map(|s| s.get_fps())
+    }
 }
 
 impl ApplicationHandler for Game {
@@ -1031,7 +1072,7 @@ impl ApplicationHandler for Game {
                 _ => event.clone().into(),
             };
             if into != Event::Unknown {
-                callback(self, event_loop, into);
+                callback(self, into, self.dt);
             }
 
             self.callback = Some(callback);
@@ -1048,7 +1089,12 @@ impl ApplicationHandler for Game {
                 }
             }
             WindowEvent::RedrawRequested => {
-                self.step(1.0 / 60.0);
+                let now = Instant::now();
+                let dt = (now - self.last_redraw).as_secs_f32();
+                self.last_redraw = now;
+                self.dt = dt;
+
+                self.step(dt);
                 self.update_sprites();
 
                 if let Some(state) = &mut self.state {

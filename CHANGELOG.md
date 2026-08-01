@@ -10,6 +10,7 @@
   - Text
 - Ui rendering
 - Font rendering
+- Delta time and FPS
 
 ### Fixes
 
@@ -20,7 +21,7 @@
 
 - Privatized renderer backend
 - Small optimizations on renderer sorting and copying sprites
-- Expanded Texture loading to instead use `zune_png` and `zune_jpeg`
+- Expanded Texture loading to instead use `png` and `zune_jpeg`
 
 ## v0.1.0 (24/07/2026)
 

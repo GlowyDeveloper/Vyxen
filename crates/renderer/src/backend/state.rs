@@ -53,6 +53,10 @@ pub struct State {
     text_draw_ranges: Vec<Option<(u32, u32)>>,
     glyph_atlas_cache: HashMap<(u64, u32, String), (GpuTexture, GlyphMap)>,
     custom_config: WindowConfig,
+    last_frame_instant: std::time::Instant,
+    fps: f32,
+    frame_accum_time: f32,
+    frame_accum_count: u32,
 }
 
 impl State {
@@ -532,6 +536,10 @@ impl State {
             glyph_atlas_cache: HashMap::new(),
             text_draw_ranges: Vec::new(),
             custom_config,
+            last_frame_instant: std::time::Instant::now(),
+            fps: 0.0,
+            frame_accum_time: 0.0,
+            frame_accum_count: 0,
         })
     }
 
@@ -700,6 +708,19 @@ impl State {
     /// Renders the scene to the screen.
     pub fn render(&mut self) -> anyhow::Result<()> {
         self.window.request_redraw();
+
+        let now = std::time::Instant::now();
+        let dt = (now - self.last_frame_instant).as_secs_f32();
+        self.last_frame_instant = now;
+
+        self.frame_accum_time += dt;
+        self.frame_accum_count += 1;
+
+        if self.frame_accum_time >= 1.0 {
+            self.fps = self.frame_accum_count as f32 / self.frame_accum_time;
+            self.frame_accum_time = 0.0;
+            self.frame_accum_count = 0;
+        }
 
         if !self.is_surface_configured {
             return Ok(());
@@ -982,5 +1003,10 @@ impl State {
     /// Returns a mutable reference to the camera.
     pub fn get_camera_mut(&mut self) -> &mut Camera {
         &mut self.camera
+    }
+
+    /// Returns the current FPS.
+    pub fn get_fps(&self) -> f32 {
+        self.fps
     }
 }

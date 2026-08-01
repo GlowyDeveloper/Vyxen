@@ -504,7 +504,14 @@ impl WindowConfig {
     /// config.set_icon(&icon);
     /// ```
     pub fn set_icon(&mut self, icon: Texture) {
-        self.icon = Some(Icon::from_rgba(icon.get_rgba().to_vec(), icon.get_dimensions().x as u32, icon.get_dimensions().y as u32).unwrap());
+        self.icon = Some(
+            Icon::from_rgba(
+                icon.get_rgba().to_vec(),
+                icon.get_dimensions().x as u32,
+                icon.get_dimensions().y as u32,
+            )
+            .unwrap(),
+        );
     }
 
     /// Enables or disables borderless fullscreen mode.
