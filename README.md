@@ -127,7 +127,7 @@ let mut game = Game::new();
 let mut scene = Scene::new();
 
 let mut sprite = Sprite::new();
-sprite.set_shape(Box::new(20.0, 2.0));
+sprite.set_shape(Box::new(200.0, 20.0));
 sprite.set_draw_type(DrawType::Color(GREEN));
 
 let mut node = Node::new("Foo".to_string());
@@ -149,7 +149,7 @@ let mut game = Game::new();
 let mut scene = Scene::new();
 
 let mut sprite = Sprite::new();
-sprite.set_shape(Box::new(20.0, 2.0));
+sprite.set_shape(Box::new(200.0, 20.0));
 sprite.set_draw_type(DrawType::Color(GREEN));
 
 let mut node = Node::new("Foo".to_string());
@@ -201,7 +201,7 @@ Once that is added, the window is changed to this:
 
 ### Keyboard
 
-There's two metheods of getting keyboard inputs:
+There's two methods of getting keyboard inputs:
 
 ```rust, no_run
 use vyxen::prelude::*;
@@ -225,42 +225,25 @@ let _ = game.run(|game, _event_loop, _window_event| {
 
 But if you are using scripts, you must use `Context`.
 
-```rust, no_run
+```rust
 use vyxen::prelude::*;
 
-let mut game = Game::new();
-let mut scene = Scene::new();
-
-let mut sprite = Sprite::new();
-sprite.set_shape(Box::new(20.0, 2.0));
-sprite.set_draw_type(DrawType::Color(Color::from_rgb(0.2, 0.8, 0.3)));
-
 let mut node = Node::new("Foo".to_string());
-node.add_component(sprite);
-node.set_is_static(true);
 node.set_physics_process(move |node, _, dt, ctx| {
-    let speed = 2.0 * dt;
     if ctx.is_held(KeyCode::KeyW) {
-        node.move_by(Vector2 { x: 0.0, y: speed * dt });
+        println!("W is held!");
     }
     if ctx.is_held(KeyCode::KeyA) {
-        node.move_by(Vector2 { x: -speed * dt, y: 0.0 });
+        println!("A is held!");
     }
     if ctx.is_held(KeyCode::KeyS) {
-        node.move_by(Vector2 { x: 0.0, y: -speed * dt });
+        println!("S is held!");
     }
     if ctx.is_held(KeyCode::KeyD) {
-        node.move_by(Vector2 { x: speed * dt, y: 0.0 });
+        println!("D is held!");
     }
 });
-scene.add_node(node);
-
-game.load_scene(scene);
-
-game.run_without_callback().unwrap();
 ```
-
-<img width="50%" src="https://raw.githubusercontent.com/GlowyDeveloper/Vyxen/refs/heads/master/docs/Example-3.gif">
 
 ### Mouse
 
@@ -282,6 +265,47 @@ let _ = game.run(|_, event, _| {
     }
 });
 ```
+
+## A Playable Example
+
+```rust, no_run
+use vyxen::prelude::*;
+
+let mut game = Game::new();
+let mut scene = Scene::new();
+
+let mut sprite = Sprite::new();
+sprite.set_shape(Box::new(200.0, 20.0));
+sprite.set_draw_type(DrawType::Color(Color::from_rgb(0.2, 0.8, 0.3)));
+
+let mut node = Node::new("Foo".to_string());
+node.add_component(sprite);
+node.set_is_static(true);
+node.set_physics_process(move |node, _, dt, ctx| {
+    let speed = 20.0 * dt;
+    if ctx.is_held(KeyCode::KeyW) {
+        node.move_by(Vector2 { x: 0.0, y: speed * dt });
+    }
+    if ctx.is_held(KeyCode::KeyA) {
+        node.move_by(Vector2 { x: -speed * dt, y: 0.0 });
+    }
+    if ctx.is_held(KeyCode::KeyS) {
+        node.move_by(Vector2 { x: 0.0, y: -speed * dt });
+    }
+    if ctx.is_held(KeyCode::KeyD) {
+        node.move_by(Vector2 { x: speed * dt, y: 0.0 });
+    }
+});
+scene.add_node(node);
+
+game.load_scene(scene);
+
+game.run_without_callback().unwrap();
+```
+
+This how it should look like in the end:
+
+<img width="50%" src="https://raw.githubusercontent.com/GlowyDeveloper/Vyxen/refs/heads/master/docs/Example-3.gif">
 
 ## License
 

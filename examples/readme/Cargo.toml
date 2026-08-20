@@ -1,0 +1,13 @@
+[package]
+name = "readme"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+vyxen = { path = "../../crates/vyxen" }

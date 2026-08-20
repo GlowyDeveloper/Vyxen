@@ -17,6 +17,7 @@ use crate::{
         MAX_SPRITE_VERTEX_BUFFER_SIZE, MAX_SPRITES, MAX_UI_ELEMENTS, SpriteRaw, UiCameraUniform,
         UiRaw, Vertex,
         shape_geometry::{sprite_geometry, text_geometry},
+        write_buffer_padded
     },
 };
 
@@ -804,19 +805,34 @@ impl State {
                 let (vertices, indices) = sprite_geometry(sprite.get_vertices());
                 let vertex_bytes = bytemuck::cast_slice(&vertices);
                 let index_bytes = bytemuck::cast_slice(&indices);
-
-                if vertex_offset + vertex_bytes.len() as u64 > MAX_SPRITE_VERTEX_BUFFER_SIZE {
+                
+                let vertex_padded_len = (vertex_bytes.len() + 3) & !3;
+                let index_padded_len = (index_bytes.len() + 3) & !3;
+                
+                if vertex_offset + vertex_padded_len as u64 > MAX_SPRITE_VERTEX_BUFFER_SIZE {
                     anyhow::bail!("Sprite vertex buffer overflow");
                 }
-                if index_offset + index_bytes.len() as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
+                if index_offset + index_padded_len as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
                     anyhow::bail!("Sprite index buffer overflow");
                 }
-
-                self.queue
-                    .write_buffer(&self.vertex_buffer, vertex_offset, vertex_bytes);
-                self.queue
-                    .write_buffer(&self.index_buffer, index_offset, index_bytes);
-
+                
+                let vertex_start = vertex_offset;
+                let index_start = index_offset;
+                
+                vertex_offset += write_buffer_padded(
+                    &self.queue,
+                    &self.vertex_buffer,
+                    vertex_start,
+                    vertex_bytes,
+                );
+                
+                index_offset += write_buffer_padded(
+                    &self.queue,
+                    &self.index_buffer,
+                    index_start,
+                    index_bytes,
+                );
+                
                 match &sprite.draw_type {
                     crate::DrawType::Texture(texture) => {
                         let id = texture.get_id();
@@ -826,37 +842,38 @@ impl State {
                                 anyhow::bail!("GpuTexture not found in cache for id: {}", id)
                             }
                         };
-
+                
                         render_pass.set_pipeline(&self.world_pipeline_texture);
                         render_pass.set_bind_group(0, &gpu_texture.bind_group, &[]);
                         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
                     }
+                
                     crate::DrawType::Color(_) => {
                         render_pass.set_pipeline(&self.world_pipeline_color);
                         render_pass.set_bind_group(0, &self.empty_bind_group, &[]);
                         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
                     }
+                
                     crate::DrawType::None => continue,
                 }
-
+                
                 render_pass.set_vertex_buffer(
                     0,
                     self.vertex_buffer
-                        .slice(vertex_offset..vertex_offset + vertex_bytes.len() as u64),
+                        .slice(vertex_start..vertex_start + vertex_bytes.len() as u64),
                 );
+                
                 render_pass.set_index_buffer(
                     self.index_buffer
-                        .slice(index_offset..index_offset + index_bytes.len() as u64),
+                        .slice(index_start..index_start + index_bytes.len() as u64),
                     wgpu::IndexFormat::Uint16,
                 );
+                
                 render_pass.draw_indexed(
                     0..indices.len() as u32,
                     0,
                     sprite_index as u32..sprite_index as u32 + 1,
                 );
-
-                vertex_offset += vertex_bytes.len() as u64;
-                index_offset += index_bytes.len() as u64;
             }
 
             vertex_offset = 0;

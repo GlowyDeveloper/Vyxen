@@ -493,3 +493,24 @@ impl GlyphRaw {
         }
     }
 }
+
+fn write_buffer_padded(
+    queue: &wgpu::Queue,
+    buffer: &wgpu::Buffer,
+    offset: u64,
+    data: &[u8],
+) -> u64 {
+    let alignment = wgpu::COPY_BUFFER_ALIGNMENT as usize;
+    let padded_len = (data.len() + alignment - 1) & !(alignment - 1);
+
+    if padded_len == data.len() {
+        queue.write_buffer(buffer, offset, data);
+    } else {
+        let mut padded = vec![0u8; padded_len];
+        padded[..data.len()].copy_from_slice(data);
+        queue.write_buffer(buffer, offset, &padded);
+    }
+
+    padded_len as u64
+}
+

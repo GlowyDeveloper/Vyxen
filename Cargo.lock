@@ -123,6 +123,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "ball-pit"
+version = "0.2.0"
+dependencies = [
+ "vyxen",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -335,6 +342,13 @@ dependencies = [
  "bitflags 2.13.0",
  "core-foundation 0.10.1",
  "libc",
+]
+
+[[package]]
+name = "counter"
+version = "0.2.0"
+dependencies = [
+ "vyxen",
 ]
 
 [[package]]
@@ -1404,6 +1418,13 @@ dependencies = [
  "bytemuck",
  "font-types",
  "once_cell",
+]
+
+[[package]]
+name = "readme"
+version = "0.2.0"
+dependencies = [
+ "vyxen",
 ]
 
 [[package]]

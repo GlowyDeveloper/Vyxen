@@ -5,8 +5,8 @@ use std::{
     any::Any,
     collections::HashMap,
     path::PathBuf,
-    sync::Arc,
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{Arc, atomic::{AtomicU64, Ordering}},
+    vec,
 };
 
 use vyxen_geometry::{AABB, Polygon, Shape, ShapeType, shape_type_from_shape};
@@ -491,6 +491,9 @@ impl Scene {
                 if !called || (node_a.on_collision_default && node_b.on_collision_default) {
                     Node::on_collision_default(&mut node_a, &mut node_b, manifold);
                 }
+
+                self.nodes.insert(id_a, node_a);
+                self.nodes.insert(id_b, node_b);
             }
         }
     }
@@ -1069,6 +1072,71 @@ impl Game {
     /// Returns `None` if the state is not initialized.
     pub fn get_fps(&self) -> Option<f32> {
         self.state.as_ref().map(|s| s.get_fps())
+    }
+
+    /// Converts screen coordinates to world coordinates
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_core::Game;
+    /// 
+    /// let mut game = Game::new();
+    /// 
+    /// assert_eq!(game.screen_to_world(Vector2 { x: 500.0, y: 200.0 }));
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// Returns `None` if the state is not initialized.
+    pub fn screen_to_world(&self, vector2: Vector2) -> Option<Vector2> {
+        if let Some(camera) = self.get_camera() {
+            let screen_center = Vector2 {
+                x: camera.get_width(),
+                y: camera.get_height(),
+            } / 2.0;
+
+            let res = camera.get_position()
+                + (vector2 - screen_center) / camera.get_zoom();
+        
+            Some(
+                Vector2 { x: res.x, y: -res.y }
+            )
+        } else {
+            None
+        }
+    }
+
+    /// Converts world coordinates to screen coordinates
+    /// 
+    /// # Examples
+    /// ```rust
+    /// use vyxen_math::Vector2;
+    /// use vyxen_core::Game;
+    /// 
+    /// let mut game = Game::new();
+    /// 
+    /// assert_eq!(game.world_to_screen(Vector2 { x: 500.0, y: 200.0 }));
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// Returns `None` if the state is not initialized.
+    pub fn world_to_screen(&self, vector2: Vector2) -> Option<Vector2> {
+        if let Some(camera) = self.get_camera() {
+            let screen_center = Vector2 {
+                x: camera.get_width(),
+                y: camera.get_height(),
+            } / 2.0;
+
+            let res = (vector2 - screen_center) * camera.get_zoom() + camera.get_position();
+        
+            Some(
+                Vector2 { x: res.x, y: -res.y }
+            )
+        } else {
+            None
+        }
     }
 }
 
@@ -2957,10 +3025,15 @@ impl Node {
                 *collider.get_hitbox_mut() = ShapeType::Polygon(Polygon::new(&new_vertices));
                 collider.set_uninitilized();
             }
+            if let Some(sprite) = self.get_component_mut::<Sprite>() {
+                sprite.set_shape(Polygon::new(&new_vertices));
+            }
         }
     }
 }
 
+/// A trait that structs can implement to be
+/// added to a node
 pub trait Component {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;

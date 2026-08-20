@@ -115,10 +115,166 @@ impl SoftBody {
         let points = match () {
             _ if shape.as_any().is::<Circle>() => {
                 if let Some(circle) = shape.as_any().downcast_ref::<Circle>() {
-                    let mut points = Vec::with_capacity(8);
+                    let mut points = Vec::with_capacity(16);
 
-                    for i in 0..8 {
-                        let angle = i as f32 * (2.0 * std::f32::consts::PI / 8.0);
+                    for i in 0..16 {
+                        let angle = i as f32 * (2.0 * std::f32::consts::PI / 16.0);
+
+                        let x = circle.get_radius() * angle.cos();
+                        let y = circle.get_radius() * angle.sin();
+
+                        points.push(Vector2 { x, y });
+                    }
+
+                    points
+                } else {
+                    Vec::new()
+                }
+            }
+            _ if shape.as_any().is::<Box>() => {
+                if let Some(bx) = shape.as_any().downcast_ref::<Box>() {
+                    vec![
+                        Vector2 {
+                            x: bx.get_width() / 2.0,
+                            y: bx.get_height() / 2.0,
+                        },
+                        Vector2 {
+                            x: -bx.get_width() / 2.0,
+                            y: bx.get_height() / 2.0,
+                        },
+                        Vector2 {
+                            x: -bx.get_width() / 2.0,
+                            y: -bx.get_height() / 2.0,
+                        },
+                        Vector2 {
+                            x: bx.get_width() / 2.0,
+                            y: -bx.get_height() / 2.0,
+                        },
+                    ]
+                } else {
+                    Vec::new()
+                }
+            }
+            _ if shape.as_any().is::<Polygon>() => {
+                if let Some(polygon) = shape.as_any().downcast_ref::<Polygon>() {
+                    polygon.get_vertices().to_vec()
+                } else {
+                    Vec::new()
+                }
+            }
+            _ => Vec::new(),
+        };
+
+        let mut point_masses = vec![];
+        for point in points.iter() {
+            point_masses.push(PointMass::new(*point));
+        }
+
+        let mut springs = vec![];
+        for i in 0..points.len() {
+            let point_a_index = i;
+            let point_b_index = (i + 1) % points.len();
+            let point_a = points[point_a_index];
+            let point_b = points[point_b_index];
+            let distance = point_a.distance(&point_b);
+            springs.push(Spring::new(point_a_index, point_b_index, distance));
+        }
+
+        let shape_type = shape_type_from_shape(shape.clone());
+
+        let area = match &shape_type {
+            ShapeType::Circle(circle) => {
+                std::f32::consts::PI * circle.get_radius() * circle.get_radius()
+            }
+            ShapeType::Box(bx) => bx.get_width() * bx.get_height(),
+            ShapeType::Polygon(polygon) => {
+                let vertices = polygon.get_vertices();
+
+                let mut products_1 = 0.0_f32;
+                let mut products_2 = 0.0_f32;
+
+                for i in 0..vertices.len() {
+                    let current = vertices[i];
+                    let next = vertices[(i + 1) % vertices.len()];
+
+                    products_1 += current.x * next.y;
+                    products_2 += current.y * next.x;
+                }
+
+                (products_1 - products_2).abs() * 0.5
+            }
+            ShapeType::Concave(concave) => {
+                let mut sum = 0.0_f32;
+                for polygon in concave {
+                    let vertices = polygon.get_vertices();
+
+                    let mut products_1 = 0.0_f32;
+                    let mut products_2 = 0.0_f32;
+
+                    for i in 0..vertices.len() {
+                        let current = vertices[i];
+                        let next = vertices[(i + 1) % vertices.len()];
+
+                        products_1 += current.x * next.y;
+                        products_2 += current.y * next.x;
+                    }
+
+                    sum += (products_1 - products_2).abs() * 0.5;
+                }
+                sum
+            }
+        };
+
+        let mass = area * if density <= 0.0 { 0.00001 } else { density };
+
+        let inertia = match &shape_type {
+            ShapeType::Circle(c) => c.rotational_inertia(mass),
+            ShapeType::Box(b) => b.rotational_inertia(mass),
+            ShapeType::Polygon(p) => p.rotational_inertia(mass),
+            ShapeType::Concave(v) => {
+                let mut added = vec![];
+                v.iter()
+                    .for_each(|p| added.push(p.rotational_inertia(mass)));
+
+                added.iter().sum::<f32>() / added.len() as f32
+            }
+        };
+
+        Self {
+            original_points: points,
+            points: point_masses,
+            springs,
+            density,
+            mass,
+            inverse_mass: if is_static { 0.0 } else { 1.0 / mass },
+            restitution: restitution.clamp(0.0, 1.0),
+            area,
+            inertia,
+            inverse_inertia: if is_static { 0.0 } else { 1.0 / inertia },
+            static_friction,
+            dynamic_friction,
+        }
+    }
+
+    pub fn new_with_points<T>(
+        density: f32,
+        is_static: bool,
+        restitution: f32,
+        shape: T,
+        static_friction: f32,
+        dynamic_friction: f32,
+        points_count: u32
+    ) -> Self
+    where
+        T: Shape,
+    {
+        let points = match () {
+            _ if shape.as_any().is::<Circle>() => {
+                if let Some(circle) = shape.as_any().downcast_ref::<Circle>() {
+                    let mut points = Vec::with_capacity(points_count as usize);
+
+                    for i in 0..points_count {
+                        let angle = i as f32 * (2.0 * std::f32::consts::PI / points_count as f32);
 
                         let x = circle.get_radius() * angle.cos();
                         let y = circle.get_radius() * angle.sin();
