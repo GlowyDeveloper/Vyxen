@@ -448,19 +448,12 @@ impl UiRaw {
     }
 
     fn gen_raw(ui: &UiElement) -> UiRaw {
-        let color: [f32; 4] = match &ui.get_ui_type() {
-            //UiType::Image(_) => [1.0, 1.0, 1.0, 1.0],
-            //UiType::Color(color) => (*color).into(),
-            //UiType::None => [1.0, 1.0, 1.0, 1.0],
-            _ => [1.0, 1.0, 1.0, 1.0],
-        };
-
         let pos = ui.get_position();
         let rot = ui.get_rotation();
 
         UiRaw {
             matrix: (Matrix4::translation(pos.x, pos.y, ui.get_z()) * Matrix4::rotate(rot)).into(),
-            color,
+            color: [1.0, 1.0, 1.0, 1.0],
         }
     }
 }
@@ -513,4 +506,3 @@ fn write_buffer_padded(
 
     padded_len as u64
 }
-

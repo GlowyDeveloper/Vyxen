@@ -30,6 +30,12 @@ pub struct UiElement {
     z: f32,
 }
 
+impl Default for UiElement {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UiElement {
     /// Creates a new UI element with the given type.
     ///

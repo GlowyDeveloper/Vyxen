@@ -5,7 +5,10 @@ use std::{
     any::Any,
     collections::HashMap,
     path::PathBuf,
-    sync::{Arc, atomic::{AtomicU64, Ordering}},
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
     vec,
 };
 
@@ -1075,15 +1078,15 @@ impl Game {
     }
 
     /// Converts screen coordinates to world coordinates
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_core::Game;
-    /// 
+    ///
     /// let mut game = Game::new();
-    /// 
-    /// assert_eq!(game.screen_to_world(Vector2 { x: 500.0, y: 200.0 }));
+    ///
+    /// assert_eq!(game.screen_to_world(Vector2 { x: 500.0, y: 200.0 }), None);
     /// ```
     ///
     /// # Note
@@ -1096,27 +1099,27 @@ impl Game {
                 y: camera.get_height(),
             } / 2.0;
 
-            let res = camera.get_position()
-                + (vector2 - screen_center) / camera.get_zoom();
-        
-            Some(
-                Vector2 { x: res.x, y: -res.y }
-            )
+            let res = camera.get_position() + (vector2 - screen_center) / camera.get_zoom();
+
+            Some(Vector2 {
+                x: res.x,
+                y: -res.y,
+            })
         } else {
             None
         }
     }
 
     /// Converts world coordinates to screen coordinates
-    /// 
+    ///
     /// # Examples
     /// ```rust
     /// use vyxen_math::Vector2;
     /// use vyxen_core::Game;
-    /// 
+    ///
     /// let mut game = Game::new();
-    /// 
-    /// assert_eq!(game.world_to_screen(Vector2 { x: 500.0, y: 200.0 }));
+    ///
+    /// assert_eq!(game.world_to_screen(Vector2 { x: 500.0, y: 200.0 }), None);
     /// ```
     ///
     /// # Note
@@ -1130,10 +1133,11 @@ impl Game {
             } / 2.0;
 
             let res = (vector2 - screen_center) * camera.get_zoom() + camera.get_position();
-        
-            Some(
-                Vector2 { x: res.x, y: -res.y }
-            )
+
+            Some(Vector2 {
+                x: res.x,
+                y: -res.y,
+            })
         } else {
             None
         }

@@ -11,12 +11,18 @@
 - Ui rendering
 - Font rendering
 - Delta time and FPS
+- Examples
+- Screen to world Vector conversion
+- CI tests
+- Shell script fixes
 
 ### Fixes
 
 - Textured being rendered 180 degrees
 - Window resizing becoming 0 pixels
 - WASM build
+- Nodes disappearing on collision
+- Panicing if vertices aren't in 4 byte alignments
 
 ### Other
 

@@ -2,9 +2,9 @@ use vyxen::prelude::*;
 
 fn main() {
     let mut clicks = 0;
-    
+
     let mut game = Game::new();
-    
+
     let mut scene = Scene::new();
 
     let text = UiElement::with_text(
@@ -23,19 +23,19 @@ fn main() {
     game.load_scene(scene);
 
     let _ = game.run(move |game, event, _| {
-        match event {
-            Event::MouseInput(_, state, _) => {
-                if state == KeyState::Released {
-                    clicks += 1;
-                }
+        if let Event::MouseInput(_, state, _) = event {
+            if state == KeyState::Released {
+                clicks += 1;
             }
-            _ => {}
-        };
+        }
 
         let _ = game.get_scene_mut().unwrap().remove_node_by_id(2);
 
         let camera = game.get_camera().unwrap();
-        let pos = Vector2 { x: camera.get_width(), y: camera.get_height() } / 2.0;
+        let pos = Vector2 {
+            x: camera.get_width(),
+            y: camera.get_height(),
+        } / 2.0;
 
         let text = UiElement::with_text(
             format!("Clicks: {}", clicks),

@@ -23,7 +23,7 @@ pub const SHAPE_DAMPING: f32 = 5.0;
 /// assert_eq!(circle.get_restitution(), 0.5);
 /// assert_eq!(circle.get_static_friction(), 0.6);
 /// assert_eq!(circle.get_dynamic_friction(), 0.4);
-/// assert_eq!(circle.get_points().len(), 8); // Circles get turned into an octagon
+/// assert_eq!(circle.get_points().len(), 16); // Circles get turned into an octagon
 /// ```
 pub struct SoftBody {
     density: f32,
@@ -256,6 +256,9 @@ impl SoftBody {
         }
     }
 
+    /// Creates a new `SoftBody` with the set amount of points.
+    ///
+    /// Only intended for use with circles.
     pub fn new_with_points<T>(
         density: f32,
         is_static: bool,
@@ -263,7 +266,7 @@ impl SoftBody {
         shape: T,
         static_friction: f32,
         dynamic_friction: f32,
-        points_count: u32
+        points_count: u32,
     ) -> Self
     where
         T: Shape,
@@ -446,7 +449,7 @@ impl SoftBody {
     ///
     /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let points = soft.get_points();
-    /// assert_eq!(points.len(), 8);
+    /// assert_eq!(points.len(), 16);
     /// ```
     pub fn get_points(&self) -> &Vec<PointMass> {
         &self.points
@@ -461,7 +464,7 @@ impl SoftBody {
     ///
     /// let mut soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let mut points = soft.get_points_mut();
-    /// assert_eq!(points.len(), 8);
+    /// assert_eq!(points.len(), 16);
     /// ```
     pub fn get_points_mut(&mut self) -> &mut Vec<PointMass> {
         &mut self.points
@@ -476,7 +479,7 @@ impl SoftBody {
     ///
     /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let springs = soft.get_springs();
-    /// assert_eq!(springs.len(), 8); // There's a spring for each edge
+    /// assert_eq!(springs.len(), 16); // There's a spring for each edge
     /// ```
     pub fn get_springs(&self) -> &Vec<Spring> {
         &self.springs

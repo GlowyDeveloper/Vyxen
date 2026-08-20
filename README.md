@@ -8,6 +8,7 @@
 [![Crates.io](https://img.shields.io/crates/v/vyxen.svg)](https://crates.io/crates/vyxen)
 [![License](https://img.shields.io/crates/l/vyxen.svg)](#license)
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+[![CI](https://github.com/GlowyDeveloper/Vyxen/actions/workflows/ci.yml/badge.svg)](https://github.com/GlowyDeveloper/Vyxen/actions/workflows/ci.yml)
 
 </div>
 
