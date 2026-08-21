@@ -42,5 +42,10 @@ fn main() {
 
     game.load_scene(scene);
 
+    let mut window = WindowConfig::new();
+    window.set_title("README example".to_string());
+
+    game.set_config(window);
+
     game.run_without_callback().unwrap();
 }

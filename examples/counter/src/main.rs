@@ -22,6 +22,11 @@ fn main() {
 
     game.load_scene(scene);
 
+    let mut window = WindowConfig::new();
+    window.set_title("Counter".to_string());
+
+    game.set_config(window);
+
     let _ = game.run(move |game, event, _| {
         if let Event::MouseInput(_, state, _) = event {
             if state == KeyState::Released {

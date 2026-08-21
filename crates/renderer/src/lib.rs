@@ -4,7 +4,7 @@
 use crate::backend::SpriteRaw;
 use vyxen_geometry::{Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::{Matrix4, Vector2};
-use vyxen_resource::{Color, Texture};
+use vyxen_resource::{Color, Texture, load_data};
 use winit::{
     dpi::{LogicalPosition, LogicalSize, Position, Size},
     window::{Fullscreen, Icon, Window, WindowAttributes},
@@ -312,7 +312,7 @@ pub struct WindowConfig {
     maximized: bool,
     visible: bool,
     decorations: bool,
-    icon: Option<Icon>,
+    icon: Icon,
     fullscreen: bool,
     render_mode: RenderMode,
     background_color: Color,
@@ -355,7 +355,16 @@ impl WindowConfig {
             maximized: false,
             visible: true,
             decorations: true,
-            icon: None,
+            //icon: None,
+            icon: Icon::from_rgba(
+                load_data::<Texture>(include_bytes!("../../../icons/512.png"))
+                    .unwrap()
+                    .get_rgba()
+                    .to_vec(),
+                512,
+                512,
+            )
+            .unwrap(),
             fullscreen: false,
             render_mode: RenderMode::Best,
             background_color: Color::from_rgb(0.0, 0.0, 0.0),
@@ -504,14 +513,12 @@ impl WindowConfig {
     /// config.set_icon(&icon);
     /// ```
     pub fn set_icon(&mut self, icon: Texture) {
-        self.icon = Some(
-            Icon::from_rgba(
-                icon.get_rgba().to_vec(),
-                icon.get_dimensions().x as u32,
-                icon.get_dimensions().y as u32,
-            )
-            .unwrap(),
-        );
+        self.icon = Icon::from_rgba(
+            icon.get_rgba().to_vec(),
+            icon.get_dimensions().x as u32,
+            icon.get_dimensions().y as u32,
+        )
+        .unwrap();
     }
 
     /// Enables or disables borderless fullscreen mode.
@@ -583,12 +590,12 @@ impl From<WindowConfig> for WindowAttributes {
             .with_maximized(value.maximized)
             .with_visible(value.visible)
             .with_decorations(value.decorations)
-            .with_window_icon(value.icon.clone())
+            .with_window_icon(Some(value.icon.clone()))
             .with_fullscreen(fullscreen);
 
         #[cfg(target_os = "windows")]
         {
-            attr = attr.with_taskbar_icon(value.icon);
+            attr = attr.with_taskbar_icon(Some(value.icon));
         }
 
         if value.max_size.x.is_finite() && value.max_size.y.is_finite() {

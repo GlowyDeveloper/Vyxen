@@ -393,8 +393,9 @@ impl State {
         });
 
         let text_uniform_alignment = device.limits().min_uniform_buffer_offset_alignment as u64;
-        let text_uniform_stride = std::mem::size_of::<UiRaw>() as u64 + text_uniform_alignment
-            - 1 / text_uniform_alignment * text_uniform_alignment;
+        let text_uniform_stride = (std::mem::size_of::<UiRaw>() as u64)
+            .div_ceil(text_uniform_alignment)
+            * text_uniform_alignment;
 
         let text_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Text Uniform Buffer"),

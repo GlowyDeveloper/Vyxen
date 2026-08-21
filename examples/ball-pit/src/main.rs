@@ -57,6 +57,11 @@ fn main() {
 
     game.load_scene(scene);
 
+    let mut window = WindowConfig::new();
+    window.set_title("Ball Pit".to_string());
+
+    game.set_config(window);
+
     let _ = game.run(|game, event, _| {
         if let Event::MouseInput(input, state, pos) = event {
             if state == KeyState::Released {
