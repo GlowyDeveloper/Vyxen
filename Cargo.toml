@@ -1,6 +1,31 @@
 [workspace]
 resolver = "3"
-members = ["crates/geometry","crates/math", "crates/physics2d","crates/vyxen", "crates/core", "crates/renderer", "crates/input", "crates/resource", "crates/ui", "testbed", "examples/ball-pit", "examples/counter", "examples/readme"]
+members = [
+    "crates/geometry",
+    "crates/math",
+    "crates/physics2d",
+    "crates/vyxen",
+    "crates/core",
+    "crates/renderer",
+    "crates/input",
+    "crates/resource",
+    "crates/ui",
+    "testbed",
+    "examples/ball-pit",
+    "examples/counter",
+    "examples/readme",
+]
+default-members = [
+    "crates/geometry",
+    "crates/math",
+    "crates/physics2d",
+    "crates/vyxen",
+    "crates/core",
+    "crates/renderer",
+    "crates/input",
+    "crates/resource",
+    "crates/ui",
+]
 
 [workspace.package]
 version = "0.2.0"
@@ -24,17 +49,17 @@ vyxen-input = { version = "0.2.0", path = "crates/input" }
 vyxen-core = { version = "0.2.0", path = "crates/core" }
 vyxen = { version = "0.2.0", path = "crates/vyxen" }
 
-winit = { version = "0.30", features = ["android-native-activity"] }
-wgpu = "28.0"
+winit = { version = "0.30.13", features = ["android-native-activity"] }
+wgpu = "30.0.1"
 pollster = "1.0.1"
-bytemuck = { version = "1.24", features = ["derive"] }
-skrifa = "0.45.1"
+bytemuck = { version = "1.25.2", features = ["derive"] }
+skrifa = "0.46.2"
 zeno = "0.3.3"
 
 zune-jpeg = { version = "0.5.15", default-features = false }
 png = { version = "0.18.1", default-features = false, features = ["zlib-rs"] }
 
-anyhow = "1.0"
+anyhow = "1.0.104"
 
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"

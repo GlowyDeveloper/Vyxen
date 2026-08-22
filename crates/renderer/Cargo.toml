@@ -27,6 +27,6 @@ anyhow.workspace = true
 bytemuck.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wgpu = { version = "28.0", features = ["webgl"] }
+wgpu = { version = "30.0.1", features = ["webgl", "webgpu"] }
 wasm-bindgen.workspace = true
 web-time.workspace = true

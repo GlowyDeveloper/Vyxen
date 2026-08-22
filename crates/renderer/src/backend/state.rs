@@ -70,11 +70,12 @@ impl State {
     pub async fn new(window: Arc<Window>, custom_config: WindowConfig) -> anyhow::Result<State> {
         let size = window.inner_size();
 
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: custom_config.render_mode.into(),
             flags: Default::default(),
             memory_budget_thresholds: Default::default(),
             backend_options: Default::default(),
+            display: None,
         });
 
         let surface = instance.create_surface(window.clone()).unwrap();
@@ -84,6 +85,7 @@ impl State {
                 power_preference: wgpu::PowerPreference::default(),
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
+                apply_limit_buckets: true,
             })
             .await?;
 
@@ -119,6 +121,7 @@ impl State {
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
+            color_space: wgpu::SurfaceColorSpace::Auto,
         };
 
         let camera = Camera {
@@ -226,14 +229,20 @@ impl State {
         let texture_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Texture World Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout],
+                bind_group_layouts: &[
+                    Some(&texture_bind_group_layout),
+                    Some(&camera_bind_group_layout),
+                ],
                 immediate_size: 0,
             });
 
         let color_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Color World Pipeline Layout"),
-                bind_group_layouts: &[&empty_bind_group_layout, &camera_bind_group_layout],
+                bind_group_layouts: &[
+                    Some(&empty_bind_group_layout),
+                    Some(&camera_bind_group_layout),
+                ],
                 immediate_size: 0,
             });
 
@@ -244,7 +253,7 @@ impl State {
                 vertex: wgpu::VertexState {
                     module: &texture_shader,
                     entry_point: Some("vs_main"),
-                    buffers: &[Vertex::desc(), SpriteRaw::desc()],
+                    buffers: &[Some(Vertex::desc()), Some(SpriteRaw::desc())],
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -282,7 +291,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &color_shader,
                 entry_point: Some("vs_main"),
-                buffers: &[Vertex::desc(), SpriteRaw::desc()],
+                buffers: &[Some(Vertex::desc()), Some(SpriteRaw::desc())],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -350,7 +359,10 @@ impl State {
         let ui_texture_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Texture Ui Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &ui_camera_bind_group_layout],
+                bind_group_layouts: &[
+                    Some(&texture_bind_group_layout),
+                    Some(&ui_camera_bind_group_layout),
+                ],
                 immediate_size: 0,
             });
 
@@ -360,7 +372,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &ui_texture_shader,
                 entry_point: Some("vs_main"),
-                buffers: &[Vertex::desc(), UiRaw::desc()],
+                buffers: &[Some(Vertex::desc()), Some(UiRaw::desc())],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -445,9 +457,9 @@ impl State {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Text Ui Pipeline Layout"),
                 bind_group_layouts: &[
-                    &texture_bind_group_layout,
-                    &ui_camera_bind_group_layout,
-                    &text_uniform_bind_group_layout,
+                    Some(&texture_bind_group_layout),
+                    Some(&ui_camera_bind_group_layout),
+                    Some(&text_uniform_bind_group_layout),
                 ],
                 immediate_size: 0,
             });
@@ -458,7 +470,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &ui_text_shader,
                 entry_point: Some("vs_main"),
-                buffers: &[GlyphRaw::desc()],
+                buffers: &[Some(GlyphRaw::desc())],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -734,26 +746,20 @@ impl State {
         }
 
         let output = match self.surface.get_current_texture() {
-            Err(wgpu::SurfaceError::Outdated) => {
+            wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
+            wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => surface_texture,
+            wgpu::CurrentSurfaceTexture::Timeout
+            | wgpu::CurrentSurfaceTexture::Occluded
+            | wgpu::CurrentSurfaceTexture::Validation => {
+                // Skip this frame
+                return Ok(());
+            }
+            wgpu::CurrentSurfaceTexture::Outdated => {
                 self.surface.configure(&self.device, &self.config);
                 return Ok(());
             }
-            Err(wgpu::SurfaceError::Lost) => {
+            wgpu::CurrentSurfaceTexture::Lost => {
                 anyhow::bail!("Lost device");
-            }
-            Err(wgpu::SurfaceError::Timeout) => {
-                return Ok(());
-            }
-
-            Err(e) => {
-                anyhow::bail!(e)
-            }
-
-            Ok(surface) => {
-                if surface.suboptimal {
-                    self.surface.configure(&self.device, &self.config);
-                }
-                surface
             }
         };
 
@@ -964,7 +970,7 @@ impl State {
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
-        output.present();
+        self.queue.present(output);
 
         Ok(())
     }
