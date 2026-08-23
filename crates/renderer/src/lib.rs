@@ -255,9 +255,11 @@ impl Sprite {
     /// Converts this sprite into the raw equivalent. Used mainly in the backend.
     pub(crate) fn to_raw(&self) -> SpriteRaw {
         let color: [f32; 4] = match &self.draw_type {
-            DrawType::Texture(_) => [1.0, 1.0, 1.0, 1.0],
+            DrawType::Texture(texture) if texture.get_tint().is_some() => {
+                texture.get_tint().unwrap().into()
+            }
             DrawType::Color(color) => (*color).into(),
-            DrawType::None => [1.0, 1.0, 1.0, 1.0],
+            _ => [1.0, 1.0, 1.0, 1.0],
         };
 
         let pos = self.position_ref;

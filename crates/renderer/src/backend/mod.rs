@@ -1,5 +1,5 @@
 use vyxen_math::{Matrix4, Vector2};
-use vyxen_ui::UiElement;
+use vyxen_ui::{UiElement, UiType};
 
 mod gpu_texture;
 pub mod shape_geometry;
@@ -448,12 +448,20 @@ impl UiRaw {
     }
 
     fn gen_raw(ui: &UiElement) -> UiRaw {
+        let color: [f32; 4] = match ui.get_ui_type() {
+            UiType::Image(texture) if texture.get_tint().is_some() => {
+                texture.get_tint().unwrap().into()
+            }
+            UiType::Text(text) if text.get_tint().is_some() => text.get_tint().unwrap().into(),
+            _ => [1.0, 1.0, 1.0, 1.0],
+        };
+
         let pos = ui.get_position();
         let rot = ui.get_rotation();
 
         UiRaw {
             matrix: (Matrix4::translation(pos.x, pos.y, ui.get_z()) * Matrix4::rotate(rot)).into(),
-            color: [1.0, 1.0, 1.0, 1.0],
+            color,
         }
     }
 }

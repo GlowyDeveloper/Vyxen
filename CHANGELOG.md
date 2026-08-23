@@ -14,7 +14,7 @@
 - Examples
 - Screen to world Vector conversion
 - CI tests
-- Shell script fixes
+- Texture and text tinting
 
 ### Fixes
 
@@ -23,6 +23,7 @@
 - WASM build
 - Nodes disappearing on collision
 - Panicing if vertices aren't in 4 byte alignments
+- Shell scripts not running the correct targets
 
 ### Other
 

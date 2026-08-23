@@ -1,4 +1,4 @@
-use crate::Resource;
+use crate::{Color, Resource};
 use png::{ColorType, Decoder, Transformations};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::{any::Any, io::Cursor};
@@ -29,6 +29,7 @@ pub struct Texture {
     id: u64,
     dim: Vector2,
     rgba: Vec<u8>,
+    tint: Option<Color>,
 }
 
 impl Resource for Texture {
@@ -114,6 +115,7 @@ impl Resource for Texture {
                     y: height as f32,
                 },
                 rgba,
+                tint: None,
             })
         } else if data.starts_with(b"\xff\xd8\xff") {
             let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGBA);
@@ -128,6 +130,7 @@ impl Resource for Texture {
                     y: height as f32,
                 },
                 rgba: pixels,
+                tint: None,
             })
         } else {
             Err(anyhow::anyhow!("Unsupported image format"))
@@ -155,6 +158,7 @@ impl Texture {
             id: NEXT_TEXTURE_ID.fetch_add(1, Ordering::Relaxed),
             dim,
             rgba,
+            tint: None,
         }
     }
 
@@ -171,6 +175,16 @@ impl Texture {
     /// Returns the texture's RGBA data.
     pub fn get_rgba(&self) -> &[u8] {
         &self.rgba
+    }
+
+    /// Sets the texture's tint color.
+    pub fn set_tint(&mut self, color: Color) {
+        self.tint = Some(color);
+    }
+
+    /// Returns the texture's tint color.
+    pub fn get_tint(&self) -> Option<Color> {
+        self.tint
     }
 }
 

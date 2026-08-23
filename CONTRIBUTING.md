@@ -7,7 +7,7 @@ cargo fmt
 ./scripts/check_every_target.sh
 ./scripts/clippy_every_target.sh
 cargo test
-cargo docs --no-deps
+cargo doc --no-deps
 ```
 
 If your change affects public API or behavior, please update the relevant documentation or examples as well.

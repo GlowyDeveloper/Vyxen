@@ -1,6 +1,6 @@
 use vyxen_geometry::{Shape, ShapeType, shape_type_from_shape};
 use vyxen_math::Vector2;
-use vyxen_resource::{Font, Texture};
+use vyxen_resource::{Color, Font, Texture};
 
 /// The type of UI element.
 #[derive(Debug, Clone)]
@@ -93,7 +93,12 @@ impl UiElement {
         Self {
             position_ref: Vector2::zero(),
             rotation_ref: 0.0,
-            ui_type: UiType::Text(Text { text, font, size }),
+            ui_type: UiType::Text(Text {
+                text,
+                font,
+                size,
+                tint: None,
+            }),
             vertices: None,
             z: 0.0,
         }
@@ -227,6 +232,7 @@ pub struct Text {
     text: String,
     font: Font,
     size: f32,
+    tint: Option<Color>,
 }
 
 impl Text {
@@ -240,21 +246,36 @@ impl Text {
     /// let text = Text::new("Hello, World!", font, 16.0);
     /// ```
     pub fn new(text: String, font: Font, size: f32) -> Self {
-        Self { text, font, size }
+        Self {
+            text,
+            font,
+            size,
+            tint: None,
+        }
     }
 
     /// Returns the text of this `Text`.
-    pub fn text(&self) -> &str {
+    pub fn get_text(&self) -> &str {
         &self.text
     }
 
     /// Returns the font of this `Text`.
-    pub fn font(&self) -> &Font {
+    pub fn get_font(&self) -> &Font {
         &self.font
     }
 
     /// Returns the size of this `Text`.
-    pub fn size(&self) -> f32 {
+    pub fn get_size(&self) -> f32 {
         self.size
+    }
+
+    /// Returns the tint of this `Text`.
+    pub fn get_tint(&self) -> Option<Color> {
+        self.tint
+    }
+
+    /// Sets the tint of this `Text`.
+    pub fn set_tint(&mut self, tint: Color) {
+        self.tint = Some(tint);
     }
 }

@@ -647,14 +647,14 @@ impl State {
                 }
                 UiType::Text(text) => {
                     let key = (
-                        text.font().id(),
-                        text.size() as u32,
-                        text.text().to_string(),
+                        text.get_font().id(),
+                        text.get_size() as u32,
+                        text.get_text().to_string(),
                     );
                     if !self.glyph_atlas_cache.contains_key(&key) {
                         let glyph_map = text
-                            .font()
-                            .generate_glyph_map(text.text().to_string(), text.size())
+                            .get_font()
+                            .generate_glyph_map(text.get_text().to_string(), text.get_size())
                             .expect("Failed to generate glyph map");
 
                         let atlas_texture = Texture::from_raw(
@@ -687,15 +687,18 @@ impl State {
             match ui.get_ui_type() {
                 UiType::Text(text) => {
                     let key = (
-                        text.font().id(),
-                        text.size() as u32,
-                        text.text().to_string(),
+                        text.get_font().id(),
+                        text.get_size() as u32,
+                        text.get_text().to_string(),
                     );
                     let (_, glyph_map) = self.glyph_atlas_cache.get(&key).unwrap_or_else(|| {
-                        panic!("glyph atlas has not been built for: {}", text.font().id())
+                        panic!(
+                            "glyph atlas has not been built for: {}",
+                            text.get_font().id()
+                        )
                     });
 
-                    let glyphs = text_geometry(glyph_map, text.text());
+                    let glyphs = text_geometry(glyph_map, text.get_text());
                     let first = self.raw_glyph_instances.len() as u32;
                     let count = glyphs.len() as u32;
                     self.raw_glyph_instances.extend(glyphs);
@@ -934,15 +937,15 @@ impl State {
                     }
                     UiType::Text(text) => {
                         let key = (
-                            text.font().id(),
-                            text.size() as u32,
-                            text.text().to_string(),
+                            text.get_font().id(),
+                            text.get_size() as u32,
+                            text.get_text().to_string(),
                         );
                         let (gpu_texture, _glyph_map) =
                             self.glyph_atlas_cache.get(&key).ok_or_else(|| {
                                 anyhow::anyhow!(
                                     "Glyph atlas not found for font: {}",
-                                    text.font().id()
+                                    text.get_font().id()
                                 )
                             })?;
 
