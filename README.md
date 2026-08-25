@@ -9,6 +9,7 @@
 [![License](https://img.shields.io/crates/l/vyxen.svg)](#license)
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 [![CI](https://github.com/GlowyDeveloper/Vyxen/actions/workflows/ci.yml/badge.svg)](https://github.com/GlowyDeveloper/Vyxen/actions/workflows/ci.yml)
+[![Deploy Vyxen Book](https://github.com/GlowyDeveloper/Vyxen/actions/workflows/gh-pages.yml/badge.svg)](https://github.com/GlowyDeveloper/Vyxen/actions/workflows/gh-pages.yml)
 
 </div>
 
@@ -311,6 +312,8 @@ game.run_without_callback().unwrap();
 This how it should look like in the end:
 
 <img width="50%" src="https://raw.githubusercontent.com/GlowyDeveloper/Vyxen/refs/heads/master/docs/Example-3.gif">
+
+Or instead you can play it [here](https://glowydeveloper.github.io/Vyxen/examples/index.html) where the code is also explained bit by bit.
 
 ## License
 
