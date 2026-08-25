@@ -1,0 +1,19 @@
+[book]
+title = "Vyxen"
+language = "en"
+src = "book/"
+description = "The book for Vyxen, a Godot-style game engine library written in Rust."
+
+[build]
+build-dir = "target/book"
+create-missing = false
+
+[rust]
+edition = "2024"
+
+[output.html]
+theme = "book/theme/"
+git-repository-url = "https://github.com/GlowyDeveloper/Vyxen"
+
+[output.html.playground]
+runnable = false

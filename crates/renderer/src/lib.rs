@@ -359,7 +359,7 @@ impl WindowConfig {
             decorations: true,
             //icon: None,
             icon: Icon::from_rgba(
-                load_data::<Texture>(include_bytes!("../../../icons/512.png"))
+                load_data::<Texture>(include_bytes!("../../../icon.png"))
                     .unwrap()
                     .get_rgba()
                     .to_vec(),
@@ -639,6 +639,8 @@ pub enum RenderMode {
     Metal,
     DX12,
     GL,
+    /// WebGPU is currently not bugged on certain browsers.
+    /// If it is not supported, it falls back to `RenderMode::GL`.
     WebGPU,
 }
 

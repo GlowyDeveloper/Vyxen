@@ -9,8 +9,8 @@ pub const WHITE: Color = Color::from_rgb(255.0, 255.0, 255.0);
 /// #808080 / 128, 128, 128
 pub const GRAY: Color = Color::from_rgb(128.0, 128.0, 128.0);
 
-/// #A9A9A9 / 169, 169, 169
-pub const DARK_GRAY: Color = Color::from_rgb(169.0, 169.0, 169.0);
+/// #454545 / 69, 69, 69
+pub const DARK_GRAY: Color = Color::from_rgb(69.0, 69.0, 69.0);
 
 /// #D3D3D3 / 211, 211, 211
 pub const LIGHT_GRAY: Color = Color::from_rgb(211.0, 211.0, 211.0);

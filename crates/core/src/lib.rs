@@ -50,7 +50,7 @@ static NEXT_NODE_ID: AtomicU64 = AtomicU64::new(1);
 ///
 /// let mut node = Node::new("Foo".to_string());
 /// let id = node.get_id();
-/// node.add_component(RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4));
+/// node.add_component(RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4));
 ///
 /// scene.add_node(node);
 ///
@@ -93,7 +93,7 @@ impl Scene {
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// let id = node.get_id();
-    /// node.add_component(RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4));
+    /// node.add_component(RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4));
     ///
     /// scene.add_node(node);
     ///
@@ -412,7 +412,7 @@ impl Scene {
     /// let mut scene = Scene::new();
     ///
     /// let mut node = Node::new("Foo".to_string());
-    /// node.add_component(RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4));
+    /// node.add_component(RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4));
     /// scene.add_node(node);
     ///
     /// scene.step(
@@ -2156,10 +2156,26 @@ impl Node {
             let e = body_a.get_restitution().min(body_b.get_restitution());
 
             (
-                body_a.get_inverse_mass(),
-                body_b.get_inverse_mass(),
-                body_a.get_inverse_inertia(),
-                body_b.get_inverse_inertia(),
+                if node_a.is_static() {
+                    0.0
+                } else {
+                    body_a.get_inverse_mass()
+                },
+                if node_b.is_static() {
+                    0.0
+                } else {
+                    body_b.get_inverse_mass()
+                },
+                if node_a.is_static() {
+                    0.0
+                } else {
+                    body_a.get_inverse_inertia()
+                },
+                if node_b.is_static() {
+                    0.0
+                } else {
+                    body_b.get_inverse_inertia()
+                },
                 sf,
                 df,
                 e,
@@ -2335,8 +2351,16 @@ impl Node {
             if let Some(s) = node_a.get_component::<SoftBody>() {
                 let c = s.get_points().len() as f32;
                 (
-                    s.get_inverse_mass() * c,
-                    s.get_inverse_inertia(),
+                    if node_a.is_static() {
+                        0.0
+                    } else {
+                        s.get_inverse_mass() * c
+                    },
+                    if node_a.is_static() {
+                        0.0
+                    } else {
+                        s.get_inverse_inertia()
+                    },
                     s.get_static_friction(),
                     s.get_dynamic_friction(),
                     s.get_restitution(),
@@ -2350,8 +2374,16 @@ impl Node {
             if let Some(s) = node_b.get_component::<SoftBody>() {
                 let c = s.get_points().len() as f32;
                 (
-                    s.get_inverse_mass() * c,
-                    s.get_inverse_inertia(),
+                    if node_b.is_static() {
+                        0.0
+                    } else {
+                        s.get_inverse_mass() * c
+                    },
+                    if node_b.is_static() {
+                        0.0
+                    } else {
+                        s.get_inverse_inertia()
+                    },
                     s.get_static_friction(),
                     s.get_dynamic_friction(),
                     s.get_restitution(),
@@ -2653,8 +2685,16 @@ impl Node {
         let (r_inv_mass, r_inv_inertia, sf_r, df_r, e_r) =
             if let Some(r) = rigid_node.get_component::<RigidBody>() {
                 (
-                    r.get_inverse_mass(),
-                    r.get_inverse_inertia(),
+                    if rigid_node.is_static() {
+                        0.0
+                    } else {
+                        r.get_inverse_mass()
+                    },
+                    if rigid_node.is_static() {
+                        0.0
+                    } else {
+                        r.get_inverse_inertia()
+                    },
                     r.get_static_friction(),
                     r.get_dynamic_friction(),
                     r.get_restitution(),
@@ -2667,8 +2707,16 @@ impl Node {
             if let Some(s) = soft_node.get_component::<SoftBody>() {
                 let count = s.get_points().len() as f32;
                 (
-                    s.get_inverse_mass() * count,
-                    s.get_inverse_inertia(),
+                    if soft_node.is_static() {
+                        0.0
+                    } else {
+                        s.get_inverse_mass() * count
+                    },
+                    if soft_node.is_static() {
+                        0.0
+                    } else {
+                        s.get_inverse_inertia()
+                    },
                     s.get_static_friction(),
                     s.get_dynamic_friction(),
                     s.get_restitution(),

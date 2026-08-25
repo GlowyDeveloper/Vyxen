@@ -111,13 +111,14 @@ The currently supported OS:
 |Vulkan    |✅    |✅           |1️⃣      |   |
 |Metal     |       |             |✅      |   |
 |DirectX 12|✅    |             |         |   |
-|OpenGL    |✅    |✅           |2️⃣      |   |
-|WebGPU    |       |             |         |✅|
+|OpenGL    |✅    |✅           |2️⃣      |✅|
+|WebGPU    |       |             |         |❗|
 |Tested    |✅    |✅           |         |✅|
 
 ✅ = Works
 1️⃣ = MoltenVK required
 2️⃣ = ANGLE required
+❗ = Unsupported on some browsers or platforms
 
 To render the scene:
 
@@ -140,6 +141,9 @@ game.load_scene(scene);
 
 let _ = game.run_without_callback();
 ```
+
+> [!CAUTION]
+> The use of `Box::new` here is Vyxen's `vyxen::geometry::Box` type, not the standard library's `std::boxed::Box` type. If you are using the standard library's box type in the same file, instead import it one of them with an alias. For example: `use std::boxed::Box as StdBox;`.
 
 If you would like a callback, instead use:
 

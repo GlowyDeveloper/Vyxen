@@ -10,6 +10,12 @@ cargo test
 cargo doc --no-deps
 ```
 
+To build the Vyxen Book, run:
+
+```bash
+./scripts/build_book.sh
+```
+
 If your change affects public API or behavior, please update the relevant documentation or examples as well.
 
 For larger features, API changes, or engine architecture changes, please open an issue first so the direction can be discussed before implementation.

@@ -15,6 +15,7 @@
 - Screen to world Vector conversion
 - CI tests
 - Texture and text tinting
+- Vyxen Book
 
 ### Fixes
 
@@ -31,6 +32,7 @@
 - Small optimizations on renderer sorting and copying sprites
 - Expanded Texture loading to instead use `png` and `zune_jpeg`
 - Updated crates to latest versions
+- Removed `RigidBody` and `SoftBody` is_static arguments
 
 ## v0.1.0 (24/07/2026)
 

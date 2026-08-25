@@ -70,7 +70,8 @@ impl State {
     pub async fn new(window: Arc<Window>, custom_config: WindowConfig) -> anyhow::Result<State> {
         let size = window.inner_size();
 
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        #[allow(unused_mut)]
+        let mut instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: custom_config.render_mode.into(),
             flags: Default::default(),
             memory_budget_thresholds: Default::default(),
@@ -78,7 +79,23 @@ impl State {
             display: None,
         });
 
-        let surface = instance.create_surface(window.clone()).unwrap();
+        #[cfg(target_arch = "wasm32")]
+        let surface = match instance.create_surface(window.clone()) {
+            Ok(s) => s,
+            Err(_e) => {
+                instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+                    backends: wgpu::Backends::GL,
+                    flags: Default::default(),
+                    memory_budget_thresholds: Default::default(),
+                    backend_options: Default::default(),
+                    display: None,
+                });
+                instance.create_surface(window.clone())?
+            }
+        };
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let surface = instance.create_surface(window.clone())?;
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {

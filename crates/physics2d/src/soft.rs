@@ -18,7 +18,7 @@ pub const SHAPE_DAMPING: f32 = 5.0;
 /// use vyxen_physics2d::SoftBody;
 /// use vyxen_geometry::Circle;
 ///
-/// let circle = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+/// let circle = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
 /// assert_eq!(circle.get_density(), 1.0);
 /// assert_eq!(circle.get_restitution(), 0.5);
 /// assert_eq!(circle.get_static_friction(), 0.6);
@@ -56,12 +56,11 @@ impl SoftBody {
     ///
     /// let radius = 1.0;
     /// let density = 1.0;
-    /// let is_static = false;
     /// let restitution = 0.5;
     /// let static_friction = 0.6;
     /// let dynamic_friction = 0.4;
     ///
-    /// let soft = SoftBody::new(density, is_static, restitution, Circle::new(radius), static_friction, dynamic_friction);
+    /// let soft = SoftBody::new(density, restitution, Circle::new(radius), static_friction, dynamic_friction);
     /// ```
     ///
     /// ## Box
@@ -73,12 +72,11 @@ impl SoftBody {
     /// let width = 1.0;
     /// let height = 2.0;
     /// let density = 1.0;
-    /// let is_static = false;
     /// let restitution = 0.5;
     /// let static_friction = 0.6;
     /// let dynamic_friction = 0.4;
     ///
-    /// let soft = SoftBody::new(density, is_static, restitution, Box::new(width, height), static_friction, dynamic_friction);
+    /// let soft = SoftBody::new(density, restitution, Box::new(width, height), static_friction, dynamic_friction);
     /// ```
     ///
     /// ## Polygon
@@ -90,7 +88,6 @@ impl SoftBody {
     /// let width = 1.0;
     /// let height = 2.0;
     /// let density = 1.0;
-    /// let is_static = false;
     /// let restitution = 0.5;
     /// let static_friction = 0.6;
     /// let dynamic_friction = 0.4;
@@ -99,11 +96,10 @@ impl SoftBody {
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
     /// let v3 = Vector2 { x: -2.0, y: 2.0 };
     ///
-    /// let soft = SoftBody::new(density, is_static, restitution, Polygon::new(&[v1, v2, v3]), static_friction, dynamic_friction);
+    /// let soft = SoftBody::new(density, restitution, Polygon::new(&[v1, v2, v3]), static_friction, dynamic_friction);
     /// ```
     pub fn new<T>(
         density: f32,
-        is_static: bool,
         restitution: f32,
         shape: T,
         static_friction: f32,
@@ -246,11 +242,11 @@ impl SoftBody {
             springs,
             density,
             mass,
-            inverse_mass: if is_static { 0.0 } else { 1.0 / mass },
+            inverse_mass: 1.0 / mass,
             restitution: restitution.clamp(0.0, 1.0),
             area,
             inertia,
-            inverse_inertia: if is_static { 0.0 } else { 1.0 / inertia },
+            inverse_inertia: 1.0 / inertia,
             static_friction,
             dynamic_friction,
         }
@@ -261,7 +257,6 @@ impl SoftBody {
     /// Only intended for use with circles.
     pub fn new_with_points<T>(
         density: f32,
-        is_static: bool,
         restitution: f32,
         shape: T,
         static_friction: f32,
@@ -405,11 +400,11 @@ impl SoftBody {
             springs,
             density,
             mass,
-            inverse_mass: if is_static { 0.0 } else { 1.0 / mass },
+            inverse_mass: 1.0 / mass,
             restitution: restitution.clamp(0.0, 1.0),
             area,
             inertia,
-            inverse_inertia: if is_static { 0.0 } else { 1.0 / inertia },
+            inverse_inertia: 1.0 / inertia,
             static_friction,
             dynamic_friction,
         }
@@ -447,7 +442,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::{Circle, ShapeType};
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let points = soft.get_points();
     /// assert_eq!(points.len(), 16);
     /// ```
@@ -462,7 +457,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::{Circle, ShapeType};
     ///
-    /// let mut soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let mut soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let mut points = soft.get_points_mut();
     /// assert_eq!(points.len(), 16);
     /// ```
@@ -477,7 +472,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::{Circle, ShapeType};
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let springs = soft.get_springs();
     /// assert_eq!(springs.len(), 16); // There's a spring for each edge
     /// ```
@@ -492,7 +487,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_density(), 1.0);
     /// ```
     pub fn get_density(&self) -> f32 {
@@ -506,7 +501,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
     /// let expected_mass = area * 1.0; // area * density
     ///
@@ -523,7 +518,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
     /// let expected_mass = area * 1.0; // area * density
     /// let expected_inverted_mass = 1.0 / expected_mass;
@@ -541,7 +536,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_restitution(), 0.5);
     /// ```
     pub fn get_restitution(&self) -> f32 {
@@ -555,7 +550,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_area(), std::f32::consts::PI);
     /// ```
     pub fn get_area(&self) -> f32 {
@@ -569,7 +564,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
     /// let expected_inertia = (1.0 / 2.0) * expected_mass * 1.0 * 1.0; // (1/2) * mass * radius * radius
     ///
@@ -586,7 +581,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
     /// let expected_inertia = (1.0 / 2.0) * expected_mass * 1.0 * 1.0; // (1/2) * mass * radius * radius
     ///
@@ -607,7 +602,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::{Circle, ShapeType};
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_static_friction(), 0.6);
     /// ```
     pub fn get_static_friction(&self) -> f32 {
@@ -621,7 +616,7 @@ impl SoftBody {
     /// use vyxen_physics2d::SoftBody;
     /// use vyxen_geometry::{Circle, ShapeType};
     ///
-    /// let soft = SoftBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_dynamic_friction(), 0.4);
     /// ```
     pub fn get_dynamic_friction(&self) -> f32 {

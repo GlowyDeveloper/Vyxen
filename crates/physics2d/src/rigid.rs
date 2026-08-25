@@ -8,7 +8,7 @@ use vyxen_geometry::{Box, Circle, Polygon, Shape, ShapeType, shape_type_from_sha
 /// use vyxen_physics2d::RigidBody;
 /// use vyxen_geometry::Circle;
 ///
-/// let circle = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+/// let circle = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
 /// assert!(circle.get_circle().is_some());
 /// assert_eq!(circle.get_circle().unwrap().get_radius(), 1.0);
 /// assert_eq!(circle.get_density(), 1.0);
@@ -46,12 +46,11 @@ impl RigidBody {
     ///
     /// let radius = 1.0;
     /// let density = 1.0;
-    /// let is_static = false;
     /// let restitution = 0.5;
     /// let static_friction = 0.6;
     /// let dynamic_friction = 0.4;
     ///
-    /// let rigid = RigidBody::new(density, is_static, restitution, Circle::new(radius), static_friction, dynamic_friction);
+    /// let rigid = RigidBody::new(density, restitution, Circle::new(radius), static_friction, dynamic_friction);
     /// ```
     ///
     /// ## Box
@@ -63,12 +62,11 @@ impl RigidBody {
     /// let width = 1.0;
     /// let height = 2.0;
     /// let density = 1.0;
-    /// let is_static = false;
     /// let restitution = 0.5;
     /// let static_friction = 0.6;
     /// let dynamic_friction = 0.4;
     ///
-    /// let rigid = RigidBody::new(density, is_static, restitution, Box::new(width, height), static_friction, dynamic_friction);
+    /// let rigid = RigidBody::new(density, restitution, Box::new(width, height), static_friction, dynamic_friction);
     /// ```
     ///
     /// ## Polygon
@@ -80,7 +78,6 @@ impl RigidBody {
     /// let width = 1.0;
     /// let height = 2.0;
     /// let density = 1.0;
-    /// let is_static = false;
     /// let restitution = 0.5;
     /// let static_friction = 0.6;
     /// let dynamic_friction = 0.4;
@@ -89,11 +86,10 @@ impl RigidBody {
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
     /// let v3 = Vector2 { x: -2.0, y: 2.0 };
     ///
-    /// let rigid = RigidBody::new(density, is_static, restitution, Polygon::new(&[v1, v2, v3]), static_friction, dynamic_friction);
+    /// let rigid = RigidBody::new(density, restitution, Polygon::new(&[v1, v2, v3]), static_friction, dynamic_friction);
     /// ```
     pub fn new<T>(
         density: f32,
-        is_static: bool,
         restitution: f32,
         shape: T,
         static_friction: f32,
@@ -165,12 +161,12 @@ impl RigidBody {
         RigidBody {
             density,
             mass,
-            inverse_mass: if is_static { 0.0 } else { 1.0 / mass },
+            inverse_mass: 1.0 / mass,
             restitution: restitution.clamp(0.0, 1.0),
             area,
             shape: shape_type,
             inertia,
-            inverse_inertia: if is_static { 0.0 } else { 1.0 / inertia },
+            inverse_inertia: 1.0 / inertia,
             static_friction,
             dynamic_friction,
         }
@@ -184,7 +180,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_density(), 1.0);
     /// ```
     pub fn get_density(&self) -> f32 {
@@ -198,7 +194,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
     /// let expected_mass = area * 1.0; // area * density
     ///
@@ -215,7 +211,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
     /// let expected_mass = area * 1.0; // area * density
     /// let expected_inverted_mass = 1.0 / expected_mass;
@@ -233,7 +229,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_restitution(), 0.5);
     /// ```
     pub fn get_restitution(&self) -> f32 {
@@ -247,7 +243,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_area(), std::f32::consts::PI);
     /// ```
     pub fn get_area(&self) -> f32 {
@@ -261,7 +257,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
     /// let expected_inertia = (1.0 / 2.0) * expected_mass * 1.0 * 1.0; // (1/2) * mass * radius * radius
     ///
@@ -278,7 +274,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Circle;
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
     /// let expected_inertia = (1.0 / 2.0) * expected_mass * 1.0 * 1.0; // (1/2) * mass * radius * radius
     ///
@@ -301,7 +297,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::{Circle, ShapeType};
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let shape = rigid.get_shape();
     /// let expected = ShapeType::Circle(Circle::new(1.0));
     /// assert!(shape == expected);
@@ -319,7 +315,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::{Circle, ShapeType};
     ///
-    /// let mut rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let mut rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let mut shape = rigid.get_shape_mut();
     /// let mut expected = ShapeType::Circle(Circle::new(1.0));
     /// assert!(shape == &mut expected);
@@ -335,10 +331,10 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::{Box, Circle, ShapeType};
     ///
-    /// let circle = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let circle = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert!(circle.get_circle().is_some());
     ///
-    /// let bx = RigidBody::new(1.0, false, 0.5, Box::new(1.0, 1.0), 0.6, 0.4);
+    /// let bx = RigidBody::new(1.0, 0.5, Box::new(1.0, 1.0), 0.6, 0.4);
     /// assert!(bx.get_circle().is_none());
     /// ```
     pub fn get_circle(&self) -> Option<Circle> {
@@ -355,10 +351,10 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::{Box, Circle, ShapeType};
     ///
-    /// let bx = RigidBody::new(1.0, false, 0.5, Box::new(1.0, 1.0), 0.6, 0.4);
+    /// let bx = RigidBody::new(1.0, 0.5, Box::new(1.0, 1.0), 0.6, 0.4);
     /// assert!(bx.get_box().is_some());
     ///
-    /// let circle = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let circle = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert!(circle.get_box().is_none());
     /// ```
     pub fn get_box(&self) -> Option<Box> {
@@ -379,7 +375,7 @@ impl RigidBody {
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
     /// let v3 = Vector2 { x: -2.0, y: 2.0 };
     ///
-    /// let convex = RigidBody::new(1.0, false, 0.5, Polygon::new(&[v1, v2, v3]), 0.6, 0.4);
+    /// let convex = RigidBody::new(1.0, 0.5, Polygon::new(&[v1, v2, v3]), 0.6, 0.4);
     /// assert!(convex.get_convex_polygon().is_some());
     ///
     /// let v1 = Vector2 { x: 2.0, y: -2.0 };
@@ -388,7 +384,7 @@ impl RigidBody {
     /// let v4 = Vector2 { x: -2.0, y: -2.0 };
     /// let v5 = Vector2 { x: 0.0, y: 0.0 };
     ///
-    /// let concave = RigidBody::new(1.0, false, 0.5, Polygon::new(&[v1, v2, v3, v4, v5]), 0.6, 0.4);
+    /// let concave = RigidBody::new(1.0, 0.5, Polygon::new(&[v1, v2, v3, v4, v5]), 0.6, 0.4);
     /// assert!(concave.get_convex_polygon().is_none());
     /// ```
     pub fn get_convex_polygon(&self) -> Option<Polygon> {
@@ -411,14 +407,14 @@ impl RigidBody {
     /// let v4 = Vector2 { x: -2.0, y: -2.0 };
     /// let v5 = Vector2 { x: 0.0, y: 0.0 };
     ///
-    /// let concave = RigidBody::new(1.0, false, 0.5, Polygon::new(&[v1, v2, v3, v4, v5]), 0.6, 0.4);
+    /// let concave = RigidBody::new(1.0, 0.5, Polygon::new(&[v1, v2, v3, v4, v5]), 0.6, 0.4);
     /// assert!(concave.get_concave_polygon().is_some());
     ///
     /// let v1 = Vector2 { x: 0.0, y: 2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
     /// let v3 = Vector2 { x: -2.0, y: 2.0 };
     ///
-    /// let convex = RigidBody::new(1.0, false, 0.5, Polygon::new(&[v1, v2, v3]), 0.6, 0.4);
+    /// let convex = RigidBody::new(1.0, 0.5, Polygon::new(&[v1, v2, v3]), 0.6, 0.4);
     /// assert!(convex.get_concave_polygon().is_none());
     /// ```
     pub fn get_concave_polygon(&self) -> Option<Vec<Polygon>> {
@@ -435,7 +431,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::{Circle, ShapeType};
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_static_friction(), 0.6);
     /// ```
     pub fn get_static_friction(&self) -> f32 {
@@ -449,7 +445,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::{Circle, ShapeType};
     ///
-    /// let rigid = RigidBody::new(1.0, false, 0.5, Circle::new(1.0), 0.6, 0.4);
+    /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_dynamic_friction(), 0.4);
     /// ```
     pub fn get_dynamic_friction(&self) -> f32 {
@@ -463,7 +459,7 @@ impl RigidBody {
     /// use vyxen_physics2d::RigidBody;
     /// use vyxen_geometry::Box;
     ///
-    /// let mut rigid = RigidBody::new(10.0, false, 1.0, Box::new(5.0, 5.0), 0.6, 0.4);
+    /// let mut rigid = RigidBody::new(10.0, 1.0, Box::new(5.0, 5.0), 0.6, 0.4);
     ///
     /// rigid.set_transform_required(true);
     /// ```

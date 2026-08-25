@@ -1,6 +1,9 @@
 use vyxen::prelude::*;
 
 fn main() {
+    #[cfg(target_arch = "wasm32")]
+    console_error_panic_hook::set_once();
+
     let mut clicks = 0;
 
     let mut game = Game::new();
@@ -36,7 +39,11 @@ fn main() {
 
         let _ = game.get_scene_mut().unwrap().remove_node_by_id(2);
 
-        let camera = game.get_camera().unwrap();
+        let camera = match game.get_camera() {
+            Some(camera) => camera,
+            None => return,
+        };
+
         let pos = Vector2 {
             x: camera.get_width(),
             y: camera.get_height(),

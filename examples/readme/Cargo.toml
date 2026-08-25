@@ -11,3 +11,4 @@ categories.workspace = true
 
 [dependencies]
 vyxen = { path = "../../crates/vyxen" }
+console_error_panic_hook = "0.1"
