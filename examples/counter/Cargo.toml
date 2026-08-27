@@ -6,5 +6,5 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-vyxen = { path = "../../crates/vyxen" }
+vyxen = { path = "../.." }
 console_error_panic_hook = "0.1"

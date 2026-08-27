@@ -11,6 +11,8 @@ Run it with `cargo run`:
 cargo run -p ball-pit
 ```
 
+Or play it [here](https://glowydeveloper.github.io/Vyxen/examples/ball_pit.html)
+
 ## [Counter](counter/)
 
 A text that counts how many time you've clicked.
@@ -20,6 +22,8 @@ Run it with `cargo run`:
 cargo run -p counter
 ```
 
+Or play it [here](https://glowydeveloper.github.io/Vyxen/examples/counter.html)
+
 ## [Readme](readme/)
 
 A movable block that was also shown in the [readme](../README.md#a-playable-example).
@@ -28,3 +32,5 @@ Run it with `cargo run`:
 ```bash
 cargo run -p readme
 ```
+
+Or play it [here](https://glowydeveloper.github.io/Vyxen/examples/index.html)
