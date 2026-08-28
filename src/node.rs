@@ -19,7 +19,7 @@ type CollisionOption = Option<Box<dyn FnMut(&mut Node, &mut Node, Manifold, &mut
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_core::Node;
+/// use vyxen::Node;
 ///
 /// let node = Node::new("Foo".to_string());
 /// ```
@@ -56,8 +56,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let node = Node::new("Foo".to_string());
     /// let id = node.get_id();
@@ -69,8 +68,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.set_id(10);
@@ -83,8 +81,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// assert_eq!(node.get_position(), Vector2 { x: 0.0, y: 0.0 });
@@ -98,8 +95,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let node = Node::new("Foo".to_string());
     /// assert_eq!(node.get_linear_velocity(), Vector2 { x: 0.0, y: 0.0 });
@@ -111,8 +107,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// assert_eq!(node.get_rotation(), 0.0);
@@ -126,8 +121,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let node = Node::new("Foo".to_string());
     /// assert_eq!(node.get_rotational_velocity(), 0.0);
@@ -139,8 +133,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let node = Node::new("Foo".to_string());
     /// assert_eq!(node.get_force(), Vector2 { x: 0.0, y: 0.0 });
@@ -153,7 +146,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let node = Node::new("Foo".to_string());
     /// assert_eq!(node.get_name(), "Foo");
@@ -166,7 +159,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut parent = Node::new("Parent".to_string());
     /// let child = Node::new("Child".to_string());
@@ -183,7 +176,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut parent = Node::new("Parent".to_string());
     /// let child1 = Node::new("Child1".to_string());
@@ -204,9 +197,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::Node;
     ///
     /// let node = Node::new("Foo".to_string());
     /// assert_eq!(node.is_static(), false);
@@ -224,7 +215,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Node".to_string());
     /// node.set_on_ready(|node, scene, context| {
@@ -242,7 +233,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Node".to_string());
     /// node.set_on_ready(|node, scene, context| {
@@ -264,7 +255,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Node".to_string());
     /// node.set_on_ready(|node, scene, context| {
@@ -282,7 +273,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Node".to_string());
     /// node.set_physics_process(|node, scene, dt, context| {
@@ -305,7 +296,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Node".to_string());
     /// node.set_on_collision(|node, other, manifold, scene, context| {
@@ -324,7 +315,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Node".to_string());
     /// node.set_on_collision(|node, other, manifold, scene, context| {
@@ -350,7 +341,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Foo".to_string());
     ///
@@ -369,8 +360,7 @@ impl Node {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let start_pos = Vector2 { x: 0.0, y: 0.0 };
     ///
@@ -397,8 +387,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.set_rotational_velocity(45.0);
@@ -422,7 +411,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// assert_eq!(false, node.is_static());
@@ -437,7 +426,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut parent = Node::new("Parent".to_string());
     /// let child = Node::new("Child".to_string());
@@ -453,7 +442,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let mut parent = Node::new("Parent".to_string());
     /// let child = Node::new("Child".to_string());
@@ -477,7 +466,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Node;
+    /// use vyxen::Node;
     ///
     /// let node = Node::new("Foo".to_string());
     /// ```
@@ -510,8 +499,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Node, Collider, Circle};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.add_component(Collider::new(Circle::new(2.0)));
@@ -524,8 +512,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Node, Collider, Circle};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.add_component(Collider::new(Circle::new(2.0)));
@@ -548,9 +535,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Circle;
-    /// use vyxen_physics2d::RigidBody;
+    /// use vyxen::{Node, Collider, Circle, physics2d::RigidBody};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.add_component(Collider::new(Circle::new(2.0)));
@@ -576,9 +561,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Circle;
-    /// use vyxen_physics2d::RigidBody;
+    /// use vyxen::{Node, Collider, Circle, physics2d::RigidBody};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.add_component(Collider::new(Circle::new(2.0)));
@@ -604,8 +587,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.move_by(Vector2 { x: 1.0, y: 1.0 });
@@ -670,8 +652,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.move_to(Vector2 { x: 3.0, y: 4.0 });
@@ -731,8 +712,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.rotate_by(45.0);
@@ -794,8 +774,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.rotate_to(45.0);
@@ -856,8 +835,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let force = Vector2 { x: 5.0, y: 0.0 };
     ///
@@ -875,8 +853,7 @@ impl Node {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Node;
+    /// use vyxen::{Node, Vector2};
     ///
     /// let force = Vector2 { x: 5.0, y: 0.0 };
     ///
@@ -1847,8 +1824,7 @@ pub trait Component {
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_core::{Node, Collider};
-/// use vyxen_geometry::Circle;
+/// use vyxen::{Node, Collider, Circle};
 ///
 /// let mut node = Node::new("Foo".to_string());
 /// node.add_component(Collider::new(Circle::new(5.0)));
@@ -1867,25 +1843,21 @@ impl Collider {
     /// # Examples
     /// ## Circles:
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Node, Collider, Circle};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.add_component(Collider::new(Circle::new(5.0)));
     /// ```
     /// ## Boxes:
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{Node, Collider, Box};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// node.add_component(Collider::new(Box::new(5.0, 5.0)));
     /// ```
     /// ## Polygons:
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Polygon;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Node, Collider, Polygon, Vector2};
     ///
     /// let v1 = Vector2 { x: 0.0, y: 2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
@@ -1913,8 +1885,7 @@ impl Collider {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Node, Collider, Circle};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// let collider = Collider::new(Circle::new(5.0));
@@ -1932,8 +1903,7 @@ impl Collider {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Node, Collider, Circle};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// let collider = Collider::new(Circle::new(5.0));
@@ -1951,9 +1921,7 @@ impl Collider {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Node, Collider};
-    /// use vyxen_geometry::Circle;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Node, Collider, Circle, Vector2};
     ///
     /// let mut node = Node::new("Foo".to_string());
     /// let collider = Collider::new(Circle::new(5.0));

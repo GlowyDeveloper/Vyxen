@@ -14,7 +14,7 @@ pub trait Resource: Sized {
 ///
 /// # Examples
 /// ```rust, ignore
-/// use vyxen_resource::{Texture, load_path};
+/// use vyxen::{Texture, load_path};
 ///
 /// let texture = load_path::<Texture>("test-img.png").unwrap();
 /// ```
@@ -35,7 +35,7 @@ pub fn load_path<T: Resource>(path: impl AsRef<Path>) -> anyhow::Result<T> {
 ///
 /// # Examples
 /// ```rust, ignore
-/// use vyxen_resource::{Texture, load_bytes};
+/// use vyxen::{Texture, load_bytes};
 ///
 /// let bytes = include_bytes!("test-img.png");
 ///

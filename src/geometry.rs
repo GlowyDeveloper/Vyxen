@@ -1,7 +1,6 @@
 use crate::{Transform, Vector2};
 use std::any::Any;
 
-/// Trait differentiating different shapes.
 pub trait Shape: Clone {
     fn as_any(&self) -> &dyn Any;
 }
@@ -240,8 +239,7 @@ impl Polygon {
     ///
     /// # Example
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::Polygon;
+    /// use vyxen::{Vector2, Polygon};
     ///
     /// let v1 = Vector2 { x: 2.0, y: -2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 2.0 };
@@ -298,8 +296,7 @@ impl Polygon {
     ///
     /// # Example
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::Polygon;
+    /// use vyxen::{Vector2, Polygon};
     ///
     /// let v1 = Vector2 { x: 2.0, y: -2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 2.0 };
@@ -396,8 +393,7 @@ impl Polygon {
     ///
     /// # Example
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::Polygon;
+    /// use vyxen::{Vector2, Polygon};
     ///
     /// let v1 = Vector2 { x: 2.0, y: -2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 2.0 };
@@ -428,8 +424,7 @@ impl Polygon {
     ///
     /// # Example
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::Polygon;
+    /// use vyxen::{Vector2, Polygon};
     ///
     /// let v1 = Vector2 { x: 0.0, y: 0.0 };
     /// let v2 = Vector2 { x: -2.0, y: -2.0 };
@@ -455,8 +450,7 @@ impl Polygon {
 /// # Examples
 ///
 /// ```rust
-/// use vyxen_math::Vector2;
-/// use vyxen_geometry::AABB;
+/// use vyxen::{Vector2, AABB};
 ///
 /// let a = AABB::new(
 ///     Vector2 { x: 0.0, y: 0.0 },
@@ -499,8 +493,7 @@ impl AABB {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::AABB;
+    /// use vyxen::{Vector2, AABB};
     ///
     /// let a = AABB::new(
     ///     Vector2 { x: 0.0, y: 0.0 },

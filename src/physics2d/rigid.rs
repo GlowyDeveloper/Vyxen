@@ -10,9 +10,7 @@ use std::any::Any;
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_math::Vector2;
-/// use vyxen_physics2d::RigidBody;
-/// use vyxen_geometry::Circle;
+/// use vyxen::{Vector2, Circle, physics2d::RigidBody};
 ///
 /// let circle = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
 /// assert!(circle.get_circle().is_some());
@@ -56,9 +54,7 @@ impl RigidBody {
     ///
     /// ## Circle
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let radius = 1.0;
     /// let density = 1.0;
@@ -71,9 +67,7 @@ impl RigidBody {
     ///
     /// ## Box
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{Vector2, Box, physics2d::RigidBody};
     ///
     /// let width = 1.0;
     /// let height = 2.0;
@@ -87,9 +81,7 @@ impl RigidBody {
     ///
     /// ## Polygon
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Polygon;
+    /// use vyxen::{Vector2, Polygon, physics2d::RigidBody};
     ///
     /// let width = 1.0;
     /// let height = 2.0;
@@ -192,9 +184,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_density(), 1.0);
@@ -206,9 +196,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
@@ -223,9 +211,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
@@ -241,9 +227,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_restitution(), 0.5);
@@ -255,9 +239,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_area(), std::f32::consts::PI);
@@ -269,9 +251,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
@@ -286,9 +266,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
@@ -309,9 +287,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::{Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody, shape_type::ShapeType};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let shape = rigid.get_shape();
@@ -327,9 +303,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::{Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody, shape_type::ShapeType};
     ///
     /// let mut rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let mut shape = rigid.get_shape_mut();
@@ -343,9 +317,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::{Box, Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, Box, physics2d::RigidBody, shape_type::ShapeType};
     ///
     /// let circle = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert!(circle.get_circle().is_some());
@@ -363,9 +335,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::{Box, Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, Box, physics2d::RigidBody, shape_type::ShapeType};
     ///
     /// let bx = RigidBody::new(1.0, 0.5, Box::new(1.0, 1.0), 0.6, 0.4);
     /// assert!(bx.get_box().is_some());
@@ -383,9 +353,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::{Polygon, Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, Polygon, physics2d::RigidBody, shape_type::ShapeType};
     ///
     /// let v1 = Vector2 { x: 0.0, y: 2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
@@ -413,9 +381,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::{Polygon, Circle, ShapeType};
+    /// use vyxen::{Vector2, Polygon, physics2d::RigidBody, shape_type::ShapeType};
     ///
     /// let v1 = Vector2 { x: 2.0, y: -2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 2.0 };
@@ -443,9 +409,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::{Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_static_friction(), 0.6);
@@ -457,9 +421,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::{Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, physics2d::RigidBody};
     ///
     /// let rigid = RigidBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(rigid.get_dynamic_friction(), 0.4);
@@ -472,8 +434,7 @@ impl RigidBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{Box, physics2d::RigidBody};
     ///
     /// let mut rigid = RigidBody::new(10.0, 1.0, Box::new(5.0, 5.0), 0.6, 0.4);
     ///

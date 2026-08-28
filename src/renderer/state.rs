@@ -21,7 +21,6 @@ use std::time::Instant;
 #[cfg(target_arch = "wasm32")]
 use web_time::Instant;
 
-/// The main state struct for the renderer backend.
 pub struct State {
     surface: wgpu::Surface<'static>,
     device: wgpu::Device,
@@ -66,7 +65,6 @@ pub struct State {
 }
 
 impl State {
-    /// Creates a new state.
     pub async fn new(window: Arc<Window>, custom_config: WindowConfig) -> anyhow::Result<State> {
         let size = window.inner_size();
 
@@ -576,7 +574,6 @@ impl State {
         })
     }
 
-    /// Resizes the renderer to the given width and height.
     pub fn resize(&mut self, width: u32, height: u32) {
         if width > 0 && height > 0 {
             self.config.width = if cfg!(target_arch = "wasm32") {
@@ -598,7 +595,6 @@ impl State {
         }
     }
 
-    /// Updates the state of the renderer.
     pub fn update(&mut self) {
         self.camera_uniform.update_view_proj(&self.camera);
         self.queue.write_buffer(
@@ -743,7 +739,6 @@ impl State {
             .write_buffer(&self.text_uniform_buffer, 0, &padded);
     }
 
-    /// Renders the scene to the screen.
     pub fn render(&mut self) -> anyhow::Result<()> {
         self.window.request_redraw();
 
@@ -770,7 +765,6 @@ impl State {
             wgpu::CurrentSurfaceTexture::Timeout
             | wgpu::CurrentSurfaceTexture::Occluded
             | wgpu::CurrentSurfaceTexture::Validation => {
-                // Skip this frame
                 return Ok(());
             }
             wgpu::CurrentSurfaceTexture::Outdated => {
@@ -994,7 +988,6 @@ impl State {
         Ok(())
     }
 
-    /// Sets the sprites to be rendered.
     pub fn set_sprites(&mut self, sprites: Vec<Sprite>) {
         let mut sprites = sprites;
         sprites.sort_by(|a, b| a.z.partial_cmp(&b.z).unwrap());
@@ -1003,7 +996,6 @@ impl State {
         self.raw_sprites = self.sprites.iter().map(SpriteRaw::gen_raw).collect();
     }
 
-    /// Sets the UI elements to be rendered.
     pub fn set_ui_elements(&mut self, elements: Vec<UiElement>) {
         let mut elements = elements;
         elements.sort_by(|a, b| a.get_z().partial_cmp(&b.get_z()).unwrap());
@@ -1012,7 +1004,6 @@ impl State {
         self.raw_ui_elements = self.ui_elements.iter().map(UiRaw::gen_raw).collect();
     }
 
-    /// Sets the camera to be used for rendering.
     pub fn set_camera(&mut self, camera: Camera) {
         self.camera = camera;
         self.camera_uniform.update_view_proj(&self.camera);
@@ -1029,27 +1020,22 @@ impl State {
         );
     }
 
-    /// Returns a reference to the window.
     pub fn get_window(&self) -> &Arc<Window> {
         &self.window
     }
 
-    /// Sets the window configuration.
     pub fn set_config(&mut self, config: WindowConfig) {
         self.custom_config = config;
     }
 
-    /// Returns a reference to the camera.
     pub fn get_camera(&self) -> &Camera {
         &self.camera
     }
 
-    /// Returns a mutable reference to the camera.
     pub fn get_camera_mut(&mut self) -> &mut Camera {
         &mut self.camera
     }
 
-    /// Returns the current FPS.
     pub fn get_fps(&self) -> f32 {
         self.fps
     }

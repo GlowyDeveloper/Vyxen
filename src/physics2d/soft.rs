@@ -20,9 +20,7 @@ pub const SHAPE_DAMPING: f32 = 5.0;
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_math::Vector2;
-/// use vyxen_physics2d::SoftBody;
-/// use vyxen_geometry::Circle;
+/// use vyxen::{Vector2, Circle, physics2d::SoftBody};
 ///
 /// let circle = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
 /// assert_eq!(circle.get_density(), 1.0);
@@ -66,9 +64,7 @@ impl SoftBody {
     ///
     /// ## Circle
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody};
     ///
     /// let radius = 1.0;
     /// let density = 1.0;
@@ -81,9 +77,7 @@ impl SoftBody {
     ///
     /// ## Box
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{Vector2, Box, physics2d::SoftBody};
     ///
     /// let width = 1.0;
     /// let height = 2.0;
@@ -97,9 +91,7 @@ impl SoftBody {
     ///
     /// ## Polygon
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Polygon;
+    /// use vyxen::{Vector2, Polygon, physics2d::SoftBody};
     ///
     /// let width = 1.0;
     /// let height = 2.0;
@@ -426,7 +418,7 @@ impl SoftBody {
         }
     }
 
-    pub fn solve_springs(&mut self, dt: f32) {
+    pub(crate) fn solve_springs(&mut self, dt: f32) {
         for spring in &self.springs {
             spring.calculate(&mut self.points, dt);
         }
@@ -454,9 +446,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::{Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody, shape_type::ShapeType};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let points = soft.get_points();
@@ -469,9 +459,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::{Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody, shape_type::ShapeType};
     ///
     /// let mut soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let mut points = soft.get_points_mut();
@@ -484,9 +472,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::{Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody, shape_type::ShapeType};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let springs = soft.get_springs();
@@ -499,9 +485,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_density(), 1.0);
@@ -513,9 +497,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
@@ -530,9 +512,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let area = std::f32::consts::PI;
@@ -548,9 +528,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_restitution(), 0.5);
@@ -562,9 +540,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_area(), std::f32::consts::PI);
@@ -576,9 +552,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
@@ -593,9 +567,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// let expected_mass = std::f32::consts::PI * 1.0; // area * density
@@ -614,9 +586,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::{Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody, shape_type::ShapeType};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_static_friction(), 0.6);
@@ -628,9 +598,7 @@ impl SoftBody {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::SoftBody;
-    /// use vyxen_geometry::{Circle, ShapeType};
+    /// use vyxen::{Vector2, Circle, physics2d::SoftBody, shape_type::ShapeType};
     ///
     /// let soft = SoftBody::new(1.0, 0.5, Circle::new(1.0), 0.6, 0.4);
     /// assert_eq!(soft.get_dynamic_friction(), 0.4);

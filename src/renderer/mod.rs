@@ -24,7 +24,7 @@ pub mod state;
 /// # Examples
 /// ## Texture
 /// ```rust, ignore
-/// use vyxen_renderer::{DrawType, Texture};
+/// use vyxen::{DrawType, Texture};
 ///
 /// let texture = DrawType::Texture(
 ///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
@@ -32,8 +32,7 @@ pub mod state;
 /// ```
 /// ## Color
 /// ```rust
-/// use vyxen_renderer::DrawType;
-/// use vyxen_resource::Color;
+/// use vyxen::{DrawType, Color};
 ///
 /// let color = DrawType::Color(
 ///     Color::from_rgba(0.2, 0.1, 0.9, 1.0)
@@ -51,8 +50,7 @@ pub enum DrawType {
 /// # Examples
 /// ## Texture
 /// ```rust, ignore
-/// use vyxen_renderer::{Texture, Sprite};
-/// use vyxen_geometry::Box;
+/// use vyxen::{Texture, Sprite, Box};
 ///
 /// let mut sprite = Sprite::with_texture(
 ///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
@@ -61,9 +59,7 @@ pub enum DrawType {
 /// ```
 /// ## Color
 /// ```rust
-/// use vyxen_renderer::Sprite;
-/// use vyxen_resource::Color;
-/// use vyxen_geometry::Box;
+/// use vyxen::{Sprite, Color, Box};
 ///
 /// let mut sprite = Sprite::with_color(
 ///     Color::from_rgba(0.2, 0.1, 0.9, 1.0)
@@ -101,8 +97,7 @@ impl Sprite {
     /// # Examples
     /// ## Texture
     /// ```rust, ignore
-    /// use vyxen_renderer::{DrawType, Texture, Sprite};
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{DrawType, Texture, Sprite, Box};
     ///
     /// let mut sprite = Sprite::new();
     /// sprite.set_shape(Box::new(20.0, 2.0));
@@ -112,9 +107,7 @@ impl Sprite {
     /// ```
     /// ## Color
     /// ```rust
-    /// use vyxen_renderer::{DrawType, Sprite};
-    /// use vyxen_resource::Color;
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{DrawType, Sprite, Color, Box};
     ///
     /// let mut sprite = Sprite::new();
     /// sprite.set_shape(Box::new(20.0, 2.0));
@@ -136,9 +129,7 @@ impl Sprite {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Sprite;
-    /// use vyxen_resource::Color;
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{Sprite, Color, Box};
     ///
     /// let mut sprite = Sprite::with_color(
     ///     Color::from_rgba(0.2, 0.1, 0.9, 1.0)
@@ -159,8 +150,7 @@ impl Sprite {
     ///
     /// # Examples
     /// ```rust, ignore
-    /// use vyxen_renderer::{Texture, Sprite};
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{Texture, Sprite, Box};
     ///
     /// let mut sprite = Sprite::with_texture(
     ///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
@@ -183,8 +173,7 @@ impl Sprite {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::{DrawType, Sprite};
-    /// use vyxen_resource::Color;
+    /// use vyxen::{DrawType, Sprite, Color};
     ///
     /// let mut sprite = Sprite::new();
     /// sprite.set_draw_type(DrawType::Color(Color::from_rgba(0.2, 0.1, 0.9, 1.0)));
@@ -198,27 +187,21 @@ impl Sprite {
     /// # Examples
     /// ## Box
     /// ```rust
-    /// use vyxen_geometry::Box;
-    /// use vyxen_renderer::Sprite;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Box, Sprite, Vector2};
     ///
     /// let mut sprite = Sprite::new();
     /// sprite.set_shape(Box::new(64.0, 64.0));
     /// ```
     /// ## Circle
     /// ```rust
-    /// use vyxen_geometry::Circle;
-    /// use vyxen_renderer::Sprite;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Circle, Sprite, Vector2};
     ///
     /// let mut sprite = Sprite::new();
     /// sprite.set_shape(Circle::new(64.0));
     /// ```
     /// ## Polygon
     /// ```rust
-    /// use vyxen_geometry::Polygon;
-    /// use vyxen_renderer::Sprite;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Polygon, Sprite, Vector2};
     ///
     /// let v1 = Vector2 { x: 0.0, y: 2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
@@ -264,8 +247,7 @@ impl Sprite {
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_renderer::Camera;
-/// use vyxen_math::Vector2;
+/// use vyxen::{Camera, Vector2};
 ///
 /// let mut camera = Camera::new(800.0, 600.0);
 /// camera.set_width(600.0);
@@ -294,8 +276,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Camera, Vector2};
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     /// camera.set_width(600.0);
@@ -324,7 +305,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
+    /// use vyxen::Camera;
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -342,7 +323,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
+    /// use vyxen::Camera;
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -360,7 +341,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
+    /// use vyxen::Camera;
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -378,8 +359,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Camera, Vector2};
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -397,7 +377,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
+    /// use vyxen::Camera;
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -415,7 +395,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
+    /// use vyxen::Camera;
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -433,7 +413,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
+    /// use vyxen::Camera;
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -451,7 +431,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
+    /// use vyxen::Camera;
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -469,8 +449,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Camera, Vector2};
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -488,7 +467,7 @@ impl Camera {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_renderer::Camera;
+    /// use vyxen::Camera;
     ///
     /// let mut camera = Camera::new(800.0, 600.0);
     ///
@@ -500,6 +479,26 @@ impl Camera {
     /// ```
     pub fn set_rotation(&mut self, rotation: f32) {
         self.rotation = rotation;
+    }
+
+    /// Moves the camera by a given offset.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen::{Camera, Vector2};
+    ///
+    /// let mut camera = Camera::new(800.0, 600.0);
+    ///
+    /// camera.set_position(Vector2 { x: 100.0, y: 100.0 });
+    ///
+    /// assert_eq!(camera.get_position(), Vector2 { x: 100.0, y: 100.0 });
+    ///
+    /// camera.move_by(Vector2 { x: 300.0, y: 200.0 });
+    ///
+    /// assert_eq!(camera.get_position(), Vector2 { x: 400.0, y: 300.0 });
+    /// ```
+    pub fn move_by(&mut self, offset: Vector2) {
+        self.position = self.position + offset;
     }
 }
 
@@ -523,9 +522,7 @@ impl Camera {
 /// # Examples
 ///
 /// ```rust
-/// use vyxen_renderer::WindowConfig;
-/// use vyxen_resource::Color;
-/// use vyxen_math::Vector2;
+/// use vyxen::{WindowConfig, Color, Vector2};
 ///
 /// let mut config = WindowConfig::new();
 ///
@@ -563,9 +560,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
-    /// use vyxen_resource::Color;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{WindowConfig, Color, Vector2};
     ///
     /// let mut config = WindowConfig::new();
     ///
@@ -608,8 +603,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{WindowConfig, Vector2};
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_size(Vector2 { x: 1920.0, y: 1080.0 });
@@ -623,8 +617,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{WindowConfig, Vector2};
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_min_size(Vector2 { x: 640.0, y: 480.0 });
@@ -638,8 +631,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{WindowConfig, Vector2};
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_max_size(Vector2 { x: 3840.0, y: 2160.0 });
@@ -653,7 +645,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen::WindowConfig;
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_title("Foo".into());
@@ -667,7 +659,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen::WindowConfig;
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_resizable(false);
@@ -681,8 +673,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{WindowConfig, Vector2};
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_position(Vector2 { x: 100.0, y: 100.0 });
@@ -696,7 +687,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen::WindowConfig;
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_maximized(true);
@@ -710,7 +701,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen::WindowConfig;
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_visible(false);
@@ -724,7 +715,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen::WindowConfig;
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_decorations(false);
@@ -738,7 +729,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust, ignore
-    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen::WindowConfig;
     ///
     /// let mut config = WindowConfig::new();
     /// let icon = load_path("assets/icon.png").unwrap();
@@ -758,7 +749,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen::WindowConfig;
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_fullscreen(true);
@@ -772,7 +763,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::{WindowConfig, RenderMode};
+    /// use vyxen::{WindowConfig, RenderMode};
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_render_mode(RenderMode::Vulkan);
@@ -786,8 +777,7 @@ impl WindowConfig {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_renderer::WindowConfig;
-    /// use vyxen_resource::Color;
+    /// use vyxen::{WindowConfig, Color};
     ///
     /// let mut config = WindowConfig::new();
     /// config.set_background_color(Color::from_rgb(0.2, 0.3, 0.4));

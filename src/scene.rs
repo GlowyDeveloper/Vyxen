@@ -8,10 +8,7 @@ use std::collections::HashMap;
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_core::{Scene, Node, Game};
-/// use vyxen_math::Vector2;
-/// use vyxen_physics2d::RigidBody;
-/// use vyxen_geometry::Circle;
+/// use vyxen::{Scene, Node, Game, Circle, Vector2, physics2d::RigidBody};
 ///
 /// let mut scene = Scene::new();
 ///
@@ -51,10 +48,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Node};
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Scene, Node, Circle, Vector2, physics2d::RigidBody};
     ///
     /// let mut scene = Scene::new();
     ///
@@ -90,7 +84,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Scene;
+    /// use vyxen::Scene;
     ///
     /// let mut scene = Scene::new();
     ///
@@ -106,7 +100,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Scene;
+    /// use vyxen::Scene;
     ///
     /// let scene = Scene::new();
     ///
@@ -122,7 +116,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Scene;
+    /// use vyxen::Scene;
     ///
     /// let scene = Scene::new();
     ///
@@ -138,7 +132,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Scene;
+    /// use vyxen::Scene;
     ///
     /// let mut scene = Scene::new();
     ///
@@ -156,7 +150,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Node};
+    /// use vyxen::{Scene, Node};
     ///
     /// let mut scene = Scene::new();
     ///
@@ -176,7 +170,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Node};
+    /// use vyxen::{Scene, Node};
     ///
     /// let mut scene = Scene::new();
     ///
@@ -196,9 +190,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Node};
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Scene, Node, Vector2, Circle};
     ///
     /// let mut scene = Scene::new();
     ///
@@ -224,9 +216,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Node};
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Scene, Node, Vector2, Circle};
     ///
     /// let mut scene = Scene::new();
     ///
@@ -269,9 +259,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Node};
-    /// use vyxen_math::Vector2;
-    /// use vyxen_geometry::Circle;
+    /// use vyxen::{Scene, Node, Vector2, Circle};
     ///
     /// let mut scene = Scene::new();
     ///
@@ -299,8 +287,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Scene;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Scene, Vector2};
     ///
     /// let scene = Scene::new();
     ///
@@ -314,8 +301,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Scene;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Scene, Vector2};
     ///
     /// let mut scene = Scene::new();
     ///
@@ -333,7 +319,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Scene;
+    /// use vyxen::Scene;
     ///
     /// let mut scene = Scene::new();
     ///
@@ -351,7 +337,7 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Scene;
+    /// use vyxen::Scene;
     ///
     /// let mut scene = Scene::new();
     ///
@@ -369,12 +355,10 @@ impl Scene {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Node, Context};
-    /// use vyxen_math::Vector2;
-    /// use vyxen_physics2d::RigidBody;
-    /// use vyxen_geometry::Circle;
-    /// use vyxen_input::Inputs;
-    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen::{
+    ///     Scene, Node, Context, Vector2, Circle,
+    ///     WindowConfig, physics2d::RigidBody, inputs::Inputs
+    /// };
     ///
     /// let mut scene = Scene::new();
     ///

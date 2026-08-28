@@ -19,7 +19,7 @@ static NEXT_TEXT_ID: AtomicU64 = AtomicU64::new(1);
 /// # Examples
 ///
 /// ```rust, ignore
-/// use vyxen_resource::{Font, load_path};
+/// use vyxen::{Font, load_path};
 ///
 /// let font = load_path::<Font>("path/to/font.ttf").unwrap();
 /// ```
@@ -48,17 +48,7 @@ impl Font {
         self.id
     }
 
-    /// Generates a glyph map for the given string and size.
-    ///
-    /// # Examples
-    ///
-    /// ```rust, ignore
-    /// use vyxen_resource::{Font, load_path};
-    ///
-    /// let font = load_path::<Font>("path/to/font.ttf").unwrap();
-    /// let glyph_map = font.generate_glyph_map("Hello, World!".to_string(), 16.0).unwrap();
-    /// ```
-    pub fn generate_glyph_map(&self, str: String, size: f32) -> anyhow::Result<GlyphMap> {
+    pub(crate) fn generate_glyph_map(&self, str: String, size: f32) -> anyhow::Result<GlyphMap> {
         let font = FontRef::new(&self.data)?;
         let charmap = font.charmap();
         let outlines = font.outline_glyphs();
@@ -193,7 +183,6 @@ impl Font {
     }
 }
 
-/// A single glyph's position/size within the atlas.
 #[derive(Debug, Clone, Copy)]
 pub struct GlyphRect {
     uv_min: (f32, f32),
@@ -229,9 +218,6 @@ impl GlyphRect {
     }
 }
 
-/// An atlas for the glyphs needed to draw one string at one size.
-///
-/// This gotten from `Font::generate_glyph_map`.
 #[derive(Debug, Clone)]
 pub struct GlyphMap {
     rgba: Vec<u8>,

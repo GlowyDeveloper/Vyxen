@@ -19,8 +19,7 @@ pub enum UiType {
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_ui::UiElement;
-/// use vyxen_geometry::Box;
+/// use vyxen::{Box, ui::UiElement};
 ///
 /// let mut element = UiElement::with_button();
 /// element.set_shape(Box::new(100.0, 20.0));
@@ -55,8 +54,7 @@ impl UiElement {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_ui::UiElement;
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{Box, ui::UiElement};
     ///
     /// let mut element = UiElement::with_button();
     /// element.set_shape(Box::new(100.0, 20.0));
@@ -75,8 +73,7 @@ impl UiElement {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_ui::{UiElement, UiType};
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{Box, ui::{UiElement, UiType}};
     ///
     /// let mut element = UiElement::with_button();
     /// element.set_shape(Box::new(100.0, 20.0));
@@ -95,9 +92,7 @@ impl UiElement {
     ///
     /// # Examples
     /// ```rust, ignore
-    /// use vyxen_ui::{UiElement, UiType};
-    /// use vyxen_geometry::Box;
-    /// use vyxen_resource::{Font, load_path};
+    /// use vyxen::{Box, Font, load_path, ui::{UiElement, UiType}};
     ///
     /// let font = load_path::<Font>("path/to/font.ttf");
     /// let mut element = UiElement::with_text("Hello World!", font, 32.0);
@@ -122,8 +117,7 @@ impl UiElement {
     ///
     /// # Examples
     /// ```rust, ignore
-    /// use vyxen_ui::{UiElement, UiType};
-    /// use vyxen_geometry::Box;
+    /// use vyxen::{Box, ui::{UiElement, UiType}};
     ///
     /// let mut element = UiElement::with_image(Texture::new(
     ///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
@@ -195,27 +189,21 @@ impl UiElement {
     /// # Examples
     /// ## Box
     /// ```rust
-    /// use vyxen_geometry::Box;
-    /// use vyxen_ui::UiElement;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Box, ui::UiElement};
     ///
     /// let mut element = UiElement::new();
     /// element.set_shape(Box::new(64.0, 64.0));
     /// ```
     /// ## Circle
     /// ```rust
-    /// use vyxen_geometry::Circle;
-    /// use vyxen_ui::UiElement;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Circle, ui::UiElement};
     ///
     /// let mut element = UiElement::new();
     /// element.set_shape(Circle::new(64.0));
     /// ```
     /// ## Polygon
     /// ```rust
-    /// use vyxen_geometry::Polygon;
-    /// use vyxen_ui::UiElement;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Polygon, Vector2, ui::UiElement};
     ///
     /// let v1 = Vector2 { x: 0.0, y: 2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
@@ -235,8 +223,7 @@ impl UiElement {
 /// Represents a text element to be rendered on the UI.
 ///
 /// ```rust, ignore
-/// use vyxen_resources::{Font, load_path};
-/// use vyxen_ui::Text;
+/// use vyxen::{Font, load_path, ui::Text};
 ///
 /// let font = load_path("path/to/font.ttf").unwrap();
 /// let text = Text::new("Hello, World!", font, 16.0);
@@ -253,8 +240,7 @@ impl Text {
     /// Creates a new `Text` element.
     ///
     /// ```rust, ignore
-    /// use vyxen_resources::{Font, load_path};
-    /// use vyxen_ui::Text;
+    /// use vyxen::{Font, load_path, ui::Text};
     ///
     /// let font = load_path("path/to/font.ttf").unwrap();
     /// let text = Text::new("Hello, World!", font, 16.0);

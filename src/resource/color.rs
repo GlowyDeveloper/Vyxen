@@ -2,7 +2,7 @@
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_resource::Color;
+/// use vyxen::Color;
 ///
 /// let color1 = Color::from_rgba(1.0, 1.0, 1.0, 1.0); // White
 /// let color2 = Color::from_rgb(0.5, 0.5, 0.5); // Gray
@@ -25,7 +25,7 @@ impl Color {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let color = Color::from_rgba(1.0, 1.0, 1.0, 1.0); // White
     ///
@@ -41,7 +41,7 @@ impl Color {
     /// Generates a color with `rgb`.
     ///
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let color = Color::from_rgb(0.5, 0.5, 0.5); // Gray
     ///
@@ -58,7 +58,7 @@ impl Color {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let color = Color::from_rgba(1.0, 1.0, 1.0, 1.0);
     ///
@@ -72,7 +72,7 @@ impl Color {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let color = Color::from_rgba(1.0, 1.0, 1.0, 1.0);
     ///
@@ -86,7 +86,7 @@ impl Color {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let color = Color::from_rgba(1.0, 1.0, 1.0, 1.0);
     ///
@@ -100,7 +100,7 @@ impl Color {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let color = Color::from_rgba(1.0, 1.0, 1.0, 1.0);
     ///
@@ -114,7 +114,7 @@ impl Color {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let mut color = Color::from_rgba(1.0, 1.0, 1.0, 1.0);
     ///
@@ -132,7 +132,7 @@ impl Color {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let mut color = Color::from_rgba(1.0, 1.0, 1.0, 1.0);
     ///
@@ -150,7 +150,7 @@ impl Color {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let mut color = Color::from_rgba(1.0, 1.0, 1.0, 1.0);
     ///
@@ -168,7 +168,7 @@ impl Color {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_resource::Color;
+    /// use vyxen::Color;
     ///
     /// let mut color = Color::from_rgba(1.0, 1.0, 1.0, 1.0);
     ///

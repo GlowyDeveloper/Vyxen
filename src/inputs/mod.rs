@@ -10,7 +10,7 @@ mod keycode;
 /// # Examples
 ///
 /// ```rust
-/// use vyxen_input::{Inputs, KeyCode};
+/// use vyxen::inputs::{Inputs, KeyCode};
 ///
 /// let mut inputs = Inputs::new();
 ///
@@ -43,7 +43,7 @@ impl Inputs {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_input::{Inputs, KeyCode};
+    /// use vyxen::inputs::{Inputs, KeyCode};
     ///
     /// let mut inputs = Inputs::new();
     ///
@@ -70,7 +70,7 @@ impl Inputs {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_input::{Inputs, KeyCode};
+    /// use vyxen::inputs::{Inputs, KeyCode};
     ///
     /// let mut inputs = Inputs::new();
     ///
@@ -92,7 +92,7 @@ impl Inputs {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_input::{Inputs, KeyCode};
+    /// use vyxen::inputs::{Inputs, KeyCode};
     ///
     /// let mut inputs = Inputs::new();
     ///
@@ -112,7 +112,7 @@ impl Inputs {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_input::{Inputs, KeyCode};
+    /// use vyxen::inputs::{Inputs, KeyCode};
     ///
     /// let mut inputs = Inputs::new();
     ///
@@ -136,7 +136,7 @@ impl Inputs {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_input::{Inputs, KeyCode};
+    /// use vyxen::inputs::{Inputs, KeyCode};
     ///
     /// let mut inputs = Inputs::new();
     ///
@@ -153,7 +153,7 @@ impl Inputs {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_input::{Inputs, KeyCode};
+    /// use vyxen::inputs::{Inputs, KeyCode};
     ///
     /// let mut inputs = Inputs::new();
     ///
@@ -170,7 +170,7 @@ impl Inputs {
     /// # Examples
     ///
     /// ```rust
-    /// use vyxen_input::{Inputs, KeyCode};
+    /// use vyxen::inputs::{Inputs, KeyCode};
     ///
     /// let mut inputs = Inputs::new();
     ///

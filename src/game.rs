@@ -28,7 +28,7 @@ type Callback = Box<dyn FnMut(&mut Game, Event, f32)>;
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_core::{Scene, Game};
+/// use vyxen::{Scene, Game};
 ///
 /// let scene = Scene::new();
 ///
@@ -59,7 +59,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Game};
+    /// use vyxen::{Scene, Game};
     ///
     /// let scene = Scene::new();
     ///
@@ -91,7 +91,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Game};
+    /// use vyxen::{Scene, Game};
     ///
     /// let scene = Scene::new();
     ///
@@ -113,7 +113,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Game};
+    /// use vyxen::{Scene, Game};
     ///
     /// let scene = Scene::new();
     ///
@@ -131,7 +131,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Game};
+    /// use vyxen::{Scene, Game};
     ///
     /// let mut scene = Scene::new();
     ///
@@ -149,7 +149,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Game};
+    /// use vyxen::{Scene, Game};
     ///
     /// let scene = Scene::new();
     ///
@@ -167,7 +167,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Game};
+    /// use vyxen::{Scene, Game};
     ///
     /// let mut game = Game::new();
     ///
@@ -182,8 +182,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Game};
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Scene, Game, Vector2};
     ///
     /// let mut game = Game::new();
     ///
@@ -198,8 +197,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::{Scene, Game};
-    /// use vyxen_renderer::WindowConfig;
+    /// use vyxen::{Scene, Game, WindowConfig};
     ///
     /// let mut game = Game::new();
     ///
@@ -268,7 +266,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust, no_run
-    /// use vyxen_core::{Scene, Game};
+    /// use vyxen::{Scene, Game};
     ///
     /// let scene = Scene::new();
     ///
@@ -310,7 +308,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust, no_run
-    /// use vyxen_core::{Scene, Game};
+    /// use vyxen::{Scene, Game};
     ///
     /// let scene = Scene::new();
     ///
@@ -346,8 +344,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_input::{KeyCode, Inputs};
-    /// use vyxen_core::Game;
+    /// use vyxen::{Game, inputs::KeyCode};
     ///
     /// let mut game = Game::new();
     ///
@@ -365,8 +362,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_input::KeyCode;
-    /// use vyxen_core::Game;
+    /// use vyxen::{Game, inputs::KeyCode};
     ///
     /// let mut game = Game::new();
     ///
@@ -384,8 +380,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_input::KeyCode;
-    /// use vyxen_core::Game;
+    /// use vyxen::{Game, inputs::KeyCode};
     ///
     /// let mut game = Game::new();
     ///
@@ -403,8 +398,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Game;
-    /// use vyxen_math::Vector2;
+    /// use vyxen::{Game, Vector2};
     ///
     /// let mut game = Game::new();
     ///
@@ -424,7 +418,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Game;
+    /// use vyxen::Game;
     ///
     /// let mut game = Game::new();
     ///
@@ -438,7 +432,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_core::Game;
+    /// use vyxen::Game;
     ///
     /// let mut game = Game::new();
     ///
@@ -456,8 +450,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Game;
+    /// use vyxen::{Game, Vector2};
     ///
     /// let mut game = Game::new();
     ///
@@ -489,8 +482,7 @@ impl Game {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
-    /// use vyxen_core::Game;
+    /// use vyxen::{Game, Vector2};
     ///
     /// let mut game = Game::new();
     ///

@@ -14,7 +14,7 @@ static NEXT_TEXTURE_ID: AtomicU64 = AtomicU64::new(1);
 /// # Examples
 /// ## Raw bytes
 /// ```rust, ignore
-/// use vyxen_resource::{Texture, load_bytes};
+/// use vyxen::{Texture, load_bytes};
 ///
 /// let bytes = include_bytes!("test-img.png");
 ///
@@ -22,7 +22,7 @@ static NEXT_TEXTURE_ID: AtomicU64 = AtomicU64::new(1);
 /// ```
 /// ## Path
 /// ```rust, ignore
-/// use vyxen_resource::{Texture, load_path};
+/// use vyxen::{Texture, load_path};
 ///
 /// let texture = load_path::<Texture>("test-img.png").unwrap();
 /// ```
@@ -150,6 +150,8 @@ impl Texture {
     /// # Examples
     ///
     /// ```rust, ignore
+    /// use vyxen::Texture;
+    ///
     /// let texture = Texture::from_raw(Vector2::new(2.0, 1.0), vec![0,0,0,255, 0,0,0,255]);
     ///
     /// assert_eq!(texture.get_dimensions(), Vector2::new(2.0, 1.0));

@@ -13,7 +13,7 @@ pub enum ShapeType {
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_geometry::{Circle, shape_type_from_shape};
+/// use vyxen::{Circle, shape_type::shape_type_from_shape};
 ///
 /// let rigid_type = shape_type_from_shape(Circle::new(2.0));
 /// ```

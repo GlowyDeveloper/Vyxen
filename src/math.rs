@@ -10,7 +10,7 @@ use web_time::{SystemTime, UNIX_EPOCH};
 /// # Examples
 ///
 /// ```rust
-/// use vyxen_math::Vector2;
+/// use vyxen::Vector2;
 ///
 /// let v1 = Vector2 { x: 1.0, y: 2.0 };
 /// assert_eq!(v1.x, 1.0);
@@ -44,7 +44,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
+    /// use vyxen::Vector2;
     ///
     /// let v = Vector2::zero();
     /// assert_eq!(v.x, 0.0);
@@ -58,7 +58,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
+    /// use vyxen::Vector2;
     ///
     /// let v = Vector2 { x: 3.0, y: 4.0 };
     /// let length = v.length();
@@ -72,7 +72,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
+    /// use vyxen::Vector2;
     ///
     /// let v = Vector2 { x: 3.0, y: 4.0 };
     /// let length = v.length();
@@ -89,7 +89,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
+    /// use vyxen::Vector2;
     ///
     /// let v1 = Vector2 { x: 1.0, y: 2.0 };
     /// let v2 = Vector2 { x: 4.0, y: 6.0 };
@@ -106,7 +106,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
+    /// use vyxen::Vector2;
     ///
     /// let v1 = Vector2 { x: 1.0, y: 2.0 };
     /// let v2 = Vector2 { x: 4.0, y: 6.0 };
@@ -126,7 +126,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
+    /// use vyxen::Vector2;
     ///
     /// let v = Vector2 { x: 3.0, y: 4.0 };
     /// let normalized = v.normalize();
@@ -144,7 +144,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
+    /// use vyxen::Vector2;
     ///
     /// let v1 = Vector2 { x: 1.0, y: 2.0 };
     /// let v2 = Vector2 { x: 3.0, y: 4.0 };
@@ -159,7 +159,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
+    /// use vyxen::Vector2;
     ///
     /// let v1 = Vector2 { x: 1.0, y: 2.0 };
     /// let v2 = Vector2 { x: 3.0, y: 4.0 };
@@ -174,7 +174,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::{Vector2, Transform};
+    /// use vyxen::{Vector2, Transform};
     ///
     /// let v = Vector2 { x: 5.0, y: 5.0 };
     /// let t = Transform::new(Vector2 {x: 5.0, y: 2.0}, 45.0);
@@ -192,7 +192,7 @@ impl Vector2 {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Vector2;
+    /// use vyxen::Vector2;
     ///
     /// let v1 = Vector2 { x: 5.0, y: 5.0 };
     /// let v2 = Vector2 { x: 4.9999, y: 4.9999 };
@@ -322,7 +322,7 @@ impl Transform {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::{Vector2, Transform};
+    /// use vyxen::{Vector2, Transform};
     ///
     /// let transform = Transform::new(Vector2 {x: 5.0, y: 2.0}, 45.0);
     /// ```
@@ -339,7 +339,7 @@ impl Transform {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::{Vector2, Transform};
+    /// use vyxen::{Vector2, Transform};
     ///
     /// let transform = Transform::zero();
     /// ```
@@ -352,7 +352,7 @@ impl Transform {
 ///
 /// # Examples
 /// ```rust
-/// use vyxen_math::is_nearly_equal;
+/// use vyxen::is_nearly_equal;
 ///
 /// let f1 = 5.0;
 /// let f2 = 4.9999;
@@ -377,7 +377,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::new(12345);
     ///
@@ -396,7 +396,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -416,7 +416,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::new(12345);
     /// let seed = rng.seed();
@@ -430,7 +430,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::new(12345);
     /// let seed = rng.seed();
@@ -449,7 +449,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -476,7 +476,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -491,7 +491,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -506,7 +506,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -521,7 +521,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -536,7 +536,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -553,7 +553,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -570,7 +570,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -587,7 +587,7 @@ impl Random {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen_math::Random;
+    /// use vyxen::Random;
     ///
     /// let mut rng = Random::from_time();
     ///
@@ -611,7 +611,7 @@ impl Default for Random {
 ///
 /// # Examples
 /// ```
-/// use vyxen_math::Matrix4;
+/// use vyxen::Matrix4;
 ///
 /// let matrix = Matrix4::new();
 ///
@@ -628,7 +628,7 @@ impl Matrix4 {
     ///
     /// # Examples
     /// ```
-    /// use vyxen_math::Matrix4;
+    /// use vyxen::Matrix4;
     ///
     /// let matrix = Matrix4::new();
     ///
@@ -642,7 +642,7 @@ impl Matrix4 {
     ///
     /// # Examples
     /// ```
-    /// use vyxen_math::Matrix4;
+    /// use vyxen::Matrix4;
     ///
     /// let identity = Matrix4::identity();
     ///
@@ -673,7 +673,7 @@ impl Matrix4 {
     ///
     /// # Examples
     /// ```
-    /// use vyxen_math::Matrix4;
+    /// use vyxen::Matrix4;
     ///
     /// let x = 2.0;
     /// let y = 4.0;
@@ -708,7 +708,7 @@ impl Matrix4 {
     ///
     /// # Examples
     /// ```
-    /// use vyxen_math::Matrix4;
+    /// use vyxen::Matrix4;
     ///
     /// let x = 2.0;
     /// let y = 4.0;
@@ -743,7 +743,7 @@ impl Matrix4 {
     ///
     /// # Examples
     /// ```
-    /// use vyxen_math::Matrix4;
+    /// use vyxen::Matrix4;
     ///
     /// let projection = Matrix4::orthographic(
     ///     -1.0, 1.0,
@@ -783,7 +783,7 @@ impl Matrix4 {
     ///
     /// # Examples
     /// ```
-    /// use vyxen_math::Matrix4;
+    /// use vyxen::Matrix4;
     ///
     /// let rotation = Matrix4::rotate(std::f32::consts::PI);
     ///
