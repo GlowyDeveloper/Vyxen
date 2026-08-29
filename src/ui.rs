@@ -1,5 +1,5 @@
 use crate::{
-    Color, Font, Texture, Vector2,
+    Color, Font, Texture,
     geometry::Shape,
     node::Component,
     shape_type::{ShapeType, shape_type_from_shape},
@@ -7,28 +7,28 @@ use crate::{
 use std::any::Any;
 
 /// The type of UI element.
-#[derive(Debug, Clone)]
-pub enum UiType {
-    Button,
+#[derive(Debug, Clone, PartialEq)]
+pub enum ElementType {
+    Color(Color),
     Text(Text),
-    Image(Texture),
+    Texture(Texture),
     None,
 }
 
 /// A UI element.
 ///
 /// # Examples
-/// ```rust
-/// use vyxen::{Box, ui::UiElement};
+/// ```rust, ignore
+/// use vyxen::{Box, UiElement};
 ///
-/// let mut element = UiElement::with_button();
+/// let mut element = UiElement::with_image(Texture::new(
+///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
+/// ));
 /// element.set_shape(Box::new(100.0, 20.0));
 /// ```
 #[derive(Debug, Clone)]
 pub struct UiElement {
-    position_ref: Vector2,
-    rotation_ref: f32,
-    ui_type: UiType,
+    element_type: ElementType,
     vertices: Option<ShapeType>,
     z: f32,
 }
@@ -53,46 +53,27 @@ impl UiElement {
     /// Creates a new UI element with the given type.
     ///
     /// # Examples
-    /// ```rust
-    /// use vyxen::{Box, ui::UiElement};
+    /// ```rust, ignore
+    /// use vyxen::{Box, UiElement};
     ///
-    /// let mut element = UiElement::with_button();
+    /// let mut element = UiElement::with_image(Texture::new(
+    ///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
+    /// ));
     /// element.set_shape(Box::new(100.0, 20.0));
     /// ```
     pub fn new() -> Self {
         Self {
-            position_ref: Vector2::zero(),
-            rotation_ref: 0.0,
-            ui_type: UiType::None,
+            element_type: ElementType::None,
             vertices: None,
             z: 0.0,
         }
     }
 
-    /// Short for `UiElement::new().set_ui_type(UiType::Button)`
-    ///
-    /// # Examples
-    /// ```rust
-    /// use vyxen::{Box, ui::{UiElement, UiType}};
-    ///
-    /// let mut element = UiElement::with_button();
-    /// element.set_shape(Box::new(100.0, 20.0));
-    /// ```
-    pub fn with_button() -> Self {
-        Self {
-            position_ref: Vector2::zero(),
-            rotation_ref: 0.0,
-            ui_type: UiType::Button,
-            vertices: None,
-            z: 0.0,
-        }
-    }
-
-    /// Short for `UiElement::new().set_ui_type(UiType::Text)`
+    /// Short for `UiElement::new().set_element_type(ElementType::Text(..))`
     ///
     /// # Examples
     /// ```rust, ignore
-    /// use vyxen::{Box, Font, load_path, ui::{UiElement, UiType}};
+    /// use vyxen::{Box, Font, load_path, UiElement};
     ///
     /// let font = load_path::<Font>("path/to/font.ttf");
     /// let mut element = UiElement::with_text("Hello World!", font, 32.0);
@@ -100,9 +81,7 @@ impl UiElement {
     /// ```
     pub fn with_text(text: String, font: Font, size: f32) -> Self {
         Self {
-            position_ref: Vector2::zero(),
-            rotation_ref: 0.0,
-            ui_type: UiType::Text(Text {
+            element_type: ElementType::Text(Text {
                 text,
                 font,
                 size,
@@ -113,55 +92,50 @@ impl UiElement {
         }
     }
 
-    /// Short for `UiElement::new().set_ui_type(UiType::Image(..))`
+    /// Short for `UiElement::new().set_element_type(ElementType::Texture(..))`
     ///
     /// # Examples
     /// ```rust, ignore
-    /// use vyxen::{Box, ui::{UiElement, UiType}};
+    /// use vyxen::{Box, UiElement};
     ///
-    /// let mut element = UiElement::with_image(Texture::new(
+    /// let mut element = UiElement::with_texture(Texture::new(
     ///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
     /// ));
     /// element.set_shape(Box::new(100.0, 20.0));
     /// ```
-    pub fn with_image(texture: Texture) -> Self {
+    pub fn with_texture(texture: Texture) -> Self {
         Self {
-            position_ref: Vector2::zero(),
-            rotation_ref: 0.0,
-            ui_type: UiType::Image(texture),
+            element_type: ElementType::Texture(texture),
             vertices: None,
             z: 0.0,
         }
     }
 
-    /// Sets the ui type of this element.
-    pub fn set_ui_type(&mut self, ui_type: UiType) {
-        self.ui_type = ui_type;
+    /// Short for `UiElement::new().set_element_type(ElementType::Color(..))`
+    ///
+    /// # Examples
+    /// ```rust, ignore
+    /// use vyxen::{Box, UiElement, Color};
+    ///
+    /// let mut element = UiElement::with_color(Color::new(Color::rgb(1.0, 0.0, 0.0)));
+    /// element.set_shape(Box::new(100.0, 20.0));
+    /// ```
+    pub fn with_color(color: Color) -> Self {
+        Self {
+            element_type: ElementType::Color(color),
+            vertices: None,
+            z: 0.0,
+        }
     }
 
-    /// Sets the position of this element. Used mainly in the backend.
-    pub fn set_position(&mut self, position: Vector2) {
-        self.position_ref = position;
+    /// Sets the type of this element.
+    pub fn set_element_type(&mut self, element_type: ElementType) {
+        self.element_type = element_type;
     }
 
-    /// Sets the rotation of this element. Used mainly in the backend.
-    pub fn set_rotation(&mut self, rotation: f32) {
-        self.rotation_ref = rotation;
-    }
-
-    /// Returns the current position of this element.
-    pub fn get_position(&self) -> Vector2 {
-        self.position_ref
-    }
-
-    /// Returns the current rotation of this element.
-    pub fn get_rotation(&self) -> f32 {
-        self.rotation_ref
-    }
-
-    /// Returns the current ui type of this element.
-    pub fn get_ui_type(&self) -> &UiType {
-        &self.ui_type
+    /// Returns the current type of this element.
+    pub fn get_element_type(&self) -> &ElementType {
+        &self.element_type
     }
 
     /// Sets the z-coordinate of this element.
@@ -189,21 +163,21 @@ impl UiElement {
     /// # Examples
     /// ## Box
     /// ```rust
-    /// use vyxen::{Box, ui::UiElement};
+    /// use vyxen::{Box, UiElement};
     ///
     /// let mut element = UiElement::new();
     /// element.set_shape(Box::new(64.0, 64.0));
     /// ```
     /// ## Circle
     /// ```rust
-    /// use vyxen::{Circle, ui::UiElement};
+    /// use vyxen::{Circle, UiElement};
     ///
     /// let mut element = UiElement::new();
     /// element.set_shape(Circle::new(64.0));
     /// ```
     /// ## Polygon
     /// ```rust
-    /// use vyxen::{Polygon, Vector2, ui::UiElement};
+    /// use vyxen::{Polygon, Vector2, UiElement};
     ///
     /// let v1 = Vector2 { x: 0.0, y: 2.0 };
     /// let v2 = Vector2 { x: 2.0, y: 0.0 };
@@ -223,12 +197,12 @@ impl UiElement {
 /// Represents a text element to be rendered on the UI.
 ///
 /// ```rust, ignore
-/// use vyxen::{Font, load_path, ui::Text};
+/// use vyxen::{Font, load_path, Text};
 ///
 /// let font = load_path("path/to/font.ttf").unwrap();
 /// let text = Text::new("Hello, World!", font, 16.0);
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Text {
     text: String,
     font: Font,
@@ -240,7 +214,7 @@ impl Text {
     /// Creates a new `Text` element.
     ///
     /// ```rust, ignore
-    /// use vyxen::{Font, load_path, ui::Text};
+    /// use vyxen::{Font, load_path, Text};
     ///
     /// let font = load_path("path/to/font.ttf").unwrap();
     /// let text = Text::new("Hello, World!", font, 16.0);

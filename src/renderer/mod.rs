@@ -1,5 +1,5 @@
 use crate::{
-    Color, Texture, Vector2,
+    Color, ElementType, Texture, Vector2,
     geometry::Shape,
     load_data,
     node::Component,
@@ -18,32 +18,6 @@ pub mod gpu_texture;
 pub mod raws;
 pub mod shape_geometry;
 pub mod state;
-
-/// Defines the draw types for a sprite
-///
-/// # Examples
-/// ## Texture
-/// ```rust, ignore
-/// use vyxen::{DrawType, Texture};
-///
-/// let texture = DrawType::Texture(
-///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
-/// );
-/// ```
-/// ## Color
-/// ```rust
-/// use vyxen::{DrawType, Color};
-///
-/// let color = DrawType::Color(
-///     Color::from_rgba(0.2, 0.1, 0.9, 1.0)
-/// );
-/// ```
-#[derive(Debug, Clone, PartialEq)]
-pub enum DrawType {
-    Texture(Texture),
-    Color(Color),
-    None,
-}
 
 /// Gives a sprite to render to the screen.
 ///
@@ -68,10 +42,8 @@ pub enum DrawType {
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sprite {
-    draw_type: DrawType,
+    element_type: ElementType,
     vertices: Option<ShapeType>,
-    position_ref: Vector2,
-    rotation_ref: f32,
     z: f32,
 }
 
@@ -97,35 +69,33 @@ impl Sprite {
     /// # Examples
     /// ## Texture
     /// ```rust, ignore
-    /// use vyxen::{DrawType, Texture, Sprite, Box};
+    /// use vyxen::{ElementType, Texture, Sprite, Box};
     ///
     /// let mut sprite = Sprite::new();
     /// sprite.set_shape(Box::new(20.0, 2.0));
-    /// sprite.set_draw_type(DrawType::Texture(
+    /// sprite.set_element_type(ElementType::Texture(
     ///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
     /// ));
     /// ```
     /// ## Color
     /// ```rust
-    /// use vyxen::{DrawType, Sprite, Color, Box};
+    /// use vyxen::{ElementType, Sprite, Color, Box};
     ///
     /// let mut sprite = Sprite::new();
     /// sprite.set_shape(Box::new(20.0, 2.0));
-    /// sprite.set_draw_type(DrawType::Color(
+    /// sprite.set_element_type(ElementType::Color(
     ///     Color::from_rgba(0.2, 0.1, 0.9, 1.0)
     /// ));
     /// ```
     pub fn new() -> Self {
         Sprite {
-            draw_type: DrawType::None,
+            element_type: ElementType::None,
             vertices: None,
-            position_ref: Vector2::zero(),
-            rotation_ref: 0.0,
             z: 0.0,
         }
     }
 
-    /// Short for `Sprite::new().set_draw_type(DrawType::Color(..))`
+    /// Short for `Sprite::new().set_element_type(ElementType::Color(..))`
     ///
     /// # Examples
     /// ```rust
@@ -138,15 +108,13 @@ impl Sprite {
     /// ```
     pub fn with_color(color: Color) -> Self {
         Sprite {
-            draw_type: DrawType::Color(color),
+            element_type: ElementType::Color(color),
             vertices: None,
-            position_ref: Vector2::zero(),
-            rotation_ref: 0.0,
             z: 0.0,
         }
     }
 
-    /// Short for `Sprite::new().set_draw_type(DrawType::Texture(..))`
+    /// Short for `Sprite::new().set_element_type(ElementType::Texture(..))`
     ///
     /// # Examples
     /// ```rust, ignore
@@ -159,27 +127,25 @@ impl Sprite {
     /// ```
     pub fn with_texture(texture: Texture) -> Self {
         Sprite {
-            draw_type: DrawType::Texture(texture),
+            element_type: ElementType::Texture(texture),
             vertices: None,
-            position_ref: Vector2::zero(),
-            rotation_ref: 0.0,
             z: 0.0,
         }
     }
 
     /// Sets how this sprite should be rendered.
     ///
-    /// This replaces the current `DrawType` of the sprite.
+    /// This replaces the current `ElementType` of the sprite.
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen::{DrawType, Sprite, Color};
+    /// use vyxen::{ElementType, Sprite, Color};
     ///
     /// let mut sprite = Sprite::new();
-    /// sprite.set_draw_type(DrawType::Color(Color::from_rgba(0.2, 0.1, 0.9, 1.0)));
+    /// sprite.set_element_type(ElementType::Color(Color::from_rgba(0.2, 0.1, 0.9, 1.0)));
     /// ```
-    pub fn set_draw_type(&mut self, draw_type: DrawType) {
-        self.draw_type = draw_type;
+    pub fn set_element_type(&mut self, element_type: ElementType) {
+        self.element_type = element_type;
     }
 
     /// Sets the shape used to render this sprite.
@@ -217,29 +183,24 @@ impl Sprite {
         self.vertices = Some(shape_type_from_shape(shape));
     }
 
-    /// Sets the world position of this sprite. Used mainly in the backend.
-    pub fn set_position(&mut self, position: Vector2) {
-        self.position_ref = position;
-    }
-
-    /// Sets the rotation of this sprite. Used mainly in the backend.
-    pub fn set_rotation(&mut self, rotation: f32) {
-        self.rotation_ref = rotation;
-    }
-
     /// Returns `Some` if the shape is assigned, `None` if not.
     pub fn get_vertices(&self) -> Option<&ShapeType> {
         self.vertices.as_ref()
     }
 
-    /// Returns the current draw type of this sprite.
-    pub fn get_draw_type(&self) -> &DrawType {
-        &self.draw_type
+    /// Returns the current element type of this sprite.
+    pub fn get_element_type(&self) -> &ElementType {
+        &self.element_type
     }
 
     /// Sets the z-index of this sprite.
     pub fn set_z(&mut self, z: f32) {
         self.z = z;
+    }
+
+    /// Returns the z-index of this sprite.
+    pub fn get_z(&self) -> f32 {
+        self.z
     }
 }
 

@@ -363,6 +363,17 @@ pub fn is_nearly_equal(a: f32, b: f32) -> bool {
     (a - b).abs() < 0.0005
 }
 
+/// A random number generator that uses a 64-bit state.
+/// 
+/// # Examples
+/// ```rust
+/// use vyxen::Random;
+///
+/// let mut rng = Random::new(12345);
+///
+/// let value1 = rng.next_u32();
+/// let value2 = rng.next_u32();
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Random {
     state: u64,

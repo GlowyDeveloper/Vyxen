@@ -1,8 +1,7 @@
 use crate::{
-    Camera, Scene, Sprite, Vector2, WindowConfig,
+    Camera, Scene, Vector2, WindowConfig,
     inputs::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase},
     renderer::state::State,
-    ui::UiElement,
 };
 use std::{path::PathBuf, sync::Arc};
 
@@ -208,53 +207,6 @@ impl Game {
     /// ```
     pub fn set_config(&mut self, config: WindowConfig) {
         self.ctx.config = config;
-    }
-
-    /// Updates the sprites for the renderer.
-    ///
-    /// Called automatically by `run()`.
-    pub fn update_sprites(&mut self) {
-        if let Some(scene) = &mut self.loaded_scene {
-            if let Some(state) = self.state.as_mut() {
-                let sprites = scene
-                    .get_nodes_mut()
-                    .iter_mut()
-                    .filter_map(|(_, node)| {
-                        let pos = node.get_position();
-                        let rot = node.get_rotation();
-
-                        if let Some(sprite) = node.get_component_mut::<Sprite>() {
-                            sprite.set_position(pos);
-                            sprite.set_rotation(rot);
-                            Some(sprite.clone())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<Sprite>>();
-
-                state.set_sprites(sprites);
-
-                let ui = scene
-                    .get_nodes_mut()
-                    .iter_mut()
-                    .filter_map(|(_, node)| {
-                        let pos = node.get_position();
-                        let rot = node.get_rotation();
-
-                        if let Some(sprite) = node.get_component_mut::<UiElement>() {
-                            sprite.set_position(pos);
-                            sprite.set_rotation(rot);
-                            Some(sprite.clone())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<UiElement>>();
-
-                state.set_ui_elements(ui);
-            }
-        }
     }
 
     /// Runs the game.
@@ -580,10 +532,11 @@ impl ApplicationHandler<State> for Game {
                 self.dt = dt;
 
                 self.step(dt);
-                self.update_sprites();
 
                 if let Some(state) = &mut self.state {
-                    state.update();
+                    if let Some(scene) = &self.loaded_scene {
+                        state.update(scene.get_nodes());
+                    }
                     state.render().unwrap();
                 }
             }

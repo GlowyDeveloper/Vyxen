@@ -47,10 +47,10 @@ sprite.set_shape(Box::new(200.0, 20.0));
 > [!CAUTION]
 > The use of `Box::new` here is Vyxen's `vyxen::geometry::Box` type, not the standard library's `std::boxed::Box` type. If you are using the standard library's box type in the same file, instead import it one of them with an alias. For example: `use std::boxed::Box as StdBox;`.
 
-It then sets the sprite's draw type to a solid color using `DrawType::Color`.
+It then sets the sprite's element type to a solid color using `ElementType::Color`.
 
 ```rust
-sprite.set_draw_type(DrawType::Color(Color::from_rgb(0.2, 0.8, 0.3)));
+sprite.set_element_type(ElementType::Color(Color::from_rgb(0.2, 0.8, 0.3)));
 ```
 
 Then it creates a `Node` and adds the `Sprite` to it.

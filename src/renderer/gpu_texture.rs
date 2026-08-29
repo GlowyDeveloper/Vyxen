@@ -1,6 +1,7 @@
 use crate::Texture;
 
 #[allow(unused)]
+#[derive(Debug)]
 pub struct GpuTexture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,

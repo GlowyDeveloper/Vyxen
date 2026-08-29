@@ -11,8 +11,6 @@ pub mod physics2d;
 pub mod prelude;
 /// Functions and enums for shape types.
 pub mod shape_type;
-/// UI types and utilities.
-pub mod ui;
 
 pub(crate) mod geometry;
 pub(crate) mod node;
@@ -22,11 +20,13 @@ pub(crate) mod resource;
 mod game;
 mod math;
 mod scene;
+mod ui;
 
 pub use game::{Context, Event, Game};
 pub use geometry::{AABB, Box, Circle, Polygon};
 pub use math::{Matrix4, Random, Transform, Vector2, is_nearly_equal};
 pub use node::{Collider, Node};
-pub use renderer::{Camera, DrawType, RenderMode, Sprite, WindowConfig};
+pub use renderer::{Camera, RenderMode, Sprite, WindowConfig};
 pub use resource::{color::Color, font::Font, load_data, load_path, texture::Texture};
 pub use scene::Scene;
+pub use ui::{ElementType, UiElement};

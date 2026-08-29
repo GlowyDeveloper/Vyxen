@@ -9,7 +9,7 @@ fn main() {
 
     let mut sprite = Sprite::new();
     sprite.set_shape(Box::new(200.0, 20.0));
-    sprite.set_draw_type(DrawType::Color(Color::from_rgb(0.2, 0.8, 0.3)));
+    sprite.set_element_type(ElementType::Color(Color::from_rgb(0.2, 0.8, 0.3)));
 
     let mut node = Node::new("Foo".to_string());
     node.add_component(sprite);
@@ -44,11 +44,6 @@ fn main() {
     scene.add_node(node);
 
     game.load_scene(scene);
-
-    let mut window = WindowConfig::new();
-    window.set_title("README example".to_string());
-
-    game.set_config(window);
 
     game.run_without_callback().unwrap();
 }

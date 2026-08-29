@@ -1,7 +1,4 @@
-use crate::{
-    Camera, DrawType, Matrix4, Sprite,
-    ui::{UiElement, UiType},
-};
+use crate::{Camera, ElementType, Matrix4, Sprite, Vector2, ui::UiElement};
 
 pub const OPENGL_TO_WGPU_MATRIX: Matrix4 = Matrix4 {
     m: [
@@ -66,17 +63,15 @@ impl SpriteRaw {
         }
     }
 
-    pub fn gen_raw(sprite: &Sprite) -> SpriteRaw {
-        let color: [f32; 4] = match &sprite.draw_type {
-            DrawType::Texture(texture) if texture.get_tint().is_some() => {
+    pub fn gen_raw(sprite: &Sprite, pos: Vector2, rot: f32) -> SpriteRaw {
+        let color: [f32; 4] = match &sprite.get_element_type() {
+            ElementType::Texture(texture) if texture.get_tint().is_some() => {
                 texture.get_tint().unwrap().into()
             }
-            DrawType::Color(color) => (*color).into(),
+            ElementType::Color(color) => (*color).into(),
+            ElementType::Text(text) if text.get_tint().is_some() => text.get_tint().unwrap().into(),
             _ => [1.0, 1.0, 1.0, 1.0],
         };
-
-        let pos = sprite.position_ref;
-        let rot = sprite.rotation_ref;
 
         SpriteRaw {
             matrix: (Matrix4::translation(pos.x, pos.y, sprite.z) * Matrix4::rotate(rot)).into(),
@@ -217,17 +212,15 @@ impl UiRaw {
         }
     }
 
-    pub fn gen_raw(ui: &UiElement) -> UiRaw {
-        let color: [f32; 4] = match ui.get_ui_type() {
-            UiType::Image(texture) if texture.get_tint().is_some() => {
+    pub fn gen_raw(ui: &UiElement, pos: Vector2, rot: f32) -> UiRaw {
+        let color: [f32; 4] = match ui.get_element_type() {
+            ElementType::Texture(texture) if texture.get_tint().is_some() => {
                 texture.get_tint().unwrap().into()
             }
-            UiType::Text(text) if text.get_tint().is_some() => text.get_tint().unwrap().into(),
+            ElementType::Text(text) if text.get_tint().is_some() => text.get_tint().unwrap().into(),
+            ElementType::Color(color) => (*color).into(),
             _ => [1.0, 1.0, 1.0, 1.0],
         };
-
-        let pos = ui.get_position();
-        let rot = ui.get_rotation();
 
         UiRaw {
             matrix: (Matrix4::translation(pos.x, pos.y, ui.get_z()) * Matrix4::rotate(rot)).into(),
