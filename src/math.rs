@@ -364,7 +364,7 @@ pub fn is_nearly_equal(a: f32, b: f32) -> bool {
 }
 
 /// A random number generator that uses a 64-bit state.
-/// 
+///
 /// # Examples
 /// ```rust
 /// use vyxen::Random;
