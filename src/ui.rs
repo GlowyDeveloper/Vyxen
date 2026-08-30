@@ -134,8 +134,15 @@ impl UiElement {
     }
 
     /// Returns the current type of this element.
+    ///
+    /// For a mutable reference, refer to `get_element_type_mut`.
     pub fn get_element_type(&self) -> &ElementType {
         &self.element_type
+    }
+
+    /// Returns the current type of this element mutably.
+    pub fn get_element_type_mut(&mut self) -> &mut ElementType {
+        &mut self.element_type
     }
 
     /// Sets the z-coordinate of this element.
@@ -251,5 +258,20 @@ impl Text {
     /// Sets the tint of this `Text`.
     pub fn set_tint(&mut self, tint: Color) {
         self.tint = Some(tint);
+    }
+
+    /// Sets the text of this `Text`.
+    pub fn set_text(&mut self, text: String) {
+        self.text = text;
+    }
+
+    /// Sets the font of this `Text`.
+    pub fn set_font(&mut self, font: Font) {
+        self.font = font;
+    }
+
+    /// Sets the size of this `Text`.
+    pub fn set_size(&mut self, size: f32) {
+        self.size = size;
     }
 }

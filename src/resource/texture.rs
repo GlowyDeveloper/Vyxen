@@ -3,11 +3,8 @@ use crate::{
     resource::{Resource, color::Color},
 };
 use png::{ColorType, Decoder, Transformations};
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::{any::Any, io::Cursor};
 use zune_jpeg::zune_core::{bytestream::ZCursor, colorspace::ColorSpace, options::DecoderOptions};
-
-static NEXT_TEXTURE_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Texture/Image type
 ///
@@ -28,7 +25,6 @@ static NEXT_TEXTURE_ID: AtomicU64 = AtomicU64::new(1);
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct Texture {
-    id: u64,
     dim: Vector2,
     rgba: Vec<u8>,
     tint: Option<Color>,
@@ -111,7 +107,6 @@ impl Resource for Texture {
             };
 
             Ok(Self {
-                id: NEXT_TEXTURE_ID.fetch_add(1, Ordering::Relaxed),
                 dim: Vector2 {
                     x: width as f32,
                     y: height as f32,
@@ -126,7 +121,6 @@ impl Resource for Texture {
             let (width, height) = decoder.dimensions().unwrap();
 
             Ok(Self {
-                id: NEXT_TEXTURE_ID.fetch_add(1, Ordering::Relaxed),
                 dim: Vector2 {
                     x: width as f32,
                     y: height as f32,
@@ -159,16 +153,10 @@ impl Texture {
     /// ```
     pub fn from_raw(dim: Vector2, rgba: Vec<u8>) -> Self {
         Self {
-            id: NEXT_TEXTURE_ID.fetch_add(1, Ordering::Relaxed),
             dim,
             rgba,
             tint: None,
         }
-    }
-
-    /// Returns the texture's ID.
-    pub fn get_id(&self) -> u64 {
-        self.id
     }
 
     /// Returns the texture's dimensions.

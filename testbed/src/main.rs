@@ -94,6 +94,17 @@ fn main() {
     node7.set_is_static(true);
     scene.add_node(node7);
 
+    let ui_fps = UiElement::with_text(
+        format!("FPS: {}", game.get_fps().unwrap_or_default().round()),
+        load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
+        32.0,
+    );
+    let mut fps = Node::new("FPS".to_string());
+    fps.add_component(ui_fps);
+    fps.move_to(Vector2 { x: 100.0, y: 560.0 });
+    fps.set_is_static(true);
+    fps.set_id(50);
+
     game.load_scene(scene);
 
     let _ = game.run(move |game, _, dt| {

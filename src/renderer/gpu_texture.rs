@@ -1,7 +1,7 @@
 use crate::Texture;
 
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GpuTexture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
@@ -15,10 +15,11 @@ impl GpuTexture {
         queue: &wgpu::Queue,
         layout: &wgpu::BindGroupLayout,
         texture: &Texture,
+        id: u64,
     ) -> anyhow::Result<Self> {
         let rgba = texture.get_rgba();
         let dimensions = texture.get_dimensions();
-        let id = texture.get_id().to_string();
+        let id = id.to_string();
         let label = id.as_str();
 
         let size = wgpu::Extent3d {

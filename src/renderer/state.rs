@@ -9,6 +9,7 @@ use crate::{
         },
         shape_geometry::{sprite_geometry, text_geometry},
     },
+    resource::font::GlyphMap,
 };
 use std::{collections::HashMap, sync::Arc};
 use wgpu::util::DeviceExt as _;
@@ -67,7 +68,7 @@ pub struct State {
     raw_ui_elements: HashMap<u64, UiRaw>,
     text_uniform_stride: u64,
     raw_glyph_instances: Vec<GlyphRaw>,
-    glyph_atlas_cache: HashMap<(u64, String, u32), (GpuTexture, u32, u32)>,
+    glyph_atlas_cache: HashMap<(u64, u32), (GlyphMap, GpuTexture, u32, u32)>,
     ui_render_order: Vec<u64>,
     sprite_render_order: Vec<u64>,
     text_uniform_index: HashMap<u64, u32>,
@@ -209,15 +210,6 @@ impl State {
         let color_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/color.wgsl"));
 
         let text_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/text.wgsl"));
-
-        let ui_texture_shader =
-            device.create_shader_module(wgpu::include_wgsl!("shaders/ui_texture.wgsl"));
-
-        let ui_text_shader =
-            device.create_shader_module(wgpu::include_wgsl!("shaders/ui_text.wgsl"));
-
-        let ui_color_shader =
-            device.create_shader_module(wgpu::include_wgsl!("shaders/ui_color.wgsl"));
 
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -496,13 +488,13 @@ impl State {
             label: Some("Ui Pipeline Texture"),
             layout: Some(&ui_texture_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &ui_texture_shader,
+                module: &texture_shader,
                 entry_point: Some("vs_main"),
                 buffers: &[Some(Vertex::desc()), Some(UiRaw::desc())],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
-                module: &ui_texture_shader,
+                module: &texture_shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
@@ -545,13 +537,13 @@ impl State {
             label: Some("Ui Pipeline Text"),
             layout: Some(&ui_text_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &ui_text_shader,
+                module: &text_shader,
                 entry_point: Some("vs_main"),
                 buffers: &[Some(GlyphRaw::desc())],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
-                module: &ui_text_shader,
+                module: &text_shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
@@ -593,13 +585,13 @@ impl State {
             label: Some("Ui Pipeline Color"),
             layout: Some(&ui_color_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &ui_color_shader,
+                module: &color_shader,
                 entry_point: Some("vs_main"),
                 buffers: &[Some(Vertex::desc()), Some(UiRaw::desc())],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
-                module: &ui_color_shader,
+                module: &color_shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
@@ -725,32 +717,31 @@ impl State {
             bytemuck::cast_slice(&[self.ui_camera_uniform]),
         );
 
+        self.raw_glyph_instances.clear();
+
         for (node_id, node) in nodes {
             if let Some(sprite) = node.get_component::<Sprite>() {
                 match sprite.get_element_type() {
                     ElementType::Texture(texture) => {
-                        if !self.texture_cache.contains_key(&texture.get_id()) {
+                        if !self.texture_cache.contains_key(node_id) {
                             let gpu_tex = GpuTexture::from_image(
                                 &self.device,
                                 &self.queue,
                                 &self.texture_bind_group_layout,
                                 texture,
+                                *node_id,
                             )
                             .expect("Failed to create GpuTexture");
 
-                            self.texture_cache.insert(texture.get_id(), gpu_tex);
+                            self.texture_cache.insert(*node_id, gpu_tex);
                         }
                     }
                     ElementType::Text(text) => {
-                        let key = (
-                            text.get_font().id(),
-                            text.get_text().to_string(),
-                            text.get_size() as u32,
-                        );
-                        if !self.glyph_atlas_cache.contains_key(&key) {
+                        let key = (node.get_id(), text.get_size() as u32);
+                        let (glyph_map, gpu_tex) = if !self.glyph_atlas_cache.contains_key(&key) {
                             let glyph_map = text
                                 .get_font()
-                                .generate_glyph_map(text.get_text().to_string(), text.get_size())
+                                .generate_glyph_map(text.get_size())
                                 .expect("Failed to generate glyph map");
 
                             let atlas_texture = Texture::from_raw(
@@ -766,16 +757,24 @@ impl State {
                                 &self.queue,
                                 &self.texture_bind_group_layout,
                                 &atlas_texture,
+                                *node_id,
                             )
                             .expect("Failed to create GpuTexture");
 
-                            let glyphs = text_geometry(&glyph_map, text.get_text());
-                            let first = self.raw_glyph_instances.len() as u32;
-                            let count = glyphs.len() as u32;
+                            (glyph_map, gpu_tex)
+                        } else {
+                            let (glyph_map, gpu_tex, _, _) =
+                                self.glyph_atlas_cache.get(&key).unwrap().clone();
+                            (glyph_map, gpu_tex)
+                        };
 
-                            self.raw_glyph_instances.extend(glyphs);
-                            self.glyph_atlas_cache.insert(key, (gpu_tex, first, count));
-                        }
+                        let glyphs = text_geometry(&glyph_map, text.get_text());
+                        let first = self.raw_glyph_instances.len() as u32;
+                        let count = glyphs.len() as u32;
+
+                        self.raw_glyph_instances.extend(glyphs);
+                        self.glyph_atlas_cache
+                            .insert(key, (glyph_map, gpu_tex, first, count));
                     }
                     _ => {}
                 }
@@ -789,28 +788,25 @@ impl State {
             if let Some(ui) = node.get_component::<UiElement>() {
                 match ui.get_element_type() {
                     ElementType::Texture(texture) => {
-                        if !self.texture_cache.contains_key(&texture.get_id()) {
+                        if !self.texture_cache.contains_key(node_id) {
                             let gpu_tex = GpuTexture::from_image(
                                 &self.device,
                                 &self.queue,
                                 &self.texture_bind_group_layout,
                                 texture,
+                                *node_id,
                             )
                             .expect("Failed to create GpuTexture");
 
-                            self.texture_cache.insert(texture.get_id(), gpu_tex);
+                            self.texture_cache.insert(*node_id, gpu_tex);
                         }
                     }
                     ElementType::Text(text) => {
-                        let key = (
-                            text.get_font().id(),
-                            text.get_text().to_string(),
-                            text.get_size() as u32,
-                        );
-                        if !self.glyph_atlas_cache.contains_key(&key) {
+                        let key = (node.get_id(), text.get_size() as u32);
+                        let (glyph_map, gpu_tex) = if !self.glyph_atlas_cache.contains_key(&key) {
                             let glyph_map = text
                                 .get_font()
-                                .generate_glyph_map(text.get_text().to_string(), text.get_size())
+                                .generate_glyph_map(text.get_size())
                                 .expect("Failed to generate glyph map");
 
                             let atlas_texture = Texture::from_raw(
@@ -826,16 +822,24 @@ impl State {
                                 &self.queue,
                                 &self.texture_bind_group_layout,
                                 &atlas_texture,
+                                *node_id,
                             )
                             .expect("Failed to create GpuTexture");
 
-                            let glyphs = text_geometry(&glyph_map, text.get_text());
-                            let first = self.raw_glyph_instances.len() as u32;
-                            let count = glyphs.len() as u32;
+                            (glyph_map, gpu_tex)
+                        } else {
+                            let (glyph_map, gpu_tex, _, _) =
+                                self.glyph_atlas_cache.get(&key).unwrap().clone();
+                            (glyph_map, gpu_tex)
+                        };
 
-                            self.raw_glyph_instances.extend(glyphs);
-                            self.glyph_atlas_cache.insert(key, (gpu_tex, first, count));
-                        }
+                        let glyphs = text_geometry(&glyph_map, text.get_text());
+                        let first = self.raw_glyph_instances.len() as u32;
+                        let count = glyphs.len() as u32;
+
+                        self.raw_glyph_instances.extend(glyphs);
+                        self.glyph_atlas_cache
+                            .insert(key, (glyph_map, gpu_tex, first, count));
                     }
                     _ => {}
                 }
@@ -847,6 +851,16 @@ impl State {
                 self.ui_elements.insert(*node_id, ui.clone());
             }
         }
+
+        self.sprites.retain(|id, _| nodes.contains_key(id));
+        self.raw_sprites.retain(|id, _| nodes.contains_key(id));
+        self.ui_elements.retain(|id, _| nodes.contains_key(id));
+        self.raw_ui_elements.retain(|id, _| nodes.contains_key(id));
+
+        self.texture_cache.retain(|id, _| nodes.contains_key(id));
+
+        self.glyph_atlas_cache
+            .retain(|(node_id, _), _| nodes.contains_key(node_id));
 
         let mut sprite_order: Vec<u64> = self.sprites.keys().copied().collect();
         sprite_order.sort_by(|a, b| {
@@ -941,7 +955,7 @@ impl State {
         self.frame_accum_time += dt;
         self.frame_accum_count += 1;
 
-        if self.frame_accum_time >= 1.0 {
+        if self.frame_accum_time >= 0.5 {
             self.fps = self.frame_accum_count as f32 / self.frame_accum_time;
             self.frame_accum_time = 0.0;
             self.frame_accum_count = 0;
@@ -1011,18 +1025,11 @@ impl State {
                 match sprite.get_element_type() {
                     ElementType::None => continue,
                     ElementType::Text(text) => {
-                        let (gpu_texture, first, count) = self
+                        let (_, gpu_texture, first, count) = self
                             .glyph_atlas_cache
-                            .get(&(
-                                text.get_font().id(),
-                                text.get_text().to_string(),
-                                text.get_size() as u32,
-                            ))
+                            .get(&(*id, text.get_size() as u32))
                             .ok_or_else(|| {
-                                anyhow::anyhow!(
-                                    "Glyph atlas not found for font: {}",
-                                    text.get_font().id()
-                                )
+                                anyhow::anyhow!("Glyph atlas not found for font: {}", id)
                             })?;
 
                         if *count == 0 {
@@ -1075,9 +1082,8 @@ impl State {
                             index_bytes,
                         );
 
-                        if let ElementType::Texture(texture) = &sprite.element_type {
-                            let id = texture.get_id();
-                            let gpu_texture = match self.texture_cache.get(&id) {
+                        if let ElementType::Texture(_) = &sprite.element_type {
+                            let gpu_texture = match self.texture_cache.get(id) {
                                 Some(g) => g,
                                 None => {
                                     anyhow::bail!("GpuTexture not found in cache for id: {}", id)
@@ -1124,18 +1130,11 @@ impl State {
                 match ui.get_element_type() {
                     ElementType::None => continue,
                     ElementType::Text(text) => {
-                        let (gpu_texture, first, count) = self
+                        let (_, gpu_texture, first, count) = self
                             .glyph_atlas_cache
-                            .get(&(
-                                text.get_font().id(),
-                                text.get_text().to_string(),
-                                text.get_size() as u32,
-                            ))
+                            .get(&(*id, text.get_size() as u32))
                             .ok_or_else(|| {
-                                anyhow::anyhow!(
-                                    "Glyph atlas not found for font: {}",
-                                    text.get_font().id()
-                                )
+                                anyhow::anyhow!("Glyph atlas not found for font: {}", id,)
                             })?;
 
                         if *count == 0 {
@@ -1188,9 +1187,8 @@ impl State {
                             index_bytes,
                         );
 
-                        if let ElementType::Texture(texture) = &ui.get_element_type() {
-                            let id = texture.get_id();
-                            let gpu_texture = match self.texture_cache.get(&id) {
+                        if let ElementType::Texture(_) = &ui.get_element_type() {
+                            let gpu_texture = match self.texture_cache.get(id) {
                                 Some(g) => g,
                                 None => {
                                     anyhow::bail!("GpuTexture not found in cache for id: {}", id)

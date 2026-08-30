@@ -6,13 +6,10 @@ use skrifa::{
 use std::{
     any::Any,
     collections::{HashMap, HashSet},
-    sync::atomic::{AtomicU64, Ordering},
 };
 use zeno::{Command, Mask, PathBuilder, Transform};
 
 use crate::resource::Resource;
-
-static NEXT_TEXT_ID: AtomicU64 = AtomicU64::new(1);
 
 /// A font resource loaded from a TTF file.
 ///
@@ -26,7 +23,6 @@ static NEXT_TEXT_ID: AtomicU64 = AtomicU64::new(1);
 #[derive(Debug, Clone, PartialEq)]
 pub struct Font {
     data: Vec<u8>,
-    id: u64,
 }
 
 impl Resource for Font {
@@ -37,18 +33,15 @@ impl Resource for Font {
     fn load(data: &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
             data: data.to_vec(),
-            id: NEXT_TEXT_ID.fetch_add(1, Ordering::Relaxed),
         })
     }
 }
 
 impl Font {
-    /// Returns the unique ID of this font.
-    pub fn id(&self) -> u64 {
-        self.id
-    }
+    pub(crate) fn generate_glyph_map(&self, size: f32) -> anyhow::Result<GlyphMap> {
+        const CHARSET_START: u32 = 0x20;
+        const CHARSET_END: u32 = 0x7E;
 
-    pub(crate) fn generate_glyph_map(&self, str: String, size: f32) -> anyhow::Result<GlyphMap> {
         let font = FontRef::new(&self.data)?;
         let charmap = font.charmap();
         let outlines = font.outline_glyphs();
@@ -58,9 +51,13 @@ impl Font {
 
         let flip = Transform::scale(1.0, -1.0);
 
+        let chars: HashSet<char> = (CHARSET_START..=CHARSET_END)
+            .filter_map(char::from_u32)
+            .collect();
+
         let mut rasterized: HashMap<char, Rasterized> = HashMap::new();
 
-        for c in str.chars().collect::<HashSet<_>>() {
+        for c in chars {
             let gid = charmap.map(c).unwrap_or_default();
             let advance = glyph_metrics.advance_width(gid).unwrap_or(0.0);
 
