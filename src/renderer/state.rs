@@ -35,7 +35,7 @@ pub struct State {
 
     texture_bind_group_layout: wgpu::BindGroupLayout,
 
-    empty_bind_group: wgpu::BindGroup,
+    color_bind_group: wgpu::BindGroup,
     camera_bind_group: wgpu::BindGroup,
     ui_camera_bind_group: wgpu::BindGroup,
     text_uniform_bind_group: wgpu::BindGroup,
@@ -234,16 +234,16 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
-        let empty_bind_group_layout =
+        let color_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[],
-                label: Some("empty_bind_group_layout"),
+                label: Some("color_bind_group_layout"),
             });
 
-        let empty_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &empty_bind_group_layout,
+        let color_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &color_bind_group_layout,
             entries: &[],
-            label: Some("empty_bind_group"),
+            label: Some("color_bind_group"),
         });
 
         let texture_pipeline_layout =
@@ -260,7 +260,7 @@ impl State {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Color World Pipeline Layout"),
                 bind_group_layouts: &[
-                    Some(&empty_bind_group_layout),
+                    Some(&color_bind_group_layout),
                     Some(&camera_bind_group_layout),
                 ],
                 immediate_size: 0,
@@ -445,7 +445,7 @@ impl State {
         ui_camera_uniform.update_view_proj(&camera);
 
         let ui_camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
+            label: Some("Ui Camera Buffer"),
             contents: bytemuck::cast_slice(&[ui_camera_uniform]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
@@ -471,7 +471,7 @@ impl State {
                 binding: 0,
                 resource: ui_camera_buffer.as_entire_binding(),
             }],
-            label: Some("camera_bind_group"),
+            label: Some("ui_camera_bind_group"),
         });
 
         let ui_texture_pipeline_layout =
@@ -575,7 +575,7 @@ impl State {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Ui Color Pipeline Layout"),
                 bind_group_layouts: &[
-                    Some(&empty_bind_group_layout),
+                    Some(&color_bind_group_layout),
                     Some(&ui_camera_bind_group_layout),
                 ],
                 immediate_size: 0,
@@ -648,7 +648,7 @@ impl State {
             camera_uniform,
             camera_buffer,
             camera_bind_group,
-            empty_bind_group,
+            color_bind_group,
             texture_bind_group_layout,
             texture_cache: HashMap::new(),
             sprite_buffer,
@@ -1095,7 +1095,7 @@ impl State {
                             render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
                         } else {
                             render_pass.set_pipeline(&self.world_pipeline_color);
-                            render_pass.set_bind_group(0, &self.empty_bind_group, &[]);
+                            render_pass.set_bind_group(0, &self.color_bind_group, &[]);
                             render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
                         }
 
@@ -1200,7 +1200,7 @@ impl State {
                             render_pass.set_bind_group(1, &self.ui_camera_bind_group, &[]);
                         } else {
                             render_pass.set_pipeline(&self.ui_pipeline_color);
-                            render_pass.set_bind_group(0, &self.empty_bind_group, &[]);
+                            render_pass.set_bind_group(0, &self.color_bind_group, &[]);
                             render_pass.set_bind_group(1, &self.ui_camera_bind_group, &[]);
                         }
 

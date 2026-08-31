@@ -39,6 +39,12 @@ pub struct Vector2 {
     pub y: f32,
 }
 
+impl Default for Vector2 {
+    fn default() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+}
+
 impl Vector2 {
     /// Creates a new Vector2 are 0, 0.
     ///

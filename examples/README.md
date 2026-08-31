@@ -11,7 +11,7 @@ Run it with `cargo run`:
 cargo run -p ball-pit
 ```
 
-Or play it [here](https://glowydeveloper.github.io/Vyxen/examples/ball_pit.html)
+Or play it [here](https://glowydeveloper.github.io/Vyxen/examples/ball-pit.html)
 
 ## [Counter](counter/)
 

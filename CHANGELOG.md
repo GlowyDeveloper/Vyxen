@@ -25,6 +25,7 @@
 - Nodes disappearing on collision
 - Panicing if vertices aren't in 4 byte alignments
 - Shell scripts not running the correct targets
+- Sprites and Ui Elements not unloading
 
 ### Other
 
