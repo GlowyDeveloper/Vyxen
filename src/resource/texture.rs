@@ -1,10 +1,21 @@
 use crate::{
     Vector2,
+    error::Error,
     resource::{Resource, color::Color},
 };
-use png::{ColorType, Decoder, Transformations};
-use std::{any::Any, io::Cursor};
-use zune_jpeg::zune_core::{bytestream::ZCursor, colorspace::ColorSpace, options::DecoderOptions};
+use png::{ColorType, Decoder, DecodingError, Transformations};
+use std::{
+    any::Any,
+    io::{Cursor, ErrorKind},
+};
+use zune_jpeg::{
+    errors::DecodeErrors,
+    zune_core::{
+        bytestream::{ZByteIoError, ZCursor},
+        colorspace::ColorSpace,
+        options::DecoderOptions,
+    },
+};
 
 /// Texture/Image type
 ///
@@ -31,25 +42,31 @@ pub struct Texture {
 }
 
 impl Resource for Texture {
-    fn load(data: &[u8]) -> anyhow::Result<Self> {
+    fn load(data: &[u8]) -> Result<Self, Error> {
         if data.len() < 8 {
-            return Err(anyhow::anyhow!("Invalid data length"));
+            return Err(Error::InvalidDataSize);
         }
 
         if data.starts_with(b"\x89PNG\r\n\x1a\n") {
             let mut decoder = Decoder::new(Cursor::new(data));
             decoder.set_transformations(Transformations::EXPAND | Transformations::STRIP_16);
 
-            let mut reader = decoder.read_info()?;
+            let mut reader = decoder.read_info().map_err(|e| match e {
+                DecodingError::IoError(e) => Error::IoError(e.kind()),
+                _ => Error::InvalidPNG,
+            })?;
 
             let mut buf = vec![
                 0;
                 reader
                     .output_buffer_size()
-                    .ok_or_else(|| anyhow::anyhow!("Unknown PNG output size"))?
+                    .ok_or(Error::CannotGetDimensions)?
             ];
 
-            let info = reader.next_frame(&mut buf)?;
+            let info = reader.next_frame(&mut buf).map_err(|e| match e {
+                DecodingError::IoError(e) => Error::IoError(e.kind()),
+                _ => Error::InvalidPNG,
+            })?;
 
             let width = info.width;
             let height = info.height;
@@ -101,9 +118,7 @@ impl Resource for Texture {
                     out
                 }
 
-                ColorType::Indexed => {
-                    anyhow::bail!("PNG should've been expanded by EXPAND transformation")
-                }
+                ColorType::Indexed => return Err(Error::FailedToExpand),
             };
 
             Ok(Self {
@@ -117,7 +132,17 @@ impl Resource for Texture {
         } else if data.starts_with(b"\xff\xd8\xff") {
             let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGBA);
             let mut decoder = zune_jpeg::JpegDecoder::new_with_options(ZCursor::new(data), options);
-            let pixels = decoder.decode().map_err(|e| anyhow::anyhow!("{e:?}"))?;
+            let pixels = decoder.decode().map_err(|e| match e {
+                DecodeErrors::IoErrors(e) => match e {
+                    ZByteIoError::Generic(_) => Error::IoError(ErrorKind::Other),
+                    ZByteIoError::NotEnoughBuffer(_, _) => Error::IoError(ErrorKind::FileTooLarge),
+                    ZByteIoError::NotEnoughBytes(_, _) => Error::IoError(ErrorKind::InvalidData),
+                    ZByteIoError::SeekError(_) => Error::IoError(ErrorKind::NotSeekable),
+                    ZByteIoError::SeekErrorOwned(_) => Error::IoError(ErrorKind::NotSeekable),
+                    ZByteIoError::TryFromIntError(_) => Error::IoError(ErrorKind::Other),
+                },
+                _ => Error::InvalidJPEG,
+            })?;
             let (width, height) = decoder.dimensions().unwrap();
 
             Ok(Self {
@@ -129,7 +154,7 @@ impl Resource for Texture {
                 tint: None,
             })
         } else {
-            Err(anyhow::anyhow!("Unsupported image format"))
+            Err(Error::UnsupportedFileFormat)
         }
     }
 
@@ -259,6 +284,6 @@ mod tests {
             0x38, 0x58,
         ];
         let webp = Texture::load(&webp_chunk);
-        assert_eq!(webp.err().unwrap().to_string(), "Unsupported image format");
+        assert_eq!(webp.err().unwrap(), Error::UnsupportedFileFormat);
     }
 }

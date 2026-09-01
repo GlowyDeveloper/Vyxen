@@ -1,5 +1,6 @@
 use crate::{
     AABB, Collider, Context, Node, Vector2,
+    error::Error,
     physics2d::{Collision, ContactPoints, Manifold},
 };
 use std::collections::HashMap;
@@ -208,13 +209,14 @@ impl Scene {
     /// Removes the node from the scene with all of its children
     ///
     /// Wrapper for `remove_node_by_id()`.
-    pub fn remove_node(&mut self, node: &Node) -> anyhow::Result<()> {
+    pub fn remove_node(&mut self, node: &Node) -> Result<(), Error> {
         self.remove_node_by_id(node.get_id())
     }
 
     /// Removes the node from the scene by id with all of its children
     ///
     /// # Examples
+    ///
     /// ```rust
     /// use vyxen::{Scene, Node, Vector2, Circle};
     ///
@@ -240,9 +242,13 @@ impl Scene {
     ///
     /// assert_eq!(1, scene.get_nodes_len());
     /// ```
-    pub fn remove_node_by_id(&mut self, id: u64) -> anyhow::Result<()> {
+    ///
+    /// # Errors
+    ///
+    /// Errors if you attempt to remove the root node (0).
+    pub fn remove_node_by_id(&mut self, id: u64) -> Result<(), Error> {
         if id == 0 {
-            anyhow::bail!("Root node cannot be removed.")
+            return Err(Error::RootNodeRemoval);
         }
 
         if let Some(node) = self.nodes.remove(&id) {
@@ -606,7 +612,6 @@ mod tests {
     #[test]
     fn test_scene_initialization() {
         let scene = Scene::new();
-        // The scene should always start with a root node at ID 0
         assert_eq!(scene.get_nodes_len(), 1);
         assert_eq!(scene.get_root().get_name(), "Root");
         assert_eq!(scene.get_gravity(), Vector2 { x: 0.0, y: -9.81 });
@@ -622,7 +627,6 @@ mod tests {
         assert_eq!(scene.get_nodes_len(), 2);
         assert!(scene.get_node(id).is_some());
 
-        // Test removal
         scene.remove_node_by_id(id).unwrap();
         assert_eq!(scene.get_nodes_len(), 1);
         assert!(scene.get_node(id).is_none());

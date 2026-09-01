@@ -29,6 +29,12 @@ At the top of the `main` function, it initializes [console_error_panic_hook](htt
 console_error_panic_hook::set_once();
 ```
 
+After that, it initializes [console_log](https://crates.io/crates/console_log), this hooks log messages to the browser console.
+```rust
+#[cfg(target_arch = "wasm32")]
+console_log::init_with_level(log::Level::Debug).unwrap();
+```
+
 Then it creates a new `Game` and `Scene` and a counter variable.
 
 ```rust

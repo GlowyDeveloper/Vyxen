@@ -1,5 +1,6 @@
 use crate::{
     Camera, Scene, Vector2, WindowConfig,
+    error::Error,
     inputs::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase},
     renderer::state::State,
 };
@@ -21,7 +22,14 @@ use std::time::Instant;
 #[cfg(target_arch = "wasm32")]
 use web_time::Instant;
 
+#[cfg(target_arch = "wasm32")]
+enum GameEvent {
+    State(Box<State>),
+    Error(Error),
+}
+
 type Callback = Box<dyn FnMut(&mut Game, Event, f32)>;
+type OnError = Box<dyn FnMut(&mut Game, Error)>;
 
 /// Game struct to hold everything
 ///
@@ -39,12 +47,13 @@ pub struct Game {
     loaded_scene: Option<Scene>,
     state: Option<State>,
     callback: Option<Callback>,
+    on_error: Option<OnError>,
     ctx: Context,
     last_redraw: Instant,
     dt: f32,
 
     #[cfg(target_arch = "wasm32")]
-    proxy: Option<winit::event_loop::EventLoopProxy<State>>,
+    proxy: Option<winit::event_loop::EventLoopProxy<GameEvent>>,
 }
 
 impl Default for Game {
@@ -71,6 +80,7 @@ impl Game {
             loaded_scene: None,
             state: None,
             callback: None,
+            on_error: None,
             ctx: Context {
                 inputs: Inputs::new(),
                 cursor_pos: Vector2::zero(),
@@ -230,11 +240,19 @@ impl Game {
     ///     println!("callback"); // Called every frame
     /// });
     /// ```
-    pub fn run<F>(mut self, callback: F) -> anyhow::Result<()>
+    pub fn run<F>(mut self, callback: F) -> Result<(), Error>
     where
         F: FnMut(&mut Game, Event, f32) + 'static,
     {
-        let event_loop: EventLoop<State> = EventLoop::with_user_event().build()?;
+        #[cfg(target_arch = "wasm32")]
+        let event_loop: EventLoop<GameEvent> = EventLoop::with_user_event()
+            .build()
+            .map_err(|_| Error::EventLoopRecreation)?;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let event_loop: EventLoop<State> = EventLoop::with_user_event()
+            .build()
+            .map_err(|_| Error::EventLoopRecreation)?;
 
         #[cfg(target_arch = "wasm32")]
         {
@@ -246,7 +264,9 @@ impl Game {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            event_loop.run_app(&mut self)?;
+            event_loop
+                .run_app(&mut self)
+                .map_err(|_| Error::EventLoopExecution)?;
         }
         #[cfg(target_arch = "wasm32")]
         {
@@ -271,8 +291,16 @@ impl Game {
     /// game.run_without_callback();
     /// ```
     #[allow(unused_mut)]
-    pub fn run_without_callback(mut self) -> anyhow::Result<()> {
-        let event_loop: EventLoop<State> = EventLoop::with_user_event().build()?;
+    pub fn run_without_callback(mut self) -> Result<(), Error> {
+        #[cfg(target_arch = "wasm32")]
+        let event_loop: EventLoop<GameEvent> = EventLoop::with_user_event()
+            .build()
+            .map_err(|_| Error::EventLoopRecreation)?;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let event_loop: EventLoop<State> = EventLoop::with_user_event()
+            .build()
+            .map_err(|_| Error::EventLoopRecreation)?;
 
         #[cfg(target_arch = "wasm32")]
         {
@@ -282,7 +310,9 @@ impl Game {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            event_loop.run_app(&mut self)?;
+            event_loop
+                .run_app(&mut self)
+                .map_err(|_| Error::EventLoopExecution)?;
         }
         #[cfg(target_arch = "wasm32")]
         {
@@ -290,6 +320,29 @@ impl Game {
         }
 
         Ok(())
+    }
+
+    /// Adds an error handler for when something errors during the event loop.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use vyxen::{Game, inputs::KeyCode, error::Error};
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// game.on_error(|game, error| {
+    ///     println!("An error occurred: {}", error);
+    /// });
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// For `on_error` to be processed correctly, the game must be first ran from `run` or `run_without_callback`.
+    pub fn on_error<E>(&mut self, on_error: E)
+    where
+        E: FnMut(&mut Game, Error) + 'static,
+    {
+        self.on_error = Some(Box::new(on_error));
     }
 
     /// If a key has been pressed between the current frame and the last.
@@ -463,7 +516,8 @@ impl Game {
     }
 }
 
-impl ApplicationHandler<State> for Game {
+#[cfg(target_arch = "wasm32")]
+impl ApplicationHandler<GameEvent> for Game {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window = Arc::new(
             event_loop
@@ -471,28 +525,23 @@ impl ApplicationHandler<State> for Game {
                 .unwrap(),
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let mut state =
-                pollster::block_on(State::new(window, self.ctx.config.clone())).unwrap();
-            state.resize(
-                state.get_window().inner_size().width,
-                state.get_window().inner_size().height,
-            );
-            self.state = Some(state);
-        }
-        #[cfg(target_arch = "wasm32")]
-        {
-            let config = self.ctx.config.clone();
-            let proxy = self.proxy.clone().unwrap();
-            wasm_bindgen_futures::spawn_local(async move {
-                assert!(
-                    proxy
-                        .send_event(State::new(window, config.clone()).await.unwrap())
-                        .is_ok()
-                )
-            });
-        }
+        let config = self.ctx.config.clone();
+        let proxy = self.proxy.clone().unwrap();
+
+        wasm_bindgen_futures::spawn_local(async move {
+            match State::new(window, config).await {
+                Ok(state) => {
+                    if proxy.send_event(GameEvent::State(Box::new(state))).is_err() {
+                        log::error!("Failed to send state event");
+                    }
+                }
+                Err(e) => {
+                    if proxy.send_event(GameEvent::Error(e)).is_err() {
+                        log::error!("Failed to send error event");
+                    }
+                }
+            }
+        });
     }
 
     fn window_event(
@@ -535,9 +584,31 @@ impl ApplicationHandler<State> for Game {
 
                 if let Some(state) = &mut self.state {
                     if let Some(scene) = &self.loaded_scene {
-                        state.update(scene.get_nodes());
+                        match state.update(scene.get_nodes()) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                if let Some(mut err) = self.on_error.take() {
+                                    err(self, e);
+                                    self.on_error = Some(err);
+                                } else {
+                                    log::error!("{}", e);
+                                }
+                                return;
+                            }
+                        }
                     }
-                    state.render().unwrap();
+
+                    match state.render() {
+                        Ok(_) => {}
+                        Err(e) => {
+                            if let Some(mut err) = self.on_error.take() {
+                                err(self, e);
+                                self.on_error = Some(err);
+                            } else {
+                                log::error!("{}", e);
+                            }
+                        }
+                    }
                 }
             }
             WindowEvent::KeyboardInput { event, .. } => {
@@ -569,13 +640,150 @@ impl ApplicationHandler<State> for Game {
         }
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: State) {
-        event.get_window().request_redraw();
-        event.resize(
-            event.get_window().inner_size().width,
-            event.get_window().inner_size().height,
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: GameEvent) {
+        match event {
+            GameEvent::State(mut state) => {
+                state.get_window().request_redraw();
+                state.resize(
+                    state.get_window().inner_size().width,
+                    state.get_window().inner_size().height,
+                );
+                self.state = Some(*state);
+            }
+            GameEvent::Error(error) => {
+                if let Some(mut err) = self.on_error.take() {
+                    err(self, error);
+                    self.on_error = Some(err);
+                } else {
+                    log::error!("{}", error);
+                }
+            }
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl ApplicationHandler<State> for Game {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        let window = Arc::new(
+            event_loop
+                .create_window(self.ctx.config.clone().into())
+                .unwrap(),
         );
-        self.state = Some(event);
+
+        let mut state = match pollster::block_on(State::new(window, self.ctx.config.clone())) {
+            Ok(state) => state,
+            Err(e) => {
+                if let Some(mut err) = self.on_error.take() {
+                    err(self, e);
+                    self.on_error = Some(err);
+                } else {
+                    log::error!("{}", e);
+                }
+                return;
+            }
+        };
+        state.resize(
+            state.get_window().inner_size().width,
+            state.get_window().inner_size().height,
+        );
+        self.state = Some(state);
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        if let Some(mut callback) = self.callback.take() {
+            let into: Event = match event {
+                WindowEvent::MouseInput { state, button, .. } => {
+                    Event::MouseInput(button.into(), state.into(), self.ctx.cursor_pos)
+                }
+                _ => event.clone().into(),
+            };
+            if into != Event::Unknown {
+                callback(self, into, self.dt);
+            }
+
+            self.callback = Some(callback);
+        }
+
+        match event {
+            WindowEvent::Resized(physical_size) => {
+                if physical_size.width == 0 || physical_size.height == 0 {
+                    return;
+                }
+
+                if let Some(state) = &mut self.state {
+                    state.resize(physical_size.width, physical_size.height);
+                }
+            }
+            WindowEvent::RedrawRequested => {
+                let now = Instant::now();
+                let dt = (now - self.last_redraw).as_secs_f32();
+                self.last_redraw = now;
+                self.dt = dt;
+
+                self.step(dt);
+
+                if let Some(state) = &mut self.state {
+                    if let Some(scene) = &self.loaded_scene {
+                        match state.update(scene.get_nodes()) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                if let Some(mut err) = self.on_error.take() {
+                                    err(self, e);
+                                    self.on_error = Some(err);
+                                } else {
+                                    log::error!("{}", e);
+                                }
+                                return;
+                            }
+                        }
+                    }
+
+                    match state.render() {
+                        Ok(_) => {}
+                        Err(e) => {
+                            if let Some(mut err) = self.on_error.take() {
+                                err(self, e);
+                                self.on_error = Some(err);
+                            } else {
+                                log::error!("{}", e);
+                            }
+                        }
+                    }
+                }
+            }
+            WindowEvent::KeyboardInput { event, .. } => {
+                if let PhysicalKey::Code(code) = event.physical_key {
+                    match event.state {
+                        ElementState::Pressed => self.ctx.inputs.key_pressed(code.into()),
+                        ElementState::Released => self.ctx.inputs.key_released(code.into()),
+                    }
+                }
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                self.ctx.cursor_pos = Vector2 {
+                    x: position.x as f32,
+                    y: position.y as f32,
+                }
+            }
+            WindowEvent::CloseRequested => {
+                event_loop.exit();
+            }
+            _ => {}
+        }
+    }
+
+    fn about_to_wait(&mut self, _: &ActiveEventLoop) {
+        self.ctx.inputs.begin_frame();
+
+        if let Some(state) = &self.state {
+            state.get_window().request_redraw();
+        }
     }
 }
 
@@ -663,7 +871,7 @@ pub enum Event {
     Visible,
     /// Window should be redrawn
     RedrawRequested,
-    /// Window should be redrawn
+
     Unknown,
 }
 

@@ -1,5 +1,6 @@
 use crate::{
     Camera, ElementType, Node, Sprite, Texture, UiElement, Vector2, WindowConfig,
+    error::Error,
     renderer::{
         gpu_texture::GpuTexture,
         raws::{
@@ -75,7 +76,7 @@ pub struct State {
 }
 
 impl State {
-    pub async fn new(window: Arc<Window>, custom_config: WindowConfig) -> anyhow::Result<State> {
+    pub async fn new(window: Arc<Window>, custom_config: WindowConfig) -> Result<State, Error> {
         let size = window.inner_size();
 
         #[allow(unused_mut)]
@@ -90,7 +91,11 @@ impl State {
         #[cfg(target_arch = "wasm32")]
         let surface = match instance.create_surface(window.clone()) {
             Ok(s) => s,
-            Err(_e) => {
+            Err(e) => {
+                log::warn!(
+                    "Failed to create surface, attempting to use GL instead: {}",
+                    e
+                );
                 instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
                     backends: wgpu::Backends::GL,
                     flags: Default::default(),
@@ -98,12 +103,16 @@ impl State {
                     backend_options: Default::default(),
                     display: None,
                 });
-                instance.create_surface(window.clone())?
+                instance
+                    .create_surface(window.clone())
+                    .map_err(|e| Error::SurfaceCreation(e.to_string()))?
             }
         };
 
         #[cfg(not(target_arch = "wasm32"))]
-        let surface = instance.create_surface(window.clone())?;
+        let surface = instance
+            .create_surface(window.clone())
+            .map_err(|e| Error::SurfaceCreation(e.to_string()))?;
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -112,7 +121,8 @@ impl State {
                 force_fallback_adapter: false,
                 apply_limit_buckets: true,
             })
-            .await?;
+            .await
+            .map_err(|e| Error::RequestingAdapter(e.to_string()))?;
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
@@ -127,7 +137,8 @@ impl State {
                 memory_hints: Default::default(),
                 trace: wgpu::Trace::Off,
             })
-            .await?;
+            .await
+            .map_err(|e| Error::RequestingDevice(e.to_string()))?;
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
@@ -702,7 +713,7 @@ impl State {
         }
     }
 
-    pub fn update(&mut self, nodes: &HashMap<u64, Node>) {
+    pub fn update(&mut self, nodes: &HashMap<u64, Node>) -> Result<(), Error> {
         self.camera_uniform.update_view_proj(&self.camera);
         self.queue.write_buffer(
             &self.camera_buffer,
@@ -730,8 +741,7 @@ impl State {
                                 &self.texture_bind_group_layout,
                                 texture,
                                 *node_id,
-                            )
-                            .expect("Failed to create GpuTexture");
+                            );
 
                             self.texture_cache.insert(*node_id, gpu_tex);
                         }
@@ -739,10 +749,7 @@ impl State {
                     ElementType::Text(text) => {
                         let key = (node.get_id(), text.get_size() as u32);
                         let (glyph_map, gpu_tex) = if !self.glyph_atlas_cache.contains_key(&key) {
-                            let glyph_map = text
-                                .get_font()
-                                .generate_glyph_map(text.get_size())
-                                .expect("Failed to generate glyph map");
+                            let glyph_map = text.get_font().generate_glyph_map(text.get_size())?;
 
                             let atlas_texture = Texture::from_raw(
                                 Vector2 {
@@ -758,8 +765,7 @@ impl State {
                                 &self.texture_bind_group_layout,
                                 &atlas_texture,
                                 *node_id,
-                            )
-                            .expect("Failed to create GpuTexture");
+                            );
 
                             (glyph_map, gpu_tex)
                         } else {
@@ -795,8 +801,7 @@ impl State {
                                 &self.texture_bind_group_layout,
                                 texture,
                                 *node_id,
-                            )
-                            .expect("Failed to create GpuTexture");
+                            );
 
                             self.texture_cache.insert(*node_id, gpu_tex);
                         }
@@ -804,10 +809,7 @@ impl State {
                     ElementType::Text(text) => {
                         let key = (node.get_id(), text.get_size() as u32);
                         let (glyph_map, gpu_tex) = if !self.glyph_atlas_cache.contains_key(&key) {
-                            let glyph_map = text
-                                .get_font()
-                                .generate_glyph_map(text.get_size())
-                                .expect("Failed to generate glyph map");
+                            let glyph_map = text.get_font().generate_glyph_map(text.get_size())?;
 
                             let atlas_texture = Texture::from_raw(
                                 Vector2 {
@@ -823,8 +825,7 @@ impl State {
                                 &self.texture_bind_group_layout,
                                 &atlas_texture,
                                 *node_id,
-                            )
-                            .expect("Failed to create GpuTexture");
+                            );
 
                             (glyph_map, gpu_tex)
                         } else {
@@ -943,9 +944,11 @@ impl State {
         }
         self.queue
             .write_buffer(&self.text_uniform_buffer, 0, &padded);
+
+        Ok(())
     }
 
-    pub fn render(&mut self) -> anyhow::Result<()> {
+    pub fn render(&mut self) -> Result<(), Error> {
         self.window.request_redraw();
 
         let now = Instant::now();
@@ -978,7 +981,7 @@ impl State {
                 return Ok(());
             }
             wgpu::CurrentSurfaceTexture::Lost => {
-                anyhow::bail!("Lost device");
+                return Err(Error::DeviceLost);
             }
         };
 
@@ -1025,12 +1028,14 @@ impl State {
                 match sprite.get_element_type() {
                     ElementType::None => continue,
                     ElementType::Text(text) => {
-                        let (_, gpu_texture, first, count) = self
-                            .glyph_atlas_cache
-                            .get(&(*id, text.get_size() as u32))
-                            .ok_or_else(|| {
-                                anyhow::anyhow!("Glyph atlas not found for font: {}", id)
-                            })?;
+                        let (gpu_texture, first, count) =
+                            match self.glyph_atlas_cache.get(&(*id, text.get_size() as u32)) {
+                                Some((_, g, f, c)) => (g, f, c),
+                                None => {
+                                    log::error!("Failed to find glyph atlas for text: {:?}", text);
+                                    continue;
+                                }
+                            };
 
                         if *count == 0 {
                             continue;
@@ -1059,10 +1064,18 @@ impl State {
 
                         if vertex_offset + vertex_padded_len as u64 > MAX_SPRITE_VERTEX_BUFFER_SIZE
                         {
-                            anyhow::bail!("Sprite vertex buffer overflow");
+                            return Err(Error::IndexOverflow(
+                                *id,
+                                vertex_offset + vertex_padded_len as u64,
+                                MAX_SPRITE_VERTEX_BUFFER_SIZE,
+                            ));
                         }
                         if index_offset + index_padded_len as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
-                            anyhow::bail!("Sprite index buffer overflow");
+                            return Err(Error::IndexOverflow(
+                                *id,
+                                index_offset + index_padded_len as u64,
+                                MAX_SPRITE_INDEX_BUFFER_SIZE,
+                            ));
                         }
 
                         let vertex_start = vertex_offset;
@@ -1086,7 +1099,8 @@ impl State {
                             let gpu_texture = match self.texture_cache.get(id) {
                                 Some(g) => g,
                                 None => {
-                                    anyhow::bail!("GpuTexture not found in cache for id: {}", id)
+                                    log::error!("GpuTexture not found in cache for id: {}", id);
+                                    continue;
                                 }
                             };
 
@@ -1130,12 +1144,14 @@ impl State {
                 match ui.get_element_type() {
                     ElementType::None => continue,
                     ElementType::Text(text) => {
-                        let (_, gpu_texture, first, count) = self
-                            .glyph_atlas_cache
-                            .get(&(*id, text.get_size() as u32))
-                            .ok_or_else(|| {
-                                anyhow::anyhow!("Glyph atlas not found for font: {}", id,)
-                            })?;
+                        let (gpu_texture, first, count) =
+                            match self.glyph_atlas_cache.get(&(*id, text.get_size() as u32)) {
+                                Some((_, g, f, c)) => (g, f, c),
+                                None => {
+                                    log::error!("Failed to find glyph atlas for text: {:?}", text);
+                                    continue;
+                                }
+                            };
 
                         if *count == 0 {
                             continue;
@@ -1164,10 +1180,18 @@ impl State {
 
                         if vertex_offset + vertex_padded_len as u64 > MAX_SPRITE_VERTEX_BUFFER_SIZE
                         {
-                            anyhow::bail!("Sprite vertex buffer overflow");
+                            return Err(Error::IndexOverflow(
+                                *id,
+                                vertex_offset + vertex_padded_len as u64,
+                                MAX_SPRITE_VERTEX_BUFFER_SIZE,
+                            ));
                         }
                         if index_offset + index_padded_len as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
-                            anyhow::bail!("Sprite index buffer overflow");
+                            return Err(Error::IndexOverflow(
+                                *id,
+                                index_offset + index_padded_len as u64,
+                                MAX_SPRITE_INDEX_BUFFER_SIZE,
+                            ));
                         }
 
                         let vertex_start = vertex_offset;
@@ -1191,7 +1215,8 @@ impl State {
                             let gpu_texture = match self.texture_cache.get(id) {
                                 Some(g) => g,
                                 None => {
-                                    anyhow::bail!("GpuTexture not found in cache for id: {}", id)
+                                    log::error!("GpuTexture not found in cache for id: {}", id);
+                                    continue;
                                 }
                             };
 
@@ -1232,16 +1257,8 @@ impl State {
         Ok(())
     }
 
-    pub fn set_camera(&mut self, camera: Camera) {
-        self.camera = camera;
-    }
-
     pub fn get_window(&self) -> &Arc<Window> {
         &self.window
-    }
-
-    pub fn set_config(&mut self, config: WindowConfig) {
-        self.custom_config = config;
     }
 
     pub fn get_camera(&self) -> &Camera {

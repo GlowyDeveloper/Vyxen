@@ -8,3 +8,4 @@ rust-version.workspace = true
 
 [dependencies]
 vyxen = { path = "../" }
+env_logger = "0.11.11"

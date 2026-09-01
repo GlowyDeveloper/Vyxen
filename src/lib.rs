@@ -3,6 +3,8 @@
 
 /// Collection of example colors for quick use.
 pub mod colors;
+/// Error types and error handling.
+pub mod error;
 /// Input system and input types.
 pub mod inputs;
 /// 2D collision and physics types.

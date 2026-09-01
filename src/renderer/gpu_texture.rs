@@ -16,7 +16,7 @@ impl GpuTexture {
         layout: &wgpu::BindGroupLayout,
         texture: &Texture,
         id: u64,
-    ) -> anyhow::Result<Self> {
+    ) -> Self {
         let rgba = texture.get_rgba();
         let dimensions = texture.get_dimensions();
         let id = id.to_string();
@@ -81,11 +81,11 @@ impl GpuTexture {
             label: Some(label),
         });
 
-        Ok(Self {
+        Self {
             texture,
             view,
             sampler,
             bind_group,
-        })
+        }
     }
 }

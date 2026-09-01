@@ -3,6 +3,8 @@ use vyxen::prelude::*;
 fn main() {
     #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
+    #[cfg(target_arch = "wasm32")]
+    console_log::init_with_level(log::Level::Debug).unwrap();
 
     let mut game = Game::new();
     let mut scene = Scene::new();

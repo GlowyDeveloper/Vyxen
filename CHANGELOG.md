@@ -16,6 +16,7 @@
 - CI tests
 - Texture and text tinting
 - Vyxen Book
+- Error handling
 
 ### Fixes
 

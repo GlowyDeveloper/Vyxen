@@ -1,5 +1,7 @@
 use std::{any::Any, path::Path};
 
+use crate::error::Error;
+
 pub mod color;
 pub mod font;
 pub mod texture;
@@ -7,7 +9,7 @@ pub mod texture;
 /// Represents a resource that can be loaded.
 pub trait Resource: Sized {
     fn as_any(&self) -> &dyn Any;
-    fn load(data: &[u8]) -> anyhow::Result<Self>;
+    fn load(data: &[u8]) -> Result<Self, Error>;
 }
 
 /// Loads a resource from a file path.
@@ -23,9 +25,9 @@ pub trait Resource: Sized {
 ///
 /// Returns an error if the file could not be read or the data could not be parsed.
 #[allow(unused)]
-pub fn load_path<T: Resource>(path: impl AsRef<Path>) -> anyhow::Result<T> {
+pub fn load_path<T: Resource>(path: impl AsRef<Path>) -> Result<T, Error> {
     #[cfg(target_arch = "wasm32")]
-    anyhow::bail!("wasm32 does not support file systems.");
+    return Err(Error::NoFileSystem);
 
     let data = std::fs::read(path)?;
     load_data::<T>(&data)
@@ -45,6 +47,6 @@ pub fn load_path<T: Resource>(path: impl AsRef<Path>) -> anyhow::Result<T> {
 /// # Errors
 ///
 /// Returns an error if the data could not be parsed.
-pub fn load_data<T: Resource>(data: &[u8]) -> anyhow::Result<T> {
+pub fn load_data<T: Resource>(data: &[u8]) -> Result<T, Error> {
     T::load(data)
 }

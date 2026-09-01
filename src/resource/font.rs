@@ -9,7 +9,7 @@ use std::{
 };
 use zeno::{Command, Mask, PathBuilder, Transform};
 
-use crate::resource::Resource;
+use crate::{error::Error, resource::Resource};
 
 /// A font resource loaded from a TTF file.
 ///
@@ -30,7 +30,7 @@ impl Resource for Font {
         self
     }
 
-    fn load(data: &[u8]) -> anyhow::Result<Self> {
+    fn load(data: &[u8]) -> Result<Self, Error> {
         Ok(Self {
             data: data.to_vec(),
         })
@@ -38,11 +38,11 @@ impl Resource for Font {
 }
 
 impl Font {
-    pub(crate) fn generate_glyph_map(&self, size: f32) -> anyhow::Result<GlyphMap> {
+    pub(crate) fn generate_glyph_map(&self, size: f32) -> Result<GlyphMap, Error> {
         const CHARSET_START: u32 = 0x20;
         const CHARSET_END: u32 = 0x7E;
 
-        let font = FontRef::new(&self.data)?;
+        let font = FontRef::new(&self.data).map_err(|_| Error::FontRefCreation)?;
         let charmap = font.charmap();
         let outlines = font.outline_glyphs();
         let px = Size::new(size);

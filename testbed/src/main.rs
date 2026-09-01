@@ -1,6 +1,8 @@
 use vyxen::prelude::*;
 
 fn main() {
+    env_logger::init();
+
     let speed = 200.0;
 
     let mut game = Game::new();
