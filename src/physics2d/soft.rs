@@ -455,7 +455,7 @@ impl SoftBody {
     pub fn get_points(&self) -> &Vec<PointMass> {
         &self.points
     }
-    /// A getter for the points of the soft body muttably.
+    /// A getter for the points of the soft body mutably.
     ///
     /// # Examples
     /// ```rust

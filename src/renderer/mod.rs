@@ -1,9 +1,10 @@
 use crate::{
-    Color, ElementType, Texture, Vector2,
+    Color, ElementType, Font, Texture, Vector2,
     geometry::Shape,
     load_data,
     node::Component,
     shape_type::{ShapeType, shape_type_from_shape},
+    ui::Text,
 };
 use std::any::Any;
 use winit::{
@@ -69,22 +70,31 @@ impl Sprite {
     /// # Examples
     /// ## Texture
     /// ```rust, ignore
-    /// use vyxen::{ElementType, Texture, Sprite, Box};
+    /// use vyxen::{ElementType, Texture, Sprite};
     ///
     /// let mut sprite = Sprite::new();
-    /// sprite.set_shape(Box::new(20.0, 2.0));
     /// sprite.set_element_type(ElementType::Texture(
     ///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
     /// ));
     /// ```
     /// ## Color
     /// ```rust
-    /// use vyxen::{ElementType, Sprite, Color, Box};
+    /// use vyxen::{ElementType, Sprite, Color};
     ///
     /// let mut sprite = Sprite::new();
-    /// sprite.set_shape(Box::new(20.0, 2.0));
     /// sprite.set_element_type(ElementType::Color(
     ///     Color::from_rgba(0.2, 0.1, 0.9, 1.0)
+    /// ));
+    /// ```
+    /// ## Text
+    /// ```rust, ignore
+    /// use vyxen::{ElementType, Sprite, Font, load_path};
+    ///
+    /// let mut sprite = Sprite::new();
+    /// sprite.set_element_type(ElementType::Text(
+    ///     "Hello, World!".to_string(),
+    ///     load_path::<Font>("path/to/font.ttf").unwrap(),
+    ///     24.0,
     /// ));
     /// ```
     pub fn new() -> Self {
@@ -99,12 +109,11 @@ impl Sprite {
     ///
     /// # Examples
     /// ```rust
-    /// use vyxen::{Sprite, Color, Box};
+    /// use vyxen::{Sprite, Color};
     ///
     /// let mut sprite = Sprite::with_color(
     ///     Color::from_rgba(0.2, 0.1, 0.9, 1.0)
     /// );
-    /// sprite.set_shape(Box::new(20.0, 2.0));
     /// ```
     pub fn with_color(color: Color) -> Self {
         Sprite {
@@ -114,16 +123,35 @@ impl Sprite {
         }
     }
 
+    /// Short for `Sprite::new().set_element_type(ElementType::Font(..))`
+    ///
+    /// # Examples
+    /// ```rust, ignore
+    /// use vyxen::{Sprite, Font, load_path};
+    ///
+    /// let mut sprite = Sprite::with_font(
+    ///     "Hello, World!".to_string(),
+    ///     load_path::<Font>("path/to/font.ttf").unwrap(),
+    ///     24.0,
+    /// );
+    /// ```
+    pub fn with_font(text: String, font: Font, size: f32) -> Self {
+        Sprite {
+            element_type: ElementType::Text(Text::new(text, font, size)),
+            vertices: None,
+            z: 0.0,
+        }
+    }
+
     /// Short for `Sprite::new().set_element_type(ElementType::Texture(..))`
     ///
     /// # Examples
     /// ```rust, ignore
-    /// use vyxen::{Texture, Sprite, Box};
+    /// use vyxen::{Texture, Sprite};
     ///
     /// let mut sprite = Sprite::with_texture(
     ///     Texture::from_bytes(include_bytes!("test-img.png"), "image").unwrap()
     /// );
-    /// sprite.set_shape(Box::new(20.0, 2.0));
     /// ```
     pub fn with_texture(texture: Texture) -> Self {
         Sprite {
@@ -134,8 +162,6 @@ impl Sprite {
     }
 
     /// Sets how this sprite should be rendered.
-    ///
-    /// This replaces the current `ElementType` of the sprite.
     ///
     /// # Examples
     /// ```rust

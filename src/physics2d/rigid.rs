@@ -297,9 +297,7 @@ impl RigidBody {
     pub fn get_shape(&self) -> ShapeType {
         self.shape.clone()
     }
-    /// A getter for the shape of the rigid body.
-    ///
-    /// If you want the mutable version, refer to `get_shape_mut()`
+    /// A getter for the shape of the rigid body as a mutable reference.
     ///
     /// # Examples
     /// ```rust
@@ -428,26 +426,5 @@ impl RigidBody {
     /// ```
     pub fn get_dynamic_friction(&self) -> f32 {
         self.dynamic_friction
-    }
-
-    /// Sets if another transform is required
-    ///
-    /// # Examples
-    /// ```rust
-    /// use vyxen::{Box, physics2d::RigidBody};
-    ///
-    /// let mut rigid = RigidBody::new(10.0, 1.0, Box::new(5.0, 5.0), 0.6, 0.4);
-    ///
-    /// rigid.set_transform_required(true);
-    /// ```
-    pub fn set_transform_required(&mut self, required: bool) {
-        match self.get_shape_mut() {
-            ShapeType::Box(b) => b.set_transform_required(required),
-            ShapeType::Polygon(p) => p.set_transform_required(required),
-            ShapeType::Concave(c) => c
-                .iter_mut()
-                .for_each(|p| p.set_transform_required(required)),
-            _ => {}
-        }
     }
 }

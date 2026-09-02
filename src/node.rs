@@ -1917,7 +1917,7 @@ impl Collider {
         &mut self.hitbox
     }
 
-    /// Gets the hitbox as a mutable reference
+    /// Generates an AABB of the Collider
     ///
     /// # Examples
     /// ```rust
@@ -2032,8 +2032,7 @@ impl Collider {
         }
     }
 
-    /// Sets if the aabb needs to be reinitialized
-    pub fn set_uninitilized(&mut self) {
+    pub(crate) fn set_uninitilized(&mut self) {
         self.aabb_initialized = false;
     }
 }

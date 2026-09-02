@@ -6,7 +6,7 @@ use crate::{
 };
 use std::any::Any;
 
-/// The type of UI element.
+/// The type of a `UIElement or `Sprite`.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ElementType {
     Color(Color),
@@ -50,7 +50,7 @@ impl Component for UiElement {
 }
 
 impl UiElement {
-    /// Creates a new UI element with the given type.
+    /// Creates a new UI element.
     ///
     /// # Examples
     /// ```rust, ignore
@@ -128,21 +128,14 @@ impl UiElement {
         }
     }
 
-    /// Sets the type of this element.
+    /// Sets how this element should be rendered.
     pub fn set_element_type(&mut self, element_type: ElementType) {
         self.element_type = element_type;
     }
 
     /// Returns the current type of this element.
-    ///
-    /// For a mutable reference, refer to `get_element_type_mut`.
     pub fn get_element_type(&self) -> &ElementType {
         &self.element_type
-    }
-
-    /// Returns the current type of this element mutably.
-    pub fn get_element_type_mut(&mut self) -> &mut ElementType {
-        &mut self.element_type
     }
 
     /// Sets the z-coordinate of this element.
