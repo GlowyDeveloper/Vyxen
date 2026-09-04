@@ -34,7 +34,7 @@ pub mod state;
 /// ```
 /// ## Color
 /// ```rust
-/// use vyxen::{Sprite, Color};
+/// use vyxen::{Sprite, Color, Box};
 ///
 /// let mut sprite = Sprite::with_color(
 ///     Color::from_rgba(0.2, 0.1, 0.9, 1.0)
