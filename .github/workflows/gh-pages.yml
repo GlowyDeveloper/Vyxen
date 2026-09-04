@@ -28,8 +28,13 @@ jobs:
           toolchain: stable
           targets: wasm32-unknown-unknown
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Build Book
-        run: bash ./scripts/build_book.sh
+        run: python build.py book
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

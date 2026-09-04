@@ -1,19 +1,22 @@
 # Contributing
 
-Before opening a pull request, please run:
-
-```bash
-cargo fmt
-./scripts/check_every_target.sh
-./scripts/clippy_every_target.sh
-cargo test
-cargo doc --no-deps
-```
+Before opening a pull request, please run the following commands with `build.py`:
+ - fmt
+ - check
+ - clippy
+ - test
+ - doc
 
 To build the Vyxen Book, run:
 
 ```bash
-./scripts/build_book.sh
+build.py book
+```
+
+Or to serve the book locally, run:
+
+```bash
+build.py book --serve
 ```
 
 If your change affects public API or behavior, please update the relevant documentation or examples as well.

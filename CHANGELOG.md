@@ -35,6 +35,7 @@
 - Expanded Texture loading to instead use `png` and `zune_jpeg`
 - Updated crates to latest versions
 - Removed `RigidBody` and `SoftBody` is_static arguments
+- Rewrote bash scripts to use python
 
 ## v0.1.0 (24/07/2026)
 
