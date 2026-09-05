@@ -4,6 +4,7 @@ import subprocess
 import sys
 import threading
 import time
+import tomllib
 from functools import partial
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
@@ -45,22 +46,19 @@ def help():
     print(f"    {OKGREEN}doc{ENDC}       builds the documentation")
     print()
     print(f"{HEADER}flags:{ENDC}")
-    print(f"{OKGREEN} -v --verbose{ENDC} enables verbose output")
     print(f"{OKGREEN} -h --help{ENDC}    prints help message")
     print()
 
-def targets(user_called):
+def targets():
     if sys.argv.count("--help") >= 1 or sys.argv.count("-h") >= 1:
         print()
         print(f"{HEADER}usage:{ENDC} build.py targets <flags>")
         print()
         print(f"{HEADER}flags:{ENDC}")
-        print(f"{OKGREEN} -v --verbose{ENDC} enables verbose output")
         print(f"{OKGREEN}    --dry{ENDC}     doesn't install any targets")
         print(f"{OKGREEN} -h --help{ENDC}    prints help message")
         print()
 
-    verbose = sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1
     installed = subprocess.run(
         ["rustup", "target", "list", "--installed"],
         capture_output=True,
@@ -68,49 +66,41 @@ def targets(user_called):
         check=True,
     ).stdout
 
-    if verbose:
-        print(f"{HEADER}rustup target list --installed{ENDC}")
-        print(installed)
+    print(f"{HEADER}rustup target list --installed{ENDC}")
+    print(installed)
 
     missing = []
 
     for target in TARGETS:
-        if verbose:
-            print(f"Checking if {target} is installed...")
+        print(f"Checking if {target} is installed...")
 
         if target in installed:
-            if verbose:
-                print(f"{target} is installed.")
+            print(f"{target} is installed.")
         else:
-            if verbose:
-                print(f"{target} is not installed.")
+            print(f"{target} is not installed.")
             missing.append(target)
 
     if len(missing) == 0:
-        if user_called:
-            print(f"{OKGREEN}targets are installed.{ENDC}")
+        print(f"{OKGREEN}targets are installed.{ENDC}")
         return 0
 
-    if user_called:
-        print(f"{HEADER}Missing targets:{ENDC}")
-    
-        for target in missing:
-            print(target)
+    print(f"{HEADER}Missing targets:{ENDC}")
+
+    for target in missing:
+        print(target)
 
     if sys.argv.count("--dry") >= 1:
-        if verbose:
-            print("Aborting for dry run")
+        print("Aborting for dry run")
         return 0
         
     for target in missing:
-        if verbose:
-            print(f"{HEADER}rustup target add {target}{ENDC}")
+        print(f"{HEADER}rustup target add {target}{ENDC}")
 
         try:
             subprocess.run(
                 ["rustup", "target", "add", target],
                 check=True,
-                stdout=None if verbose else subprocess.DEVNULL,
+                stdout=None,
                 stderr=subprocess.PIPE,
                 text=True,
             )
@@ -121,9 +111,10 @@ def targets(user_called):
                 print(f"{FAIL}Try checking your internet connection{ENDC}")
             else:
                 print(f"{WARNING}Failed to add {target}.{ENDC}")
-            if verbose:
-                print(e)
-                print(error)
+            
+            print(e)
+            print(error)
+            
             return 1
 
     print(f"{OKGREEN}All targets are installed.{ENDC}")
@@ -162,42 +153,37 @@ def clippy():
         print(f"{HEADER}usage:{ENDC} build.py clippy <flags>")
         print()
         print(f"{HEADER}flags:{ENDC}")
-        print(f"{OKGREEN} -v --verbose{ENDC} enables verbose output")
         print(f"{OKGREEN}    --dry{ENDC}     doesn't run anything")
         print(f"{OKGREEN} -h --help{ENDC}    prints help message")
         print()
 
-    verbose = sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1
+    print(f"{HEADER}build.py targets{ENDC}")
 
-    if verbose:
-        print(f"{HEADER}build.py targets{ENDC}")
-
-    code = targets(True)
+    code = targets()
 
     if code != 0:
         return code
 
     if sys.argv.count("--dry") >= 1:
-        if verbose:
-            print("Aborting for dry run")
+        print("Aborting for dry run")
         return 0
 
     for target in TARGETS:
         try:
-            if verbose:
-                print(f"{HEADER}cargo clippy --all-features --target {target}{ENDC}")
+            print(f"{HEADER}cargo clippy --all-features --target {target}{ENDC}")
             subprocess.run(
                 ["cargo", "clippy", "--all-features", "--target", target, "--", "-D", "warnings"],
                 check=True,
-                stdout=None if verbose else subprocess.DEVNULL,
+                stdout=None,
                 stderr=subprocess.PIPE,
                 text=True,
             )
         except subprocess.CalledProcessError as e:
             error = e.stderr or ""
-            if verbose:
-                print(e)
-                print(error)
+            
+            print(e)
+            print(error)
+            
             return 1
 
     print(f"{OKGREEN}No issues{ENDC}")
@@ -209,42 +195,35 @@ def check():
         print(f"{HEADER}usage:{ENDC} build.py check <flags>")
         print()
         print(f"{HEADER}flags:{ENDC}")
-        print(f"{OKGREEN} -v --verbose{ENDC} enables verbose output")
         print(f"{OKGREEN}    --dry{ENDC}     doesn't run anything")
         print(f"{OKGREEN} -h --help{ENDC}    prints help message")
         print()
 
-    verbose = sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1
+    print(f"{HEADER}build.py targets{ENDC}")
 
-    if verbose:
-        print(f"{HEADER}build.py targets{ENDC}")
-
-    code = targets(True)
+    code = targets()
 
     if code != 0:
         return code
 
     if sys.argv.count("--dry") >= 1:
-        if verbose:
-            print("Aborting for dry run")
+        print("Aborting for dry run")
         return 0
 
     for target in TARGETS:
         try:
-            if verbose:
-                print(f"{HEADER}cargo check --all-features --target {target}{ENDC}")
+            print(f"{HEADER}cargo check --all-features --target {target}{ENDC}")
             subprocess.run(
                 ["cargo", "check", "--all-features", "--target", target],
                 check=True,
-                stdout=None if verbose else subprocess.DEVNULL,
+                stdout=None,
                 stderr=subprocess.PIPE,
                 text=True,
             )
         except subprocess.CalledProcessError as e:
             error = e.stderr or ""
-            if verbose:
-                print(e)
-                print(error)
+            print(e)
+            print(error)
             return 1
 
     print(f"{OKGREEN}No issues{ENDC}")
@@ -264,21 +243,17 @@ def build():
         print(f"{OKGREEN} -j --jobs [NUMBER OF JOBS]{ENDC} amount of parallel jobs.")
         print(f"{OKGREEN}    --target [TARGET]{ENDC}       builds for the specified target")
         print()
-
-    verbose = sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1
     
     command = sys.argv[2:]
     command = ["-F" if arg == "-f" else arg for arg in command]
 
-    if verbose:
-        print(command)
+    print(command)
 
     command.insert(0, "cargo")
     command.insert(1, "build")
 
     try:
-        if verbose:
-            print(f"{HEADER}{command}{ENDC}")
+        print(f"{HEADER}{command}{ENDC}")
         subprocess.run(
             command,
             check=True,
@@ -286,9 +261,8 @@ def build():
         )
     except subprocess.CalledProcessError as e:
         error = e.stderr or ""
-        if verbose:
-            print(e)
-            print(error)
+        print(e)
+        print(error)
         return 1
 
     return 0
@@ -303,8 +277,6 @@ def book():
         print(f"{OKGREEN} -h --help{ENDC}                  prints help message")
         print(f"{OKGREEN} -s --serve{ENDC}                 serves the book locally")
         print()
-
-    verbose = sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1
     
     installed = subprocess.run(
         ["rustup", "target", "list", "--installed"],
@@ -313,21 +285,18 @@ def book():
         check=True,
     ).stdout
 
-    if verbose:
-        print(f"{HEADER}rustup target list --installed{ENDC}")
-        print(installed)
+    print(f"{HEADER}rustup target list --installed{ENDC}")
+    print(installed)
 
     if installed.count("wasm32-unknown-unknown") == 0:
         print("wasm32-unknown-unknown isn't installed")
-
-        if verbose:
-            print(f"{HEADER}rustup target add wasm32-unknown-unknown{ENDC}")
+        print(f"{HEADER}rustup target add wasm32-unknown-unknown{ENDC}")
 
         try:
             subprocess.run(
                 ["rustup", "target", "add", "wasm32-unknown-unknown"],
                 check=True,
-                stdout=None if verbose else subprocess.DEVNULL,
+                stdout=None,
                 stderr=subprocess.PIPE,
                 text=True,
             )
@@ -338,13 +307,13 @@ def book():
                 print(f"{FAIL}Try checking your internet connection{ENDC}")
             else:
                 print(f"{WARNING}Failed to add wasm32-unknown-unknown.{ENDC}")
-            if verbose:
-                print(e)
-                print(error)
+            
+            print(e)
+            print(error)
+            
             return 1
     else:
-        if verbose:
-            print(f"{HEADER}wasm32-unknown-unknown is installed{ENDC}")
+        print(f"{HEADER}wasm32-unknown-unknown is installed{ENDC}")
 
     installed = subprocess.run(
         ["cargo", "install", "--list"],
@@ -355,8 +324,7 @@ def book():
 
     if "mdbook v" not in installed:
         print(f"{HEADER}mdbook is not installed{ENDC}")
-        if verbose:
-            print(f"{HEADER}cargo install mdbook{ENDC}")
+        print(f"{HEADER}cargo install mdbook{ENDC}")
         
         try:
             subprocess.run(
@@ -371,17 +339,36 @@ def book():
                 print(f"{FAIL}Try checking your internet connection{ENDC}")
             else:
                 print(f"{WARNING}Failed to install mdbook.{ENDC}")
-            if verbose:
-                print(e)
-                print(error)
+
+            print(e)
+            print(error)
+            
             return 1
-    if "wasm-bindgen-cli v" not in installed:
-        print(f"{HEADER}wasm-bindgen-cli is not installed{ENDC}")
-        if verbose:
-            print(f"{HEADER}cargo install wasm-bindgen-cli{ENDC}")
+
+    print(f"{HEADER}mdbbook is installed{ENDC}")
+
+    print(f"{HEADER}Getting wasm-bindgen version{ENDC}")
+
+    with open("Cargo.lock", "rb") as f:
+        lockfile = tomllib.load(f)
+
+    version = None
+
+    for package in lockfile["package"]:
+        if package["name"] == "wasm-bindgen":
+            version = package["version"]
+
+    if version is None:
+        print("Unable to get wasm-bindgen version")
+        return 1
+    
+    if f"wasm-bindgen-cli v{version}" not in installed:
+        print(f"{HEADER}wasm-bindgen-cli v{version} is not installed{ENDC}")
+
+        print(f"{HEADER}cargo install -f wasm-bindgen-cli --version {version}{ENDC}")
         try:
             subprocess.run(
-                ["cargo", "install", "wasm-bindgen-cli"],
+                ["cargo", "install", "-f", "wasm-bindgen-cli", "--version", version],
                 check=True,
                 text=True,
             )
@@ -392,10 +379,13 @@ def book():
                 print(f"{FAIL}Try checking your internet connection{ENDC}")
             else:
                 print(f"{WARNING}Failed to install wasm-bindgen-cli.{ENDC}")
-            if verbose:
-                print(e)
-                print(error)
+
+            print(e)
+            print(error)
+            
             return 1
+            
+    print(f"{HEADER}wasm-bindgen-cli is installed{ENDC}")
 
     if sys.argv.count("--serve") >= 1 or sys.argv.count("-s") >= 1:
         def run_server():
@@ -412,51 +402,46 @@ def book():
 
         def watch_files():
             def book_changed():
-                if verbose:
-                    print(f"{HEADER}moving target/book/wasm to target/wasm{ENDC}")
+                print(f"{HEADER}moving target/book/wasm to target/wasm{ENDC}")
                 shutil.move("target/book/wasm", "target/wasm")
-                if verbose:
-                    print(f"{HEADER}mdbook build{ENDC}")
+                
+                print(f"{HEADER}mdbook build{ENDC}")
                 subprocess.run(
                     ["mdbook", "build"],
                     check=True,
                     text=True,
                 )
-                if verbose:
-                    print(f"{HEADER}moving target/wasm to target/book/wasm{ENDC}")
+                
+                print(f"{HEADER}moving target/wasm to target/book/wasm{ENDC}")
                 shutil.move("target/wasm", "target/book/wasm")
 
             def examples_changed():
-                if verbose:
-                    print(f"{HEADER}removing target/book/wasm{ENDC}")
+                print(f"{HEADER}removing target/book/wasm{ENDC}")
+                
                 try:
                     shutil.rmtree("target/book/wasm", ignore_errors=True)
                 except FileNotFoundError:
                     pass
                 except OSError as e:
                     print("Failed to remove target/book/wasm")
-                    if verbose:
-                        print(e)
+                    print(e)
+                    
                     return 1
             
                 for example in EXAMPLES:
                     try:
-                        if verbose:
-                            print(f"{HEADER}cargo build --target wasm32-unknown-unknown -p {example} -r -v{ENDC}")
+                        print(f"{HEADER}cargo build --target wasm32-unknown-unknown -p {example} -r -v{ENDC}")
                         subprocess.run(
-                            ["cargo", "build", "--target", "wasm32-unknown-unknown", "-p", example, "-r"] + (["-v"] if verbose else []),
+                            ["cargo", "build", "--target", "wasm32-unknown-unknown", "-p", example, "-r"] + (["-v"] if sys.argv.count("-v") >= 1 or sys.argv.count("--verbose") >= 1 else []),
                             check=True,
                             text=True,
                         )
                     except subprocess.CalledProcessError as e:
                         print(f"Failed to build {example}")
-                        error = e.stderr or ""
-                        if verbose:
-                            print(e)
+                        print(e)
                         return 1
                     try:
-                        if verbose:
-                            print(f"{HEADER}wasm-bindgen --target web --out-dir target/book/wasm/{example} target/wasm32-unknown-unknown/release/{example}.wasm{ENDC}")
+                        print(f"{HEADER}wasm-bindgen --target web --out-dir target/book/wasm/{example} target/wasm32-unknown-unknown/release/{example}.wasm{ENDC}")
                         subprocess.run(
                             ["wasm-bindgen", "--target", "web", "--out-dir", f"target/book/wasm/{example}", f"target/wasm32-unknown-unknown/release/{example}.wasm", "--no-typescript"],
                             check=True,
@@ -465,9 +450,8 @@ def book():
                     except subprocess.CalledProcessError as e:
                         print(f"Failed to generate wasm bindings for {example}")
                         error = e.stderr or ""
-                        if verbose:
-                            print(e)
-                            print(error)
+                        print(e)
+                        print(error)
                         return 1
             
             book = Path("./book")
@@ -499,18 +483,15 @@ def book():
         
                 for path, mtime in current_book.items():
                     if path not in previous_book:
-                        if verbose:
-                            print(f"New file: {path}")
+                        print(f"New file: {path}")
                         book_changed()
                     elif mtime != previous_book[path]:
-                        if verbose:
-                            print(f"File changed: {path}")
+                        print(f"File changed: {path}")
                         book_changed()
         
                 for path in previous_book:
                     if path not in current_book:
-                        if verbose:
-                            print(f"File deleted: {path}")
+                        print(f"File deleted: {path}")
                         book_changed()
         
                 previous_book = current_book
@@ -523,18 +504,15 @@ def book():
 
                 for path, mtime in current_example.items():
                     if path not in previous_example:
-                        if verbose:
-                            print(f"New file: {path}")
+                        print(f"New file: {path}")
                         examples_changed()
                     elif mtime != previous_example[path]:
-                        if verbose:
-                            print(f"File changed: {path}")
+                        print(f"File changed: {path}")
                         examples_changed()
 
                 for path in previous_example:
                     if path not in current_example:
-                        if verbose:
-                            print(f"File deleted: {path}")
+                        print(f"File deleted: {path}")
                         examples_changed()
 
                 previous_example = current_example
@@ -547,18 +525,15 @@ def book():
 
                 for path, mtime in current_src.items():
                     if path not in previous_src:
-                        if verbose:
-                            print(f"New file: {path}")
+                        print(f"New file: {path}")
                         examples_changed()
                     elif mtime != previous_src[path]:
-                        if verbose:
-                            print(f"File changed: {path}")
+                        print(f"File changed: {path}")
                         examples_changed()
 
                 for path in previous_src:
                     if path not in current_src:
-                        if verbose:
-                            print(f"File deleted: {path}")
+                        print(f"File deleted: {path}")
                         examples_changed()
 
                 previous_src = current_src
@@ -575,8 +550,7 @@ def book():
         watcher_thread.join()
     else:
         try:
-            if verbose:
-                print(f"{HEADER}mdbook build{ENDC}")
+            print(f"{HEADER}mdbook build{ENDC}")
             subprocess.run(
                 ["mdbook", "build"],
                 check=True,
@@ -585,9 +559,8 @@ def book():
         except subprocess.CalledProcessError as e:
             print("Failed to build book")
             error = e.stderr or ""
-            if verbose:
-                print(e)
-                print(error)
+            print(e)
+            print(error)
             return 1
     
         try:
@@ -596,28 +569,23 @@ def book():
             pass
         except OSError as e:
             print("Failed to remove target/book/wasm")
-            if verbose:
-                print(e)
+            print(e)
             return 1
     
         for example in EXAMPLES:
             try:
-                if verbose:
-                    print(f"{HEADER}cargo build --target wasm32-unknown-unknown -p {example} -r -v{ENDC}")
+                print(f"{HEADER}cargo build --target wasm32-unknown-unknown -p {example} -r -v{ENDC}")
                 subprocess.run(
-                    ["cargo", "build", "--target", "wasm32-unknown-unknown", "-p", example, "-r"] + (["-v"] if verbose else []),
+                    ["cargo", "build", "--target", "wasm32-unknown-unknown", "-p", example, "-r"] + (["-v"] if sys.argv.count("-v") >= 1 or sys.argv.count("--verbose") >= 1 else []),
                     check=True,
                     text=True,
                 )
             except subprocess.CalledProcessError as e:
                 print(f"Failed to build {example}")
-                error = e.stderr or ""
-                if verbose:
-                    print(e)
+                print(e)
                 return 1
             try:
-                if verbose:
-                    print(f"{HEADER}wasm-bindgen --target web --out-dir target/book/wasm/{example} target/wasm32-unknown-unknown/release/{example}.wasm{ENDC}")
+                print(f"{HEADER}wasm-bindgen --target web --out-dir target/book/wasm/{example} target/wasm32-unknown-unknown/release/{example}.wasm{ENDC}")
                 subprocess.run(
                     ["wasm-bindgen", "--target", "web", "--out-dir", f"target/book/wasm/{example}", f"target/wasm32-unknown-unknown/release/{example}.wasm", "--no-typescript"],
                     check=True,
@@ -625,9 +593,7 @@ def book():
                 )
             except subprocess.CalledProcessError as e:
                 print(f"Failed to generate wasm bindings for {example}")
-                error = e.stderr or ""
-                if verbose:
-                    print(e)
+                print(e)
                 return 1
         return 0
 
@@ -646,8 +612,6 @@ def test():
         print(f"{OKGREEN}    --doc{ENDC}     runs only the doc tests")
         print()
     
-    verbose = sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1
-    
     command = sys.argv[2:]
 
     if "-j" not in command and "--jobs" not in command:
@@ -656,15 +620,13 @@ def test():
         if cores is not None:
             command.append(str(int(cores // 1.5)))
 
-    if verbose:
-        print(command)
+    print(command)
 
     command.insert(0, "cargo")
     command.insert(1, "test")
 
     try:
-        if verbose:
-            print(f"{HEADER}{command}{ENDC}")
+        print(f"{HEADER}{command}{ENDC}")
         subprocess.run(
             command,
             check=True,
@@ -672,9 +634,8 @@ def test():
         )
     except subprocess.CalledProcessError as e:
         error = e.stderr or ""
-        if verbose:
-            print(e)
-            print(error)
+        print(e)
+        print(error)
         return 1
 
     return 0
@@ -688,26 +649,22 @@ def doc():
         print(f"{OKGREEN} -v --verbose{ENDC}               enables verbose output")
         print(f"{OKGREEN} -h --help{ENDC}                  prints help message")
         print()
-        
-    verbose = sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1
 
     env = os.environ.copy()
     env["RUSTDOCFLAGS"] = "-D warnings"
 
     try:
-        if verbose:
-            print(f"{HEADER}RUSTDOCFLAGS=\"-D warnings\" cargo doc --all-features --no-deps -v{ENDC}")
+        print(f"{HEADER}RUSTDOCFLAGS=\"-D warnings\" cargo doc --all-features --no-deps -v{ENDC}")
         subprocess.run(
-            ["cargo", "doc", "--all-features", "--no-deps"] + (["-v"] if verbose else []),
+            ["cargo", "doc", "--all-features", "--no-deps"] + (["-v"] if sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1 else []),
             check=True,
             text=True,
             env=env
         )
     except subprocess.CalledProcessError as e:
         error = e.stderr or ""
-        if verbose:
-            print(e)
-            print(error)
+        print(e)
+        print(error)
         return 1
 
     return 0
@@ -720,7 +677,7 @@ def main():
         help()
         return 0
     elif sys.argv[1] == "targets":
-        return targets(True)
+        return targets()
     elif sys.argv[1] == "fmt":
         return fmt()
     elif sys.argv[1] == "clippy":
