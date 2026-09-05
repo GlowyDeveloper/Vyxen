@@ -1,5 +1,5 @@
 use crate::{
-    Color, Font, Texture,
+    Color, Font, Text, Texture,
     geometry::Shape,
     node::Component,
     shape_type::{ShapeType, shape_type_from_shape},
@@ -81,12 +81,7 @@ impl UiElement {
     /// ```
     pub fn with_text(text: String, font: Font, size: f32) -> Self {
         Self {
-            element_type: ElementType::Text(Text {
-                text,
-                font,
-                size,
-                tint: None,
-            }),
+            element_type: ElementType::Text(Text::new(text, font, size)),
             vertices: None,
             z: 0.0,
         }
@@ -191,80 +186,5 @@ impl UiElement {
         T: Shape,
     {
         self.vertices = Some(shape_type_from_shape(shape));
-    }
-}
-
-/// Represents a text element to be rendered on the UI.
-///
-/// ```rust, ignore
-/// use vyxen::{Font, load_path, Text};
-///
-/// let font = load_path("path/to/font.ttf").unwrap();
-/// let text = Text::new("Hello, World!", font, 16.0);
-/// ```
-#[derive(Debug, Clone, PartialEq)]
-pub struct Text {
-    text: String,
-    font: Font,
-    size: f32,
-    tint: Option<Color>,
-}
-
-impl Text {
-    /// Creates a new `Text` element.
-    ///
-    /// ```rust, ignore
-    /// use vyxen::{Font, load_path, Text};
-    ///
-    /// let font = load_path("path/to/font.ttf").unwrap();
-    /// let text = Text::new("Hello, World!", font, 16.0);
-    /// ```
-    pub fn new(text: String, font: Font, size: f32) -> Self {
-        Self {
-            text,
-            font,
-            size,
-            tint: None,
-        }
-    }
-
-    /// Returns the text of this `Text`.
-    pub fn get_text(&self) -> &str {
-        &self.text
-    }
-
-    /// Returns the font of this `Text`.
-    pub fn get_font(&self) -> &Font {
-        &self.font
-    }
-
-    /// Returns the size of this `Text`.
-    pub fn get_size(&self) -> f32 {
-        self.size
-    }
-
-    /// Returns the tint of this `Text`.
-    pub fn get_tint(&self) -> Option<Color> {
-        self.tint
-    }
-
-    /// Sets the tint of this `Text`.
-    pub fn set_tint(&mut self, tint: Color) {
-        self.tint = Some(tint);
-    }
-
-    /// Sets the text of this `Text`.
-    pub fn set_text(&mut self, text: String) {
-        self.text = text;
-    }
-
-    /// Sets the font of this `Text`.
-    pub fn set_font(&mut self, font: Font) {
-        self.font = font;
-    }
-
-    /// Sets the size of this `Text`.
-    pub fn set_size(&mut self, size: f32) {
-        self.size = size;
     }
 }

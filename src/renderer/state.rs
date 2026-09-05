@@ -774,7 +774,7 @@ impl State {
                             (glyph_map, gpu_tex)
                         };
 
-                        let glyphs = text_geometry(&glyph_map, text.get_text());
+                        let glyphs = text_geometry(&glyph_map, text.get_text(), text.get_anchor());
                         let first = self.raw_glyph_instances.len() as u32;
                         let count = glyphs.len() as u32;
 
@@ -834,7 +834,7 @@ impl State {
                             (glyph_map, gpu_tex)
                         };
 
-                        let glyphs = text_geometry(&glyph_map, text.get_text());
+                        let glyphs = text_geometry(&glyph_map, text.get_text(), text.get_anchor());
                         let first = self.raw_glyph_instances.len() as u32;
                         let count = glyphs.len() as u32;
 

@@ -101,17 +101,20 @@ fn main() {
 
         game.get_scene_mut().unwrap().remove_node_by_id(50).unwrap();
 
-        let ui_fps2 = UiElement::with_text(
+        let mut text_fps = Text::new(
             format!("FPS: {}", game.get_fps().unwrap_or_default().round()),
             load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
             16.0,
         );
-        let mut fps2 = Node::new("FPS".to_string());
-        fps2.add_component(ui_fps2);
-        fps2.move_to(Vector2 { x: 35.0, y: 10.0 });
-        fps2.set_is_static(true);
-        fps2.set_id(50);
+        text_fps.set_anchor(TextAnchor::Left);
+        let mut ui_fps = UiElement::new();
+        ui_fps.set_element_type(ElementType::Text(text_fps));
+        let mut fps = Node::new("FPS".to_string());
+        fps.add_component(ui_fps);
+        fps.move_to(Vector2 { x: 10.0, y: 10.0 });
+        fps.set_is_static(true);
+        fps.set_id(50);
 
-        game.get_scene_mut().unwrap().add_node(fps2);
+        game.get_scene_mut().unwrap().add_node(fps);
     });
 }

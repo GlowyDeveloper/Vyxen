@@ -1,10 +1,9 @@
 use crate::{
-    Color, ElementType, Font, Texture, Vector2,
+    Color, ElementType, Font, Text, Texture, Vector2,
     geometry::Shape,
     load_data,
     node::Component,
     shape_type::{ShapeType, shape_type_from_shape},
-    ui::Text,
 };
 use std::any::Any;
 use winit::{

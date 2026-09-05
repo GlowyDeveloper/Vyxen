@@ -1,5 +1,5 @@
 use crate::{
-    Box, Polygon, Vector2,
+    Box, Polygon, TextAnchor, Vector2,
     renderer::raws::{GlyphRaw, Vertex},
     resource::font::GlyphMap,
     shape_type::ShapeType,
@@ -150,8 +150,7 @@ pub fn uv_from_position(position: Vector2, bounds: (Vector2, Vector2)) -> [f32; 
     ]
 }
 
-#[inline]
-pub fn text_geometry(glyph_map: &GlyphMap, text: &str) -> Vec<GlyphRaw> {
+pub fn text_geometry(glyph_map: &GlyphMap, text: &str, anchor: &TextAnchor) -> Vec<GlyphRaw> {
     struct Placed {
         left: f32,
         right: f32,
@@ -201,8 +200,11 @@ pub fn text_geometry(glyph_map: &GlyphMap, text: &str) -> Vec<GlyphRaw> {
         return Vec::new();
     }
 
-    let center_x = (min_x + max_x) / 2.0;
-    let center_y = (min_y + max_y) / 2.0;
+    let (center_x, center_y) = match anchor {
+        TextAnchor::Center => ((min_x + max_x) / 2.0, (min_y + max_y) / 2.0),
+        TextAnchor::Left => (min_x, min_y),
+        TextAnchor::Right => (max_x, max_y),
+    };
 
     placed
         .iter()

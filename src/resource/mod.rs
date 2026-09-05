@@ -4,6 +4,7 @@ use crate::error::Error;
 
 pub mod color;
 pub mod font;
+pub mod text;
 pub mod texture;
 
 /// Represents a resource that can be loaded.
