@@ -1,5 +1,5 @@
 use crate::{
-    Camera, ElementType, Node, Sprite, Texture, UiElement, Vector2, WindowConfig,
+    Camera, ElementType, FrameCap, Node, Sprite, Texture, UiElement, Vector2, WindowConfig,
     error::Error,
     renderer::{
         gpu_texture::GpuTexture,
@@ -148,12 +148,37 @@ impl State {
             .copied()
             .unwrap_or(surface_caps.formats[0]);
 
+        let present_mode = match custom_config.frame_cap {
+            FrameCap::Vsync => {
+                log::info!("Setting present mode to fifo");
+                wgpu::PresentMode::Fifo
+            }
+            FrameCap::Uncapped | FrameCap::Capped(_) => {
+                if surface_caps
+                    .present_modes
+                    .contains(&wgpu::PresentMode::Immediate)
+                {
+                    log::info!("Setting present mode to immediate");
+                    wgpu::PresentMode::Immediate
+                } else if surface_caps
+                    .present_modes
+                    .contains(&wgpu::PresentMode::Mailbox)
+                {
+                    log::info!("Setting present mode to mailbox");
+                    wgpu::PresentMode::Mailbox
+                } else {
+                    log::warn!("No present mode available, using first available");
+                    surface_caps.present_modes[0]
+                }
+            }
+        };
+
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width: size.width,
             height: size.height,
-            present_mode: surface_caps.present_modes[0],
+            present_mode,
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
@@ -949,7 +974,9 @@ impl State {
     }
 
     pub fn render(&mut self) -> Result<(), Error> {
-        self.window.request_redraw();
+        if self.custom_config.frame_cap == FrameCap::Uncapped {
+            self.window.request_redraw();
+        }
 
         let now = Instant::now();
         let dt = (now - self.last_frame_instant).as_secs_f32();
@@ -1271,6 +1298,23 @@ impl State {
 
     pub fn get_fps(&self) -> f32 {
         self.fps
+    }
+
+    pub async fn set_window_config(
+        self,
+        window: Arc<Window>,
+        config: WindowConfig,
+    ) -> Result<State, Error> {
+        let camera = self.camera;
+        let size = window.inner_size();
+
+        drop(self);
+
+        let mut new_state = State::new(window, config).await?;
+        new_state.camera = camera;
+        new_state.resize(size.width, size.height);
+
+        Ok(new_state)
     }
 }
 

@@ -7,6 +7,14 @@ Before opening a pull request, please run the following commands with `build.py`
  - test
  - doc
 
+```bash
+cargo fmt
+build.py check
+build.py clippy
+cargo test
+cargo doc --no-deps
+```
+
 To build the Vyxen Book, run:
 
 ```bash

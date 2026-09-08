@@ -131,7 +131,7 @@ game.set_config(window);
 It then creates an event loop.
 
 ```rust
-let _ = game.run(|game, event, dt| { .. });
+let _ = game.run(|game, context, event, dt| { .. });
 ```
 
 Inside the event loop, it checks if the event is a `Event::MouseInput` and checks if the state is `KeyState::Released`.

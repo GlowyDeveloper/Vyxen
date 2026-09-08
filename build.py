@@ -36,14 +36,10 @@ def help():
     print(f"{HEADER}usage:{ENDC} build.py <command> <flags>")
     print()
     print(f"{HEADER}commands:{ENDC}")
-    print(f"    {OKGREEN}build{ENDC}     builds a project")
-    print(f"    {OKGREEN}test{ENDC}      runs test suite")
-    print(f"    {OKGREEN}fmt{ENDC}       formats code")
     print(f"    {OKGREEN}clippy{ENDC}    checks for formatting issues")
     print(f"    {OKGREEN}check{ENDC}     checks for warnings and errors")
     print(f"    {OKGREEN}targets{ENDC}   installs targets")
     print(f"    {OKGREEN}book{ENDC}      builds the book")
-    print(f"    {OKGREEN}doc{ENDC}       builds the documentation")
     print()
     print(f"{HEADER}flags:{ENDC}")
     print(f"{OKGREEN} -h --help{ENDC}    prints help message")
@@ -119,32 +115,6 @@ def targets():
 
     print(f"{OKGREEN}All targets are installed.{ENDC}")
 
-    return 0
-
-def fmt():
-    if sys.argv.count("--help") >= 1 or sys.argv.count("-h") >= 1:
-        print()
-        print(f"{HEADER}usage:{ENDC} build.py fmt <flags>")
-        print()
-        print(f"{HEADER}flags:{ENDC}")
-        print(f"{OKGREEN} -v --verbose{ENDC} enables verbose output")
-        print(f"{OKGREEN} -h --help{ENDC}    prints help message")
-        print()
-    
-    verbose = sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1
-    if verbose:
-        print(f"{HEADER}cargo fmt -v{ENDC}")
-        subprocess.run(
-            ["cargo", "fmt", "-v"],
-            check=True,
-            text=True,
-        )
-    else:
-        subprocess.run(
-            ["cargo", "fmt"],
-            check=True,
-            text=True,
-        )
     return 0
 
 def clippy():
@@ -227,44 +197,6 @@ def check():
             return 1
 
     print(f"{OKGREEN}No issues{ENDC}")
-    return 0
-
-def build():
-    if sys.argv.count("--help") >= 1 or sys.argv.count("-h") >= 1:
-        print()
-        print(f"{HEADER}usage:{ENDC} build.py build <package> <flags>")
-        print()
-        print(f"{HEADER}flags:{ENDC}")
-        print(f"{OKGREEN} -v --verbose{ENDC}               enables verbose output")
-        print(f"{OKGREEN} -h --help{ENDC}                  prints help message")
-        print(f"{OKGREEN} -r --release{ENDC}               builds in release mode")
-        print(f"{OKGREEN} -f --features [FEATURE]{ENDC}    builds with the features seperated with a comma or space")
-        print(f"{OKGREEN}    --all-features{ENDC}          builds with all features")
-        print(f"{OKGREEN} -j --jobs [NUMBER OF JOBS]{ENDC} amount of parallel jobs.")
-        print(f"{OKGREEN}    --target [TARGET]{ENDC}       builds for the specified target")
-        print()
-    
-    command = sys.argv[2:]
-    command = ["-F" if arg == "-f" else arg for arg in command]
-
-    print(command)
-
-    command.insert(0, "cargo")
-    command.insert(1, "build")
-
-    try:
-        print(f"{HEADER}{command}{ENDC}")
-        subprocess.run(
-            command,
-            check=True,
-            text=True,
-        )
-    except subprocess.CalledProcessError as e:
-        error = e.stderr or ""
-        print(e)
-        print(error)
-        return 1
-
     return 0
 
 def book():
@@ -402,8 +334,9 @@ def book():
 
         def watch_files():
             def book_changed():
-                print(f"{HEADER}moving target/book/wasm to target/wasm{ENDC}")
-                shutil.move("target/book/wasm", "target/wasm")
+                if os.path.isdir('target/book/wasm'):
+                    print(f"{HEADER}moving target/book/wasm to target/wasm{ENDC}")
+                    shutil.move("target/book/wasm", "target/wasm")
                 
                 print(f"{HEADER}mdbook build{ENDC}")
                 subprocess.run(
@@ -411,9 +344,10 @@ def book():
                     check=True,
                     text=True,
                 )
-                
-                print(f"{HEADER}moving target/wasm to target/book/wasm{ENDC}")
-                shutil.move("target/wasm", "target/book/wasm")
+
+                if os.path.isdir('target/wasm'):
+                    print(f"{HEADER}moving target/wasm to target/book/wasm{ENDC}")
+                    shutil.move("target/wasm", "target/book/wasm")
 
             def examples_changed():
                 print(f"{HEADER}removing target/book/wasm{ENDC}")
@@ -453,6 +387,9 @@ def book():
                         print(e)
                         print(error)
                         return 1
+
+            book_changed()
+            examples_changed()
             
             book = Path("./book")
             examples = Path("./examples")
@@ -640,35 +577,6 @@ def test():
 
     return 0
 
-def doc():
-    if sys.argv.count("--help") >= 1 or sys.argv.count("-h") >= 1:
-        print()
-        print(f"{HEADER}usage:{ENDC} build.py doc <flags>")
-        print()
-        print(f"{HEADER}flags:{ENDC}")
-        print(f"{OKGREEN} -v --verbose{ENDC}               enables verbose output")
-        print(f"{OKGREEN} -h --help{ENDC}                  prints help message")
-        print()
-
-    env = os.environ.copy()
-    env["RUSTDOCFLAGS"] = "-D warnings"
-
-    try:
-        print(f"{HEADER}RUSTDOCFLAGS=\"-D warnings\" cargo doc --all-features --no-deps -v{ENDC}")
-        subprocess.run(
-            ["cargo", "doc", "--all-features", "--no-deps"] + (["-v"] if sys.argv.count("--verbose") >= 1 or sys.argv.count("-v") >= 1 else []),
-            check=True,
-            text=True,
-            env=env
-        )
-    except subprocess.CalledProcessError as e:
-        error = e.stderr or ""
-        print(e)
-        print(error)
-        return 1
-
-    return 0
-
 def main():
     if len(sys.argv) < 2:
         help()
@@ -678,20 +586,12 @@ def main():
         return 0
     elif sys.argv[1] == "targets":
         return targets()
-    elif sys.argv[1] == "fmt":
-        return fmt()
     elif sys.argv[1] == "clippy":
         return clippy()
     elif sys.argv[1] == "check":
         return check()
-    elif sys.argv[1] == "build":
-        return build()
     elif sys.argv[1] == "book":
         return book()
-    elif sys.argv[1] == "test":
-        return test()
-    elif sys.argv[1] == "doc":
-        return doc()
     else:
         help()
         return 2

@@ -1,17 +1,18 @@
 use crate::{
-    Camera, Scene, Vector2, WindowConfig,
+    Camera, FrameCap, Scene, Vector2, WindowConfig,
     error::Error,
     inputs::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase},
     renderer::state::State,
 };
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use winit::{
     application::ApplicationHandler,
+    dpi::{LogicalPosition, LogicalSize, Position, Size},
     event::{ElementState, MouseScrollDelta, WindowEvent},
-    event_loop::{ActiveEventLoop, EventLoop},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::PhysicalKey,
-    window::WindowId,
+    window::{Fullscreen, WindowId},
 };
 
 #[cfg(target_arch = "wasm32")]
@@ -28,7 +29,7 @@ enum GameEvent {
     Error(Error),
 }
 
-type Callback = Box<dyn FnMut(&mut Game, Event, f32)>;
+type Callback = Box<dyn FnMut(&mut Game, &Context, Event, f32)>;
 type OnError = Box<dyn FnMut(&mut Game, Error)>;
 
 /// Game struct to hold everything
@@ -51,6 +52,7 @@ pub struct Game {
     ctx: Context,
     last_redraw: Instant,
     dt: f32,
+    next_frame_time: Instant,
 
     #[cfg(target_arch = "wasm32")]
     proxy: Option<winit::event_loop::EventLoopProxy<GameEvent>>,
@@ -88,6 +90,7 @@ impl Game {
             },
             last_redraw: Instant::now(),
             dt: 0.0,
+            next_frame_time: Instant::now(),
 
             #[cfg(target_arch = "wasm32")]
             proxy: None,
@@ -216,13 +219,93 @@ impl Game {
     /// game.set_config(conf);
     /// ```
     pub fn set_config(&mut self, config: WindowConfig) {
-        self.ctx.config = config;
+        self.ctx.config = config.clone();
+
+        if let Some(state) = self.state.take() {
+            let window = state.get_window().clone();
+
+            let min_size = Size::Logical(LogicalSize::new(
+                config.min_size.x.into(),
+                config.min_size.y.into(),
+            ));
+            let max_size = Size::Logical(LogicalSize::new(
+                config.max_size.x.into(),
+                config.max_size.y.into(),
+            ));
+            let fullscreen = if config.fullscreen {
+                Some(Fullscreen::Borderless(None))
+            } else {
+                None
+            };
+
+            window.set_min_inner_size(Some(min_size));
+            window.set_title(&config.title);
+            window.set_resizable(config.resizable);
+            window.set_maximized(config.maximized);
+            window.set_visible(config.visible);
+            window.set_decorations(config.decorations);
+            window.set_window_icon(Some(config.icon.clone()));
+            window.set_fullscreen(fullscreen);
+
+            #[cfg(target_os = "windows")]
+            {
+                use winit::platform::windows::WindowExtWindows;
+
+                window.set_taskbar_icon(Some(config.icon.clone()));
+            }
+
+            if config.max_size.x.is_finite() && config.max_size.y.is_finite() {
+                window.set_max_inner_size(Some(max_size));
+            }
+
+            if let Some(vector) = config.position {
+                let position =
+                    Position::Logical(LogicalPosition::new(vector.x.into(), vector.y.into()));
+                window.set_outer_position(position);
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            match pollster::block_on(state.set_window_config(window, config)) {
+                Ok(s) => self.state = Some(s),
+                Err(e) => {
+                    if let Some(mut err) = self.on_error.take() {
+                        err(self, e);
+                        self.on_error = Some(err);
+                    } else {
+                        log::error!("{}", e);
+                    }
+                }
+            }
+
+            #[cfg(target_arch = "wasm32")]
+            {
+                if let Some(state) = self.state.take() {
+                    let proxy = self.proxy.clone().unwrap();
+
+                    wasm_bindgen_futures::spawn_local(async move {
+                        match state.set_window_config(window, config).await {
+                            Ok(s) => {
+                                if proxy.send_event(GameEvent::State(Box::new(s))).is_err() {
+                                    log::error!("Failed to send state event");
+                                }
+                            }
+                            Err(e) => {
+                                if proxy.send_event(GameEvent::Error(e)).is_err() {
+                                    log::error!("Failed to send state event");
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
     }
 
     /// Runs the game.
     ///
     /// Fields are:
     ///  - `Game` (the current game)
+    ///  - `Context` (the current context)
     ///  - `Event` (the event that triggered the callback)
     ///  - `f32` (the delta time since the last frame redraw)
     ///
@@ -236,13 +319,13 @@ impl Game {
     ///
     /// game.load_scene(scene);
     ///
-    /// game.run(|_, _, _| {
+    /// game.run(|_, _, _, _| {
     ///     println!("callback"); // Called every frame
     /// });
     /// ```
     pub fn run<F>(mut self, callback: F) -> Result<(), Error>
     where
-        F: FnMut(&mut Game, Event, f32) + 'static,
+        F: FnMut(&mut Game, &Context, Event, f32) + 'static,
     {
         #[cfg(target_arch = "wasm32")]
         let event_loop: EventLoop<GameEvent> = EventLoop::with_user_event()
@@ -558,7 +641,10 @@ impl ApplicationHandler<GameEvent> for Game {
                 _ => event.clone().into(),
             };
             if into != Event::Unknown {
-                callback(self, into, self.dt);
+                self.ctx.inputs.begin_frame();
+
+                let ctx = self.ctx.clone();
+                callback(self, &ctx, into, self.dt);
             }
 
             self.callback = Some(callback);
@@ -632,11 +718,25 @@ impl ApplicationHandler<GameEvent> for Game {
         }
     }
 
-    fn about_to_wait(&mut self, _: &ActiveEventLoop) {
-        self.ctx.inputs.begin_frame();
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        let Some(state) = &self.state else { return };
 
-        if let Some(state) = &self.state {
-            state.get_window().request_redraw();
+        match self.ctx.config.frame_cap {
+            FrameCap::Capped(target_fps) if target_fps > 0 => {
+                let frame_duration = Duration::from_secs_f32(1.0 / target_fps as f32);
+                let now = Instant::now();
+
+                if now >= self.next_frame_time {
+                    self.next_frame_time = now + frame_duration;
+                    state.get_window().request_redraw();
+                }
+
+                event_loop.set_control_flow(ControlFlow::WaitUntil(self.next_frame_time));
+            }
+            _ => {
+                event_loop.set_control_flow(ControlFlow::Wait);
+                state.get_window().request_redraw();
+            }
         }
     }
 
@@ -704,7 +804,10 @@ impl ApplicationHandler<State> for Game {
                 _ => event.clone().into(),
             };
             if into != Event::Unknown {
-                callback(self, into, self.dt);
+                self.ctx.inputs.begin_frame();
+
+                let ctx = self.ctx.clone();
+                callback(self, &ctx, into, self.dt);
             }
 
             self.callback = Some(callback);
@@ -778,11 +881,25 @@ impl ApplicationHandler<State> for Game {
         }
     }
 
-    fn about_to_wait(&mut self, _: &ActiveEventLoop) {
-        self.ctx.inputs.begin_frame();
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        let Some(state) = &self.state else { return };
 
-        if let Some(state) = &self.state {
-            state.get_window().request_redraw();
+        match self.ctx.config.frame_cap {
+            FrameCap::Capped(target_fps) if target_fps > 0 => {
+                let frame_duration = Duration::from_secs_f32(1.0 / target_fps as f32);
+                let now = Instant::now();
+
+                if now >= self.next_frame_time {
+                    self.next_frame_time = now + frame_duration;
+                    state.get_window().request_redraw();
+                }
+
+                event_loop.set_control_flow(ControlFlow::WaitUntil(self.next_frame_time));
+            }
+            _ => {
+                event_loop.set_control_flow(ControlFlow::Poll);
+                state.get_window().request_redraw();
+            }
         }
     }
 }

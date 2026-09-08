@@ -165,7 +165,7 @@ scene.add_node(node);
 
 game.load_scene(scene);
 
-let _ = game.run(|_game, _event_loop, _window_event| {
+let _ = game.run(|_game, _context, _event_loop, _window_event| {
     // Callback here
 });
 ```
@@ -214,7 +214,7 @@ use vyxen::prelude::*;
 
 let mut game = Game::new();
 
-let _ = game.run(|game, _event_loop, _window_event| {
+let _ = game.run(|game, _context, _event_loop, _window_event| {
     if game.is_just_pressed(KeyCode::KeyW) {
         println!("W was just pressed!");
     }
@@ -260,7 +260,7 @@ use vyxen::prelude::*;
 
 let mut game = Game::new();
 
-let _ = game.run(|_, event, _| {
+let _ = game.run(|_, _, event, _| {
     match event {
         Event::MouseInput(button, state, position) => {
             println!("Button: {:?}", button);

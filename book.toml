@@ -1,5 +1,5 @@
 [book]
-title = "Vyxen"
+title = "Vyxen Handbook"
 language = "en"
 src = "book/"
 description = "The book for Vyxen, a Godot-style game engine library written in Rust."

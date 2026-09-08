@@ -28,7 +28,7 @@ pub use game::{Context, Event, Game};
 pub use geometry::{AABB, Box, Circle, Polygon};
 pub use math::{Matrix4, Random, Transform, Vector2, is_nearly_equal};
 pub use node::{Collider, Node};
-pub use renderer::{Camera, RenderMode, Sprite, WindowConfig};
+pub use renderer::{Camera, FrameCap, RenderMode, Sprite, WindowConfig};
 pub use resource::{
     color::Color,
     font::Font,

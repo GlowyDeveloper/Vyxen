@@ -1,7 +1,7 @@
 use vyxen::prelude::*;
 
 fn main() {
-    env_logger::init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let speed = 200.0;
 
@@ -109,7 +109,18 @@ fn main() {
 
     game.load_scene(scene);
 
-    let _ = game.run(move |game, _, dt| {
+    let mut window_config = WindowConfig::new();
+    window_config.set_frame_cap(FrameCap::Capped(30));
+
+    game.set_config(window_config);
+
+    let mut fps = 30;
+
+    game.on_error(|_, err| {
+        println!("{:?}", err);
+    });
+
+    let _ = game.run(move |game, context, _, dt| {
         let speed = speed * dt;
         if game.is_held(KeyCode::KeyW) {
             let cam_pos = game.get_camera().unwrap().get_position();
@@ -142,6 +153,25 @@ fn main() {
                     std::hint::black_box(i.wrapping_mul(j));
                 }
             }
+        }
+
+        if game.is_held(KeyCode::KeyQ) {
+            fps += 1;
+
+            let mut window = context.config.clone();
+            window.set_frame_cap(FrameCap::Capped(fps));
+            game.set_config(window);
+        }
+
+        if game.is_held(KeyCode::KeyE) {
+            fps -= 1;
+            if fps < 1 {
+                fps = 1;
+            }
+
+            let mut window = context.config.clone();
+            window.set_frame_cap(FrameCap::Capped(fps));
+            game.set_config(window);
         }
 
         game.get_scene_mut().unwrap().remove_node_by_id(50).unwrap();

@@ -519,19 +519,20 @@ impl Camera {
 /// ```
 #[derive(Debug, Clone)]
 pub struct WindowConfig {
-    size: Vector2,
-    min_size: Vector2,
-    max_size: Vector2,
-    title: String,
-    resizable: bool,
-    position: Option<Vector2>,
-    maximized: bool,
-    visible: bool,
-    decorations: bool,
-    icon: Icon,
-    fullscreen: bool,
-    render_mode: RenderMode,
-    background_color: Color,
+    pub(crate) size: Vector2,
+    pub(crate) min_size: Vector2,
+    pub(crate) max_size: Vector2,
+    pub(crate) title: String,
+    pub(crate) resizable: bool,
+    pub(crate) position: Option<Vector2>,
+    pub(crate) maximized: bool,
+    pub(crate) visible: bool,
+    pub(crate) decorations: bool,
+    pub(crate) icon: Icon,
+    pub(crate) fullscreen: bool,
+    pub(crate) render_mode: RenderMode,
+    pub(crate) background_color: Color,
+    pub(crate) frame_cap: FrameCap,
 }
 
 impl Default for WindowConfig {
@@ -581,6 +582,7 @@ impl WindowConfig {
             fullscreen: false,
             render_mode: RenderMode::Best,
             background_color: Color::from_rgb(0.0, 0.0, 0.0),
+            frame_cap: FrameCap::Vsync,
         }
     }
 
@@ -771,6 +773,22 @@ impl WindowConfig {
     pub fn set_background_color(&mut self, color: Color) {
         self.background_color = color;
     }
+
+    /// Sets the window frame cap.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use vyxen::{WindowConfig, FrameCap};
+    ///
+    /// let mut config = WindowConfig::new();
+    /// config.set_frame_cap(FrameCap::Vsync);
+    /// config.set_frame_cap(FrameCap::Uncapped);
+    /// config.set_frame_cap(FrameCap::Capped(60));
+    /// ```
+    pub fn set_frame_cap(&mut self, cap: FrameCap) {
+        self.frame_cap = cap;
+    }
 }
 
 impl From<WindowConfig> for WindowAttributes {
@@ -861,4 +879,14 @@ impl From<RenderMode> for wgpu::Backends {
             RenderMode::WebGPU => wgpu::Backends::BROWSER_WEBGPU,
         }
     }
+}
+
+/// Frame cap for the renderer.
+///
+/// On wasm, it is set to `Capped(60)` even if modified, this is due to platform limitations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum FrameCap {
+    Uncapped,
+    Capped(u32),
+    Vsync,
 }

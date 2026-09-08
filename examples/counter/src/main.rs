@@ -32,7 +32,7 @@ fn main() {
 
     game.set_config(window);
 
-    let _ = game.run(move |game, event, _| {
+    let _ = game.run(move |game, _, event, _| {
         if let Event::MouseInput(_, state, _) = event {
             if state == KeyState::Released {
                 clicks += 1;

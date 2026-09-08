@@ -67,7 +67,7 @@ fn main() {
 
     game.set_config(window);
 
-    let _ = game.run(|game, event, _| {
+    let _ = game.run(|game, _, event, _| {
         if let Event::MouseInput(input, state, pos) = event {
             if state == KeyState::Released {
                 let pos = game.screen_to_world(pos).unwrap();
