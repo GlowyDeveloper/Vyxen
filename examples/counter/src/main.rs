@@ -33,10 +33,14 @@ fn main() {
     game.set_config(window);
 
     let _ = game.run(move |game, _, event, _| {
-        if let Event::MouseInput(_, state, _) = event {
-            if state == KeyState::Released {
-                clicks += 1;
-            }
+        if let Event::MouseInput(_, state, _) = event
+            && state == KeyState::Pressed
+        {
+            clicks += 1;
+        } else if let Event::Touch(_, phase) = event
+            && phase == TouchPhase::Started
+        {
+            clicks += 1;
         }
 
         let _ = game.get_scene_mut().unwrap().remove_node_by_id(2);

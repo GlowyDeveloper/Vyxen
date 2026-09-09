@@ -20,6 +20,10 @@
   - [Counter](./examples/counter.md)
   - [README](./examples/readme.md)
 
+# Misc
+
+- [Recommended Libraries](./recommended-libs.md)
+
 # Community
 
 - [Source Code](./placeholders/1.md)
