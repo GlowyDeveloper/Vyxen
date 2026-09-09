@@ -42,5 +42,5 @@ console_log::init_with_level(log::Level::Debug).unwrap();
 Panic hook that logs the panic message and the stack trace to the console for wasm32.
 
 ```rust
-console_error_panic_hook::init();
+console_error_panic_hook::set_once();
 ```
