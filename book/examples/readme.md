@@ -2,10 +2,16 @@
 
 ## Playground
 
-<canvas id="canvas" width="640" height="480"></canvas>
+<link rel="stylesheet" type="text/css" href="../theme/wasm-style.css">
+
+<div id="stage">
+  <canvas id="canvas" width="800" height="600"></canvas>
+  <div id="status">Loading…</div>
+</div>
+
 <script type="module">
-  import init from "../wasm/readme/readme.js";
-  init();
+  import load from "../theme/wasm-loader.js"
+  load("../wasm/readme/readme.js")
 </script>
 
 ## Code

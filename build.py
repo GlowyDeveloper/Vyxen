@@ -326,9 +326,9 @@ def book():
                 directory="target/book"
             )
         
-            server = HTTPServer(("localhost", 8000), handler)
+            server = HTTPServer(("0.0.0.0", 8000), handler)
         
-            print("Serving on http://localhost:8000")
+            print("Serving on http://0.0.0.0:8000")
         
             server.serve_forever()
 

@@ -1,0 +1,34 @@
+#stage {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  aspect-ratio: 800 / 600;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+}
+
+#canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 800px;
+  height: 600px;
+  transform-origin: top left;
+  display: block;
+}
+
+#status {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  font-weight: bold;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(16px, 6vw, 64px);
+  padding: 0 1rem;
+}
