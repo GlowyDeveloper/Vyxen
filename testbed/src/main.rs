@@ -106,21 +106,20 @@ fn main() {
     fps.move_to(Vector2 { x: 100.0, y: 560.0 });
     fps.set_is_static(true);
     fps.set_id(50);
+    scene.add_node(fps);
 
     game.load_scene(scene);
 
     let mut window_config = WindowConfig::new();
-    window_config.set_frame_cap(FrameCap::Capped(30));
+    window_config.set_debug(true);
 
     game.set_config(window_config);
-
-    let mut fps = 30;
 
     game.on_error(|_, err| {
         println!("{:?}", err);
     });
 
-    let _ = game.run(move |game, context, _, dt| {
+    let _ = game.run(move |game, _, _, dt| {
         let speed = speed * dt;
         if game.is_held(KeyCode::KeyW) {
             let cam_pos = game.get_camera().unwrap().get_position();
@@ -155,41 +154,18 @@ fn main() {
             }
         }
 
-        if game.is_held(KeyCode::KeyQ) {
-            fps += 1;
-
-            let mut window = context.config.clone();
-            window.set_frame_cap(FrameCap::Capped(fps));
-            game.set_config(window);
-        }
-
-        if game.is_held(KeyCode::KeyE) {
-            fps -= 1;
-            if fps < 1 {
-                fps = 1;
+        let fps = game.get_fps().unwrap_or_default().round();
+        if let Some(element) = game
+            .get_scene_mut()
+            .unwrap()
+            .get_node_mut(50)
+            .unwrap()
+            .get_component_mut::<UiElement>()
+        {
+            if let ElementType::Text(mut text) = element.get_element_type().clone() {
+                text.set_text(format!("FPS: {}", fps));
+                element.set_element_type(ElementType::Text(text));
             }
-
-            let mut window = context.config.clone();
-            window.set_frame_cap(FrameCap::Capped(fps));
-            game.set_config(window);
         }
-
-        game.get_scene_mut().unwrap().remove_node_by_id(50).unwrap();
-
-        let mut fps_text2 = Text::new(
-            format!("FPS: {}", game.get_fps().unwrap_or_default().round()),
-            load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
-            32.0,
-        );
-        fps_text2.set_anchor(TextAnchor::Left);
-        let mut ui_fps2 = UiElement::new();
-        ui_fps2.set_element_type(ElementType::Text(fps_text2));
-        let mut fps2 = Node::new("FPS".to_string());
-        fps2.add_component(ui_fps2);
-        fps2.move_to(Vector2 { x: 20.0, y: 560.0 });
-        fps2.set_is_static(true);
-        fps2.set_id(50);
-
-        game.get_scene_mut().unwrap().add_node(fps2);
     });
 }

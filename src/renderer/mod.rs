@@ -533,6 +533,7 @@ pub struct WindowConfig {
     pub(crate) render_mode: RenderMode,
     pub(crate) background_color: Color,
     pub(crate) frame_cap: FrameCap,
+    pub(crate) debug: bool,
 }
 
 impl Default for WindowConfig {
@@ -583,6 +584,7 @@ impl WindowConfig {
             render_mode: RenderMode::Best,
             background_color: Color::from_rgb(0.0, 0.0, 0.0),
             frame_cap: FrameCap::Vsync,
+            debug: false,
         }
     }
 
@@ -788,6 +790,21 @@ impl WindowConfig {
     /// ```
     pub fn set_frame_cap(&mut self, cap: FrameCap) {
         self.frame_cap = cap;
+    }
+
+    /// Enables debug mode.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use vyxen::WindowConfig;
+    ///
+    /// let mut config = WindowConfig::new();
+    /// config.set_debug(true);
+    /// config.set_debug(false);
+    /// ```
+    pub fn set_debug(&mut self, debug: bool) {
+        self.debug = debug;
     }
 }
 

@@ -74,10 +74,9 @@ It then sets the node's position to the center of the screen.
 node.move_to(Vector2 { x: 0.0, y: 0.0 });
 ```
 
-It makes the node static, and gives it an id of `2` so it can be found and removed later.
+It gives the node an id of `2` so it can be found and removed later.
 
 ```rust
-node.set_is_static(true);
 node.set_id(2);
 ```
 
@@ -157,7 +156,6 @@ let text = UiElement::with_text(
 let mut node = Node::new("text".to_string());
 node.add_component(text);
 node.move_to(pos);
-node.set_is_static(true);
 node.set_id(2);
 
 game.get_scene_mut().unwrap().add_node(node);

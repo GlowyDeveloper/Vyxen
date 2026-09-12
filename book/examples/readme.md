@@ -72,12 +72,6 @@ let mut node = Node::new("Foo".to_string());
 node.add_component(sprite);
 ```
 
-It makes the node static, so it will be moved manually via input.
-
-```rust
-node.set_is_static(true);
-```
-
 It then sets the node's physics process, a function that runs every physics step.
 
 ```rust

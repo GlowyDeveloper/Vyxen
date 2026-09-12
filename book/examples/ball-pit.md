@@ -119,7 +119,38 @@ Lastly, it adds the wall to the scene.
 scene.add_node(top_wall);
 ```
 
-Once all the walls are added, the scene is loaded.
+After all the walls are added, an fps counter is created
+
+It creates a text type and anchors to the left.
+
+```rust
+let mut text_fps = Text::new(
+    format!("FPS: {}", game.get_fps().unwrap_or_default().round()),
+    load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
+    16.0,
+);
+text_fps.set_anchor(TextAnchor::Left);
+```
+
+It also creates a new ui element and attachs the text.
+
+```rust
+let mut ui_fps = UiElement::new();
+ui_fps.set_element_type(ElementType::Text(text_fps));
+```
+
+Lastly, it creates a new node to hold the ui element and adds it to the scene.
+
+```rust
+let mut fps = Node::new("FPS".to_string());
+fps.add_component(ui_fps);
+fps.move_to(Vector2 { x: 10.0, y: 10.0 });
+fps.set_id(50);
+
+game.get_scene_mut().unwrap().add_node(fps);
+```
+
+The scene is then loaded.
 
 ```rust
 game.load_scene(scene);
@@ -190,40 +221,35 @@ if input == MouseButton::Right {
 }
 ```
 
-At the end of the event loop, it creates an fps counter.
+At the end of the event loop, it updates the fps counter.
 
-First it removes the old fps counter node, if it exists.
+First it gets the fps:
 
 ```rust
-game.get_scene_mut().unwrap().remove_node_by_id(50).unwrap();
+let fps = game.get_fps().unwrap_or_default().round();
 ```
 
-Then it creates a text type and anchors to the left.
+It then gets the old fps counter
 
 ```rust
-let mut text_fps = Text::new(
-    format!("FPS: {}", game.get_fps().unwrap_or_default().round()),
-    load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
-    16.0,
-);
-text_fps.set_anchor(TextAnchor::Left);
+if let Some(element) = game
+    .get_scene_mut()
+    .unwrap()
+    .get_node_mut(50)
+    .unwrap()
+    .get_component_mut::<UiElement>()
+{ .. }
 ```
 
-It also creates a new ui element and attachs the text.
+It gets gets the old text
 
 ```rust
-let mut ui_fps = UiElement::new();
-ui_fps.set_element_type(ElementType::Text(text_fps));
+if let ElementType::Text(mut text) = element.get_element_type().clone() { .. }
 ```
 
-Lastly, it creates a new node to hold the ui element and adds it to the scene.
+Finally it updates the text
 
 ```rust
-let mut fps = Node::new("FPS".to_string());
-fps.add_component(ui_fps);
-fps.move_to(Vector2 { x: 10.0, y: 10.0 });
-fps.set_is_static(true);
-fps.set_id(50);
-
-game.get_scene_mut().unwrap().add_node(fps);
+text.set_text(format!("FPS: {}", fps));
+element.set_element_type(ElementType::Text(text));
 ```

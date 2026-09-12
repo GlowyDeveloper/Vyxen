@@ -58,8 +58,7 @@ ElementType::Texture(texture) => {
             &self.texture_bind_group_layout,
             texture,
             *node_id,
-        )
-        .expect("Failed to create GpuTexture");
+        );
 
         self.texture_cache.insert(*node_id, gpu_tex);
     }
@@ -98,10 +97,7 @@ let (glyph_map, gpu_tex, _, _) =
 If it's not, then it generates a new `GlyphMap`.
 
 ```rust
-let glyph_map = text
-    .get_font()
-    .generate_glyph_map(text.get_size())
-    .expect("Failed to generate glyph map");
+let glyph_map = text.get_font().generate_glyph_map(text.get_size())?;
 ```
 
 Then it creates a new `GpuTexture`.
@@ -121,8 +117,7 @@ let gpu_tex = GpuTexture::from_image(
     &self.texture_bind_group_layout,
     &atlas_texture,
     *node_id,
-)
-.expect("Failed to create GpuTexture");
+);
 
 (glyph_map, gpu_tex)
 ```

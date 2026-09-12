@@ -1722,7 +1722,13 @@ impl Node {
             self.last_rotational_velocity = self.rotational_velocity;
         }
 
-        let new_linear_velocity = self.linear_velocity + gravity * dt;
+        let new_linear_velocity = if self.get_component::<RigidBody>().is_none()
+            && self.get_component::<SoftBody>().is_none()
+        {
+            self.linear_velocity * dt
+        } else {
+            self.linear_velocity + gravity * dt
+        };
         if !new_linear_velocity.x.is_finite() || !new_linear_velocity.y.is_finite() {
             if !self.nan_logged {
                 self.nan_logged = true;

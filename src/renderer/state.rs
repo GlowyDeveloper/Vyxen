@@ -4,9 +4,9 @@ use crate::{
     renderer::{
         gpu_texture::GpuTexture,
         raws::{
-            CameraUniform, GlyphRaw, MAX_GLYPH_INSTANCES, MAX_SPRITE_INDEX_BUFFER_SIZE,
-            MAX_SPRITE_VERTEX_BUFFER_SIZE, MAX_SPRITES, MAX_UI_ELEMENTS, SpriteRaw,
-            UiCameraUniform, UiRaw, Vertex,
+            CameraUniform, DebugTriangle, DebugUniform, GlyphRaw, MAX_GLYPH_INSTANCES,
+            MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE, MAX_SPRITES,
+            MAX_UI_ELEMENTS, SpriteRaw, UiCameraUniform, UiRaw, Vertex, debug_triangles,
         },
         shape_geometry::{sprite_geometry, text_geometry},
     },
@@ -40,6 +40,7 @@ pub struct State {
     camera_bind_group: wgpu::BindGroup,
     ui_camera_bind_group: wgpu::BindGroup,
     text_uniform_bind_group: wgpu::BindGroup,
+    debug_triangle_bind_group: wgpu::BindGroup,
 
     world_pipeline_texture: wgpu::RenderPipeline,
     world_pipeline_color: wgpu::RenderPipeline,
@@ -56,6 +57,8 @@ pub struct State {
     ui_camera_buffer: wgpu::Buffer,
     glyph_instance_buffer: wgpu::Buffer,
     text_uniform_buffer: wgpu::Buffer,
+    debug_triangle_buffer: wgpu::Buffer,
+    debug_triangle_uniform_buffer: wgpu::Buffer,
 
     last_frame_instant: Instant,
     fps: f32,
@@ -124,10 +127,22 @@ impl State {
             .await
             .map_err(|e| Error::RequestingAdapter(e.to_string()))?;
 
+        let required_features = if custom_config.debug {
+            if !adapter.features().contains(wgpu::Features::PRIMITIVE_INDEX) {
+                return Err(Error::RequestingDevice(
+                    "Debug rendering requires the PRIMITIVE_INDEX GPU feature.".into(),
+                ));
+            }
+
+            wgpu::Features::PRIMITIVE_INDEX
+        } else {
+            wgpu::Features::empty()
+        };
+
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: None,
-                required_features: wgpu::Features::empty(),
+                required_features,
                 experimental_features: wgpu::ExperimentalFeatures::disabled(),
                 required_limits: if cfg!(target_arch = "wasm32") {
                     wgpu::Limits::downlevel_webgl2_defaults()
@@ -240,10 +255,34 @@ impl State {
             mapped_at_creation: false,
         });
 
-        let texture_shader =
-            device.create_shader_module(wgpu::include_wgsl!("shaders/texture.wgsl"));
+        let debug_triangle_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Debug Triangle Buffer"),
+            size: MAX_SPRITE_INDEX_BUFFER_SIZE,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
 
-        let color_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/color.wgsl"));
+        let debug_triangle_uniform_buffer =
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Debug Triangle Uniform Buffer"),
+                contents: bytemuck::bytes_of(&DebugUniform {
+                    triangle_offset: 0,
+                    _padding: [0; 7],
+                }),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
+
+        let texture_shader = device.create_shader_module(if !custom_config.debug {
+            wgpu::include_wgsl!("shaders/texture.wgsl")
+        } else {
+            wgpu::include_wgsl!("shaders/texture_debug.wgsl")
+        });
+
+        let color_shader = device.create_shader_module(if !custom_config.debug {
+            wgpu::include_wgsl!("shaders/color.wgsl")
+        } else {
+            wgpu::include_wgsl!("shaders/color_debug.wgsl")
+        });
 
         let text_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/text.wgsl"));
 
@@ -270,6 +309,48 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
+        let debug_triangle_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Debug Triangle Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+            });
+
+        let debug_triangle_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Debug Triangle Bind Group"),
+            layout: &debug_triangle_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: debug_triangle_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: debug_triangle_uniform_buffer.as_entire_binding(),
+                },
+            ],
+        });
+
         let color_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[],
@@ -282,23 +363,47 @@ impl State {
             label: Some("color_bind_group"),
         });
 
+        let bind_group_layouts = if !custom_config.debug {
+            [
+                Some(&texture_bind_group_layout),
+                Some(&camera_bind_group_layout),
+            ]
+            .to_vec()
+        } else {
+            [
+                Some(&texture_bind_group_layout),
+                Some(&camera_bind_group_layout),
+                Some(&debug_triangle_bind_group_layout),
+            ]
+            .to_vec()
+        };
+
         let texture_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Texture World Pipeline Layout"),
-                bind_group_layouts: &[
-                    Some(&texture_bind_group_layout),
-                    Some(&camera_bind_group_layout),
-                ],
+                bind_group_layouts: &bind_group_layouts,
                 immediate_size: 0,
             });
+
+        let bind_group_layouts = if !custom_config.debug {
+            [
+                Some(&color_bind_group_layout),
+                Some(&camera_bind_group_layout),
+            ]
+            .to_vec()
+        } else {
+            [
+                Some(&color_bind_group_layout),
+                Some(&camera_bind_group_layout),
+                Some(&debug_triangle_bind_group_layout),
+            ]
+            .to_vec()
+        };
 
         let color_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Color World Pipeline Layout"),
-                bind_group_layouts: &[
-                    Some(&color_bind_group_layout),
-                    Some(&camera_bind_group_layout),
-                ],
+                bind_group_layouts: &bind_group_layouts,
                 immediate_size: 0,
             });
 
@@ -510,13 +615,25 @@ impl State {
             label: Some("ui_camera_bind_group"),
         });
 
+        let bind_group_layouts = if !custom_config.debug {
+            [
+                Some(&texture_bind_group_layout),
+                Some(&ui_camera_bind_group_layout),
+            ]
+            .to_vec()
+        } else {
+            [
+                Some(&texture_bind_group_layout),
+                Some(&ui_camera_bind_group_layout),
+                Some(&debug_triangle_bind_group_layout),
+            ]
+            .to_vec()
+        };
+
         let ui_texture_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Texture Ui Pipeline Layout"),
-                bind_group_layouts: &[
-                    Some(&texture_bind_group_layout),
-                    Some(&ui_camera_bind_group_layout),
-                ],
+                bind_group_layouts: &bind_group_layouts,
                 immediate_size: 0,
             });
 
@@ -607,13 +724,25 @@ impl State {
             cache: None,
         });
 
+        let bind_group_layouts = if !custom_config.debug {
+            [
+                Some(&color_bind_group_layout),
+                Some(&ui_camera_bind_group_layout),
+            ]
+            .to_vec()
+        } else {
+            [
+                Some(&color_bind_group_layout),
+                Some(&ui_camera_bind_group_layout),
+                Some(&debug_triangle_bind_group_layout),
+            ]
+            .to_vec()
+        };
+
         let ui_color_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Ui Color Pipeline Layout"),
-                bind_group_layouts: &[
-                    Some(&color_bind_group_layout),
-                    Some(&ui_camera_bind_group_layout),
-                ],
+                bind_group_layouts: &bind_group_layouts,
                 immediate_size: 0,
             });
 
@@ -701,6 +830,9 @@ impl State {
             ui_pipeline_color,
             custom_config,
             world_pipeline_text,
+            debug_triangle_bind_group,
+            debug_triangle_buffer,
+            debug_triangle_uniform_buffer,
             last_frame_instant: Instant::now(),
             fps: 0.0,
             frame_accum_time: 0.0,
@@ -974,10 +1106,6 @@ impl State {
     }
 
     pub fn render(&mut self) -> Result<(), Error> {
-        if self.custom_config.frame_cap == FrameCap::Uncapped {
-            self.window.request_redraw();
-        }
-
         let now = Instant::now();
         let dt = (now - self.last_frame_instant).as_secs_f32();
         self.last_frame_instant = now;
@@ -1049,6 +1177,7 @@ impl State {
 
             let mut vertex_offset: u64 = 0;
             let mut index_offset: u64 = 0;
+            let mut debug_offset: u64 = 0;
 
             for (sprite_index, id) in self.sprite_render_order.iter().enumerate() {
                 let sprite = &self.sprites[id];
@@ -1140,6 +1269,42 @@ impl State {
                             render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
                         }
 
+                        if self.custom_config.debug {
+                            let triangles = debug_triangles(&vertices, &indices);
+
+                            let debug_bytes =
+                                triangles.len() * std::mem::size_of::<DebugTriangle>();
+
+                            if debug_offset + debug_bytes as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
+                                return Err(Error::IndexOverflow(
+                                    *id,
+                                    debug_offset + debug_bytes as u64,
+                                    MAX_SPRITE_INDEX_BUFFER_SIZE,
+                                ));
+                            }
+
+                            render_pass.set_bind_group(2, &self.debug_triangle_bind_group, &[]);
+
+                            self.queue.write_buffer(
+                                &self.debug_triangle_buffer,
+                                debug_offset,
+                                bytemuck::cast_slice(&triangles),
+                            );
+
+                            self.queue.write_buffer(
+                                &self.debug_triangle_uniform_buffer,
+                                0,
+                                bytemuck::bytes_of(&DebugUniform {
+                                    triangle_offset: (debug_offset
+                                        / std::mem::size_of::<DebugTriangle>() as u64)
+                                        as u32,
+                                    _padding: [0; 7],
+                                }),
+                            );
+
+                            debug_offset += debug_bytes as u64;
+                        }
+
                         render_pass.set_vertex_buffer(
                             0,
                             self.vertex_buffer
@@ -1163,6 +1328,7 @@ impl State {
 
             vertex_offset = 0;
             index_offset = 0;
+            debug_offset = 0;
 
             render_pass.set_vertex_buffer(1, self.ui_element_buffer.slice(..));
 
@@ -1254,6 +1420,42 @@ impl State {
                             render_pass.set_pipeline(&self.ui_pipeline_color);
                             render_pass.set_bind_group(0, &self.color_bind_group, &[]);
                             render_pass.set_bind_group(1, &self.ui_camera_bind_group, &[]);
+                        }
+
+                        if self.custom_config.debug {
+                            let triangles = debug_triangles(&vertices, &indices);
+
+                            let debug_bytes =
+                                triangles.len() * std::mem::size_of::<DebugTriangle>();
+
+                            if debug_offset + debug_bytes as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
+                                return Err(Error::IndexOverflow(
+                                    *id,
+                                    debug_offset + debug_bytes as u64,
+                                    MAX_SPRITE_INDEX_BUFFER_SIZE,
+                                ));
+                            }
+
+                            render_pass.set_bind_group(2, &self.debug_triangle_bind_group, &[]);
+
+                            self.queue.write_buffer(
+                                &self.debug_triangle_buffer,
+                                debug_offset,
+                                bytemuck::cast_slice(&triangles),
+                            );
+
+                            self.queue.write_buffer(
+                                &self.debug_triangle_uniform_buffer,
+                                0,
+                                bytemuck::bytes_of(&DebugUniform {
+                                    triangle_offset: (debug_offset
+                                        / std::mem::size_of::<DebugTriangle>() as u64)
+                                        as u32,
+                                    _padding: [0; 7],
+                                }),
+                            );
+
+                            debug_offset += debug_bytes as u64;
                         }
 
                         render_pass.set_vertex_buffer(

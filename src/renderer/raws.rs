@@ -257,3 +257,39 @@ impl GlyphRaw {
         }
     }
 }
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct DebugTriangle {
+    pub a: [f32; 3],
+    pub _pad_a: f32,
+
+    pub b: [f32; 3],
+    pub _pad_b: f32,
+
+    pub c: [f32; 3],
+    pub _pad_c: f32,
+}
+
+pub fn debug_triangles(vertices: &[Vertex], indices: &[u16]) -> Vec<DebugTriangle> {
+    indices
+        .chunks_exact(3)
+        .map(|triangle| DebugTriangle {
+            a: vertices[triangle[0] as usize].position,
+            _pad_a: 0.0,
+
+            b: vertices[triangle[1] as usize].position,
+            _pad_b: 0.0,
+
+            c: vertices[triangle[2] as usize].position,
+            _pad_c: 0.0,
+        })
+        .collect()
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct DebugUniform {
+    pub triangle_offset: u32,
+    pub _padding: [u32; 7],
+}

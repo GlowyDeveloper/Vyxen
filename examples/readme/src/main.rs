@@ -15,7 +15,6 @@ fn main() {
 
     let mut node = Node::new("Foo".to_string());
     node.add_component(sprite);
-    node.set_is_static(true);
     node.set_physics_process(move |node, _, dt, ctx| {
         let speed = 20.0 * dt;
         if ctx.is_held(KeyCode::KeyW) {

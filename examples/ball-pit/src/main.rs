@@ -60,6 +60,21 @@ fn main() {
 
     scene.add_node(right_wall);
 
+    let mut text_fps = Text::new(
+        format!("FPS: {}", game.get_fps().unwrap_or_default().round()),
+        load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
+        16.0,
+    );
+    text_fps.set_anchor(TextAnchor::Left);
+    let mut ui_fps = UiElement::new();
+    ui_fps.set_element_type(ElementType::Text(text_fps));
+    let mut fps = Node::new("FPS".to_string());
+    fps.add_component(ui_fps);
+    fps.move_to(Vector2 { x: 10.0, y: 10.0 });
+    fps.set_id(50);
+
+    scene.add_node(fps);
+
     game.load_scene(scene);
 
     let mut window = WindowConfig::new();
@@ -119,22 +134,18 @@ fn main() {
             _ => {}
         }
 
-        game.get_scene_mut().unwrap().remove_node_by_id(50).unwrap();
-
-        let mut text_fps = Text::new(
-            format!("FPS: {}", game.get_fps().unwrap_or_default().round()),
-            load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
-            16.0,
-        );
-        text_fps.set_anchor(TextAnchor::Left);
-        let mut ui_fps = UiElement::new();
-        ui_fps.set_element_type(ElementType::Text(text_fps));
-        let mut fps = Node::new("FPS".to_string());
-        fps.add_component(ui_fps);
-        fps.move_to(Vector2 { x: 10.0, y: 10.0 });
-        fps.set_is_static(true);
-        fps.set_id(50);
-
-        game.get_scene_mut().unwrap().add_node(fps);
+        let fps = game.get_fps().unwrap_or_default().round();
+        if let Some(element) = game
+            .get_scene_mut()
+            .unwrap()
+            .get_node_mut(50)
+            .unwrap()
+            .get_component_mut::<UiElement>()
+        {
+            if let ElementType::Text(mut text) = element.get_element_type().clone() {
+                text.set_text(format!("FPS: {}", fps));
+                element.set_element_type(ElementType::Text(text));
+            }
+        }
     });
 }

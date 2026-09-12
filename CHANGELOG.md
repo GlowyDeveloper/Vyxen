@@ -17,6 +17,8 @@
 - Texture and text tinting
 - Vyxen Book
 - Error handling
+- Frame capping
+- Debug render mode
 
 ### Fixes
 
@@ -36,6 +38,7 @@
 - Updated crates to latest versions
 - Removed `RigidBody` and `SoftBody` is_static arguments
 - Rewrote bash scripts to use python
+- Changed empty nodes to be not affected bby gravity
 
 ## v0.1.0 (24/07/2026)
 

@@ -21,8 +21,6 @@ if self.frame_accum_time >= 0.5 {
 }
 ```
 
-It also calls `self.window.request_redraw()`, so rendering keeps looping.
-
 If the surface hasn't been configured yet, it waits until the surface is configured.
 
 ```rust
@@ -49,7 +47,7 @@ let output = match self.surface.get_current_texture() {
         return Ok(());
     }
     wgpu::CurrentSurfaceTexture::Lost => {
-        anyhow::bail!("Lost device");
+        return Err(Error::DeviceLost);
     }
 };
 ```
@@ -125,11 +123,20 @@ It generates the sprite's geometry with `sprite_geometry`, then writes the verti
 It bails with an error if either buffer would overflow.
 
 ```rust
-if vertex_offset + vertex_padded_len as u64 > MAX_SPRITE_VERTEX_BUFFER_SIZE {
-    anyhow::bail!("Sprite vertex buffer overflow");
+if vertex_offset + vertex_padded_len as u64 > MAX_SPRITE_VERTEX_BUFFER_SIZE
+{
+    return Err(Error::IndexOverflow(
+        *id,
+        vertex_offset + vertex_padded_len as u64,
+        MAX_SPRITE_VERTEX_BUFFER_SIZE,
+    ));
 }
 if index_offset + index_padded_len as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
-    anyhow::bail!("Sprite index buffer overflow");
+    return Err(Error::IndexOverflow(
+        *id,
+        index_offset + index_padded_len as u64,
+        MAX_SPRITE_INDEX_BUFFER_SIZE,
+    ));
 }
 ```
 
@@ -151,6 +158,53 @@ Then it picks `world_pipeline_color`, and binds `color_bind_group` and world cam
 render_pass.set_pipeline(&self.world_pipeline_color);
 render_pass.set_bind_group(0, &self.color_bind_group, &[]);
 render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+```
+
+#### Debug mode
+
+For both, it checks if debbug mode is enabled.
+
+```rust
+if self.custom_config.debug { .. }
+```
+
+It then checks if the debug buffer is too large
+
+```rust
+if debug_offset + debug_bytes as u64 > MAX_SPRITE_INDEX_BUFFER_SIZE {
+    return Err(Error::IndexOverflow(
+        *id,
+        debug_offset + debug_bytes as u64,
+        MAX_SPRITE_INDEX_BUFFER_SIZE,
+    ));
+}
+```
+
+A bind group is set
+
+```rust
+render_pass.set_bind_group(2, &self.debug_triangle_bind_group, &[]);
+```
+
+Lastly the buffers are written
+
+```rust
+self.queue.write_buffer(
+    &self.debug_triangle_buffer,
+    debug_offset,
+    bytemuck::cast_slice(&triangles),
+);
+
+self.queue.write_buffer(
+    &self.debug_triangle_uniform_buffer,
+    0,
+    bytemuck::bytes_of(&DebugUniform {
+        triangle_offset: (debug_offset
+            / std::mem::size_of::<DebugTriangle>() as u64)
+            as u32,
+        _padding: [0; 7],
+    }),
+);
 ```
 
 ## Drawing UI elements

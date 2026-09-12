@@ -24,7 +24,11 @@ On WASM, it creates `wgpu::Surface`, and if it fails, it instead uses WebGL.
 #[cfg(target_arch = "wasm32")]
 let surface = match instance.create_surface(window.clone()) {
     Ok(s) => s,
-    Err(_e) => {
+    Err(e) => {
+        log::warn!(
+            "Failed to create surface, attempting to use GL instead: {}",
+            e
+        );
         instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::GL,
             flags: Default::default(),
@@ -32,7 +36,9 @@ let surface = match instance.create_surface(window.clone()) {
             backend_options: Default::default(),
             display: None,
         });
-        instance.create_surface(window.clone())?
+        instance
+            .create_surface(window.clone())
+            .map_err(|e| Error::SurfaceCreation(e.to_string()))?
     }
 };
 ```
@@ -41,10 +47,12 @@ If it's not WASM, it just creates a `wgpu::Surface` and returns the error.
 
 ```rust
 #[cfg(not(target_arch = "wasm32"))]
-let surface = instance.create_surface(window.clone())?;
+let surface = instance
+    .create_surface(window.clone())
+    .map_err(|e| Error::SurfaceCreation(e.to_string()))?;
 ```
 
-Then it requests an `wgpu::Adapter`, `wgpu::Device` and `wgpu::Queue`.
+Then it requests an `wgpu::Adapter`.
 
 ```rust
 let adapter = instance
@@ -52,23 +60,49 @@ let adapter = instance
         power_preference: wgpu::PowerPreference::default(),
         compatible_surface: Some(&surface),
         force_fallback_adapter: false,
-        ..
+        apply_limit_buckets: true,
     })
-    .await?;
+    .await
+    .map_err(|e| Error::RequestingAdapter(e.to_string()))?;
+```
 
+It checks for any required features, due to debug rendering requiring `wgpu::Features::PRIMITIVE_INDEX`.
+
+```rust
+let required_features = if custom_config.debug {
+    if !adapter.features().contains(wgpu::Features::PRIMITIVE_INDEX) {
+        return Err(Error::RequestingDevice(
+            "Debug rendering requires the PRIMITIVE_INDEX GPU feature.".into(),
+        ));
+    }
+
+    wgpu::Features::PRIMITIVE_INDEX
+} else {
+    wgpu::Features::empty()
+};
+```
+
+Then it can create a `wgpu::Device` and `wgpu::Queue`.
+
+```rust
 let (device, queue) = adapter
     .request_device(&wgpu::DeviceDescriptor {
+        label: None,
+        required_features,
+        experimental_features: wgpu::ExperimentalFeatures::disabled(),
         required_limits: if cfg!(target_arch = "wasm32") {
             wgpu::Limits::downlevel_webgl2_defaults()
         } else {
             wgpu::Limits::default()
         },
-        ..
+        memory_hints: Default::default(),
+        trace: wgpu::Trace::Off,
     })
-    .await?;
+    .await
+    .map_err(|e| Error::RequestingDevice(e.to_string()))?;
 ```
 
-It picks sRGB surface format if possible, and builds the `SurfaceConfiguration`.
+It picks sRGB surface format if possible.
 
 ```rust
 let surface_caps = surface.get_capabilities(&adapter);
@@ -78,13 +112,46 @@ let surface_format = surface_caps
     .find(|f| f.is_srgb())
     .copied()
     .unwrap_or(surface_caps.formats[0]);
+```
 
+It then chooses the present mode from `FrameCap`.
+
+```rust
+let present_mode = match custom_config.frame_cap {
+    FrameCap::Vsync => {
+        log::info!("Setting present mode to fifo");
+        wgpu::PresentMode::Fifo
+    }
+    FrameCap::Uncapped | FrameCap::Capped(_) => {
+        if surface_caps
+            .present_modes
+            .contains(&wgpu::PresentMode::Immediate)
+        {
+            log::info!("Setting present mode to immediate");
+            wgpu::PresentMode::Immediate
+        } else if surface_caps
+            .present_modes
+            .contains(&wgpu::PresentMode::Mailbox)
+        {
+            log::info!("Setting present mode to mailbox");
+            wgpu::PresentMode::Mailbox
+        } else {
+            log::warn!("No present mode available, using first available");
+            surface_caps.present_modes[0]
+        }
+    }
+};
+```
+
+Then it builds a `SurfaceConfiguration`.
+
+```rust
 let config = wgpu::SurfaceConfiguration {
     usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
     format: surface_format,
     width: size.width,
     height: size.height,
-    present_mode: surface_caps.present_modes[0],
+    present_mode,
     alpha_mode: surface_caps.alpha_modes[0],
     view_formats: vec![],
     desired_maximum_frame_latency: 2,
@@ -231,6 +298,27 @@ let glyph_instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
 });
 ```
 
+It lastly creates a debug buffer.
+
+```rust
+let debug_triangle_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+    label: Some("Debug Triangle Buffer"),
+    size: MAX_SPRITE_INDEX_BUFFER_SIZE,
+    usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+    mapped_at_creation: false,
+});
+
+let debug_triangle_uniform_buffer =
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Debug Triangle Uniform Buffer"),
+        contents: bytemuck::bytes_of(&DebugUniform {
+            triangle_offset: 0,
+            _padding: [0; 7],
+        }),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
+```
+
 ## Creating the bind group layouts and bind groups
 
 It creates the bind group layouts that the pipelines share.
@@ -318,6 +406,54 @@ let text_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescripto
 });
 ```
 
+## Creating debug bind groups
+
+Since bind groups are required when passing anything to the shaders, a `wgpu::BindGroup` and `wgpu::BindGroupLayout` is created.
+
+```rust
+let debug_triangle_bind_group_layout =
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Debug Triangle Bind Group Layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+        ],
+    });
+
+let debug_triangle_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+    label: Some("Debug Triangle Bind Group"),
+    layout: &debug_triangle_bind_group_layout,
+    entries: &[
+        wgpu::BindGroupEntry {
+            binding: 0,
+            resource: debug_triangle_buffer.as_entire_binding(),
+        },
+        wgpu::BindGroupEntry {
+            binding: 1,
+            resource: debug_triangle_uniform_buffer.as_entire_binding(),
+        },
+    ],
+});
+```
+
 ## Creating the pipelines
 
 Then it creates the six render pipelines, they are
@@ -331,16 +467,31 @@ Then it creates the six render pipelines, they are
 For example, here's the `world_pipeline_texture`:
 
 ```rust
-let texture_shader =
-    device.create_shader_module(wgpu::include_wgsl!("shaders/texture.wgsl"));
+let texture_shader = device.create_shader_module(if custom_config.debug == false {
+    wgpu::include_wgsl!("shaders/texture.wgsl")
+} else {
+    wgpu::include_wgsl!("shaders/texture_debug.wgsl")
+});
+
+let bind_group_layouts = if custom_config.debug == false {
+    [
+        Some(&texture_bind_group_layout),
+        Some(&camera_bind_group_layout),
+    ]
+    .to_vec()
+} else {
+    [
+        Some(&texture_bind_group_layout),
+        Some(&camera_bind_group_layout),
+        Some(&debug_triangle_bind_group_layout),
+    ]
+    .to_vec()
+};
 
 let texture_pipeline_layout =
     device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Texture World Pipeline Layout"),
-        bind_group_layouts: &[
-            Some(&texture_bind_group_layout),
-            Some(&camera_bind_group_layout),
-        ],
+        bind_group_layouts: &bind_group_layouts,
         immediate_size: 0,
     });
 
@@ -441,6 +592,9 @@ Ok(Self {
     ui_pipeline_color,
     custom_config,
     world_pipeline_text,
+    debug_triangle_bind_group,
+    debug_triangle_buffer,
+    debug_triangle_uniform_buffer,
     last_frame_instant: Instant::now(),
     fps: 0.0,
     frame_accum_time: 0.0,
