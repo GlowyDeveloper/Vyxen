@@ -267,14 +267,16 @@ impl State {
         };
 
         let debug_triangle_uniform_buffer = if custom_config.debug {
-            Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Debug Triangle Uniform Buffer"),
-                contents: bytemuck::bytes_of(&DebugUniform {
-                    triangle_offset: 0,
-                    _padding: [0; 7],
+            Some(
+                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Debug Triangle Uniform Buffer"),
+                    contents: bytemuck::bytes_of(&DebugUniform {
+                        triangle_offset: 0,
+                        _padding: [0; 7],
+                    }),
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 }),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }))
+            )
         } else {
             None
         };
@@ -316,9 +318,9 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
-        let debug_triangle_bind_group_layout =
-            if custom_config.debug {
-                Some(device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let debug_triangle_bind_group_layout = if custom_config.debug {
+            Some(
+                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                     label: Some("Debug Triangle Bind Group Layout"),
                     entries: &[
                         wgpu::BindGroupLayoutEntry {
@@ -342,26 +344,32 @@ impl State {
                             count: None,
                         },
                     ],
-                }))
-            } else {
-                None
-            };
+                }),
+            )
+        } else {
+            None
+        };
 
         let debug_triangle_bind_group = if custom_config.debug {
-            Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("Debug Triangle Bind Group"),
-                layout: &debug_triangle_bind_group_layout.as_ref().unwrap(),
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: debug_triangle_buffer.as_ref().unwrap().as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: debug_triangle_uniform_buffer.as_ref().unwrap().as_entire_binding(),
-                    },
-                ],
-            }))
+            Some(
+                device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("Debug Triangle Bind Group"),
+                    layout: debug_triangle_bind_group_layout.as_ref().unwrap(),
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: debug_triangle_buffer.as_ref().unwrap().as_entire_binding(),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: debug_triangle_uniform_buffer
+                                .as_ref()
+                                .unwrap()
+                                .as_entire_binding(),
+                        },
+                    ],
+                }),
+            )
         } else {
             None
         };
