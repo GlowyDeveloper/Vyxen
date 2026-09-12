@@ -40,7 +40,7 @@ pub struct State {
     camera_bind_group: wgpu::BindGroup,
     ui_camera_bind_group: wgpu::BindGroup,
     text_uniform_bind_group: wgpu::BindGroup,
-    debug_triangle_bind_group: wgpu::BindGroup,
+    debug_triangle_bind_group: Option<wgpu::BindGroup>,
 
     world_pipeline_texture: wgpu::RenderPipeline,
     world_pipeline_color: wgpu::RenderPipeline,
@@ -57,8 +57,8 @@ pub struct State {
     ui_camera_buffer: wgpu::Buffer,
     glyph_instance_buffer: wgpu::Buffer,
     text_uniform_buffer: wgpu::Buffer,
-    debug_triangle_buffer: wgpu::Buffer,
-    debug_triangle_uniform_buffer: wgpu::Buffer,
+    debug_triangle_buffer: Option<wgpu::Buffer>,
+    debug_triangle_uniform_buffer: Option<wgpu::Buffer>,
 
     last_frame_instant: Instant,
     fps: f32,
@@ -255,22 +255,29 @@ impl State {
             mapped_at_creation: false,
         });
 
-        let debug_triangle_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Debug Triangle Buffer"),
-            size: MAX_SPRITE_INDEX_BUFFER_SIZE,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
+        let debug_triangle_buffer = if custom_config.debug {
+            Some(device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Debug Triangle Buffer"),
+                size: MAX_SPRITE_INDEX_BUFFER_SIZE,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }))
+        } else {
+            None
+        };
 
-        let debug_triangle_uniform_buffer =
-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let debug_triangle_uniform_buffer = if custom_config.debug {
+            Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Debug Triangle Uniform Buffer"),
                 contents: bytemuck::bytes_of(&DebugUniform {
                     triangle_offset: 0,
                     _padding: [0; 7],
                 }),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            });
+            }))
+        } else {
+            None
+        };
 
         let texture_shader = device.create_shader_module(if !custom_config.debug {
             wgpu::include_wgsl!("shaders/texture.wgsl")
@@ -310,46 +317,54 @@ impl State {
             });
 
         let debug_triangle_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Debug Triangle Bind Group Layout"),
+            if custom_config.debug {
+                Some(device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    label: Some("Debug Triangle Bind Group Layout"),
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Storage { read_only: true },
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        },
+                    ],
+                }))
+            } else {
+                None
+            };
+
+        let debug_triangle_bind_group = if custom_config.debug {
+            Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Debug Triangle Bind Group"),
+                layout: &debug_triangle_bind_group_layout.as_ref().unwrap(),
                 entries: &[
-                    wgpu::BindGroupLayoutEntry {
+                    wgpu::BindGroupEntry {
                         binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: true },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                        resource: debug_triangle_buffer.as_ref().unwrap().as_entire_binding(),
                     },
-                    wgpu::BindGroupLayoutEntry {
+                    wgpu::BindGroupEntry {
                         binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                        resource: debug_triangle_uniform_buffer.as_ref().unwrap().as_entire_binding(),
                     },
                 ],
-            });
-
-        let debug_triangle_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Debug Triangle Bind Group"),
-            layout: &debug_triangle_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: debug_triangle_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: debug_triangle_uniform_buffer.as_entire_binding(),
-                },
-            ],
-        });
+            }))
+        } else {
+            None
+        };
 
         let color_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -363,47 +378,25 @@ impl State {
             label: Some("color_bind_group"),
         });
 
-        let bind_group_layouts = if !custom_config.debug {
-            [
-                Some(&texture_bind_group_layout),
-                Some(&camera_bind_group_layout),
-            ]
-            .to_vec()
-        } else {
-            [
-                Some(&texture_bind_group_layout),
-                Some(&camera_bind_group_layout),
-                Some(&debug_triangle_bind_group_layout),
-            ]
-            .to_vec()
-        };
-
         let texture_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Texture World Pipeline Layout"),
-                bind_group_layouts: &bind_group_layouts,
+                bind_group_layouts: &[
+                    Some(&texture_bind_group_layout),
+                    Some(&camera_bind_group_layout),
+                    debug_triangle_bind_group_layout.as_ref(),
+                ],
                 immediate_size: 0,
             });
-
-        let bind_group_layouts = if !custom_config.debug {
-            [
-                Some(&color_bind_group_layout),
-                Some(&camera_bind_group_layout),
-            ]
-            .to_vec()
-        } else {
-            [
-                Some(&color_bind_group_layout),
-                Some(&camera_bind_group_layout),
-                Some(&debug_triangle_bind_group_layout),
-            ]
-            .to_vec()
-        };
 
         let color_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Color World Pipeline Layout"),
-                bind_group_layouts: &bind_group_layouts,
+                bind_group_layouts: &[
+                    Some(&color_bind_group_layout),
+                    Some(&camera_bind_group_layout),
+                    debug_triangle_bind_group_layout.as_ref(),
+                ],
                 immediate_size: 0,
             });
 
@@ -615,25 +608,14 @@ impl State {
             label: Some("ui_camera_bind_group"),
         });
 
-        let bind_group_layouts = if !custom_config.debug {
-            [
-                Some(&texture_bind_group_layout),
-                Some(&ui_camera_bind_group_layout),
-            ]
-            .to_vec()
-        } else {
-            [
-                Some(&texture_bind_group_layout),
-                Some(&ui_camera_bind_group_layout),
-                Some(&debug_triangle_bind_group_layout),
-            ]
-            .to_vec()
-        };
-
         let ui_texture_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Texture Ui Pipeline Layout"),
-                bind_group_layouts: &bind_group_layouts,
+                bind_group_layouts: &[
+                    Some(&texture_bind_group_layout),
+                    Some(&ui_camera_bind_group_layout),
+                    debug_triangle_bind_group_layout.as_ref(),
+                ],
                 immediate_size: 0,
             });
 
@@ -724,25 +706,14 @@ impl State {
             cache: None,
         });
 
-        let bind_group_layouts = if !custom_config.debug {
-            [
-                Some(&color_bind_group_layout),
-                Some(&ui_camera_bind_group_layout),
-            ]
-            .to_vec()
-        } else {
-            [
-                Some(&color_bind_group_layout),
-                Some(&ui_camera_bind_group_layout),
-                Some(&debug_triangle_bind_group_layout),
-            ]
-            .to_vec()
-        };
-
         let ui_color_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Ui Color Pipeline Layout"),
-                bind_group_layouts: &bind_group_layouts,
+                bind_group_layouts: &[
+                    Some(&color_bind_group_layout),
+                    Some(&ui_camera_bind_group_layout),
+                    debug_triangle_bind_group_layout.as_ref(),
+                ],
                 immediate_size: 0,
             });
 
@@ -1286,13 +1257,13 @@ impl State {
                             render_pass.set_bind_group(2, &self.debug_triangle_bind_group, &[]);
 
                             self.queue.write_buffer(
-                                &self.debug_triangle_buffer,
+                                self.debug_triangle_buffer.as_ref().unwrap(),
                                 debug_offset,
                                 bytemuck::cast_slice(&triangles),
                             );
 
                             self.queue.write_buffer(
-                                &self.debug_triangle_uniform_buffer,
+                                self.debug_triangle_uniform_buffer.as_ref().unwrap(),
                                 0,
                                 bytemuck::bytes_of(&DebugUniform {
                                     triangle_offset: (debug_offset
@@ -1439,13 +1410,13 @@ impl State {
                             render_pass.set_bind_group(2, &self.debug_triangle_bind_group, &[]);
 
                             self.queue.write_buffer(
-                                &self.debug_triangle_buffer,
+                                self.debug_triangle_buffer.as_ref().unwrap(),
                                 debug_offset,
                                 bytemuck::cast_slice(&triangles),
                             );
 
                             self.queue.write_buffer(
-                                &self.debug_triangle_uniform_buffer,
+                                self.debug_triangle_uniform_buffer.as_ref().unwrap(),
                                 0,
                                 bytemuck::bytes_of(&DebugUniform {
                                     triangle_offset: (debug_offset
