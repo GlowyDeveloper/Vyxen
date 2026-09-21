@@ -25,22 +25,11 @@ members = [
     "examples/readme",
 ]
 
-[workspace.package]
-version = "0.2.0"
-license = "MIT OR Apache-2.0"
-edition = "2024"
-rust-version = "1.86"
-
-homepage = "https://github.com/GlowyDeveloper/Vyxen"
-repository = "https://github.com/GlowyDeveloper/Vyxen"
-keywords = ["game", "engine", "gamedev", "gui"]
-categories = ["gui", "game-development", "game-engines", "graphics"]
-
 [dependencies]
-winit = { version = "0.30.13", features = ["android-native-activity"] }
+winit = { version = "0.30.13", default-features = false, features = ["rwh_06"] }
 bytemuck = { version = "1.25.2", features = ["derive"] }
 
-skrifa = "0.46.2"
+skrifa = "0.47.0"
 zeno = "0.3.3"
 
 zune-jpeg = { version = "0.5.15", default-features = false }
@@ -49,11 +38,17 @@ png = { version = "0.18.1", default-features = false, features = ["zlib-rs"] }
 log = "0.4.34"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-web-time = "1"
+wasm-bindgen = "0.2.128"
+wasm-bindgen-futures = "0.4.78"
+web-time = "1.1.0"
 wgpu = { version = "30.0.1", features = ["webgl", "webgpu"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "1.0.1"
 wgpu = "30.0.1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+winit = { version = "0.30.13" }
+
+[target.'cfg(target_os = "android")'.dependencies]
+winit = { version = "0.30.13", default-features = false, features = ["android-native-activity"] }
