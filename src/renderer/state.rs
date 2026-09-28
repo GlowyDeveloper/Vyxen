@@ -1200,6 +1200,10 @@ impl State {
                     }
                     _ => {
                         let (vertices, indices) = sprite_geometry(sprite.get_vertices());
+                        if vertices.is_empty() || indices.is_empty() {
+                            continue;
+                        }
+                        
                         let vertex_bytes = bytemuck::cast_slice(&vertices);
                         let index_bytes = bytemuck::cast_slice(&indices);
 
@@ -1329,11 +1333,6 @@ impl State {
                 }
             }
 
-            // `vertex_offset` / `index_offset` keep accumulating into the UI loop on purpose.
-            // All `queue.write_buffer` calls land before the single submit, so resetting them
-            // here would make UI geometry overwrite the world sprites' geometry before the
-            // GPU ever draws them.
-
             render_pass.set_vertex_buffer(1, self.ui_element_buffer.slice(..));
 
             for (ui_index, id) in self.ui_render_order.iter().enumerate() {
@@ -1369,6 +1368,10 @@ impl State {
                     }
                     _ => {
                         let (vertices, indices) = sprite_geometry(ui.get_vertices());
+                        if vertices.is_empty() || indices.is_empty() {
+                            continue;
+                        }
+                        
                         let vertex_bytes = bytemuck::cast_slice(&vertices);
                         let index_bytes = bytemuck::cast_slice(&indices);
 

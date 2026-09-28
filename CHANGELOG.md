@@ -5,6 +5,7 @@
 ### Fixes
 
 - Debug rendering not having the correct amount of triangles rendered
+- If a polygon has less than 3 vertices, it is skipped instead of causing a panic
 
 ## v0.2.0 (21/09/2026)
 
