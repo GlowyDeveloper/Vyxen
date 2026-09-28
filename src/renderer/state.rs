@@ -4,9 +4,10 @@ use crate::{
     renderer::{
         gpu_texture::GpuTexture,
         raws::{
-            CameraUniform, DebugTriangle, DebugUniform, GlyphRaw, MAX_GLYPH_INSTANCES,
-            MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE, MAX_SPRITES,
-            MAX_UI_ELEMENTS, SpriteRaw, UiCameraUniform, UiRaw, Vertex, debug_triangles,
+            CameraUniform, DebugTriangle, DebugUniform, GlyphRaw, MAX_DEBUG_DRAWS,
+            MAX_GLYPH_INSTANCES, MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE,
+            MAX_SPRITES, MAX_UI_ELEMENTS, SpriteRaw, UiCameraUniform, UiRaw, Vertex,
+            debug_triangles,
         },
         shape_geometry::{sprite_geometry, text_geometry},
     },
@@ -76,6 +77,7 @@ pub struct State {
     ui_render_order: Vec<u64>,
     sprite_render_order: Vec<u64>,
     text_uniform_index: HashMap<u64, u32>,
+    debug_uniform_stride: u64,
 }
 
 impl State {
@@ -266,21 +268,6 @@ impl State {
             None
         };
 
-        let debug_triangle_uniform_buffer = if custom_config.debug {
-            Some(
-                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Debug Triangle Uniform Buffer"),
-                    contents: bytemuck::bytes_of(&DebugUniform {
-                        triangle_offset: 0,
-                        _padding: [0; 7],
-                    }),
-                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                }),
-            )
-        } else {
-            None
-        };
-
         let texture_shader = device.create_shader_module(if !custom_config.debug {
             wgpu::include_wgsl!("shaders/texture.wgsl")
         } else {
@@ -318,58 +305,78 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
-        let debug_triangle_bind_group_layout = if custom_config.debug {
-            Some(
-                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    label: Some("Debug Triangle Bind Group Layout"),
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Storage { read_only: true },
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
+        let debug_triangle_bind_group_layout =
+            if custom_config.debug {
+                Some(
+                    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                        label: Some("Debug Triangle Bind Group Layout"),
+                        entries: &[
+                            wgpu::BindGroupLayoutEntry {
+                                binding: 0,
+                                visibility: wgpu::ShaderStages::FRAGMENT,
+                                ty: wgpu::BindingType::Buffer {
+                                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                                    has_dynamic_offset: false,
+                                    min_binding_size: None,
+                                },
+                                count: None,
                             },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
+                            wgpu::BindGroupLayoutEntry {
+                                binding: 1,
+                                visibility: wgpu::ShaderStages::FRAGMENT,
+                                ty: wgpu::BindingType::Buffer {
+                                    ty: wgpu::BufferBindingType::Uniform,
+                                    has_dynamic_offset: true,
+                                    min_binding_size: std::num::NonZeroU64::new(
+                                        std::mem::size_of::<DebugUniform>() as u64,
+                                    ),
+                                },
+                                count: None,
                             },
-                            count: None,
-                        },
-                    ],
-                }),
-            )
+                        ],
+                    }),
+                )
+            } else {
+                None
+            };
+
+        let debug_uniform_alignment = device.limits().min_uniform_buffer_offset_alignment as u64;
+        let debug_uniform_stride = (std::mem::size_of::<DebugUniform>() as u64)
+            .div_ceil(debug_uniform_alignment)
+            * debug_uniform_alignment;
+
+        let debug_triangle_uniform_buffer = if custom_config.debug {
+            Some(device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Debug Triangle Uniform Buffer"),
+                size: debug_uniform_stride * MAX_DEBUG_DRAWS as u64,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }))
         } else {
             None
         };
 
         let debug_triangle_bind_group = if custom_config.debug {
-            Some(
-                device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some("Debug Triangle Bind Group"),
-                    layout: debug_triangle_bind_group_layout.as_ref().unwrap(),
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: debug_triangle_buffer.as_ref().unwrap().as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: debug_triangle_uniform_buffer
-                                .as_ref()
-                                .unwrap()
-                                .as_entire_binding(),
-                        },
-                    ],
-                }),
-            )
+            Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Debug Triangle Bind Group"),
+                layout: debug_triangle_bind_group_layout.as_ref().unwrap(),
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: debug_triangle_buffer.as_ref().unwrap().as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                            buffer: debug_triangle_uniform_buffer.as_ref().unwrap(),
+                            offset: 0,
+                            size: std::num::NonZeroU64::new(
+                                std::mem::size_of::<DebugUniform>() as u64
+                            ),
+                        }),
+                    },
+                ],
+            }))
         } else {
             None
         };
@@ -825,6 +832,7 @@ impl State {
             ui_render_order: Vec::new(),
             sprite_render_order: Vec::new(),
             text_uniform_index: HashMap::new(),
+            debug_uniform_stride,
         })
     }
 
@@ -1157,6 +1165,7 @@ impl State {
             let mut vertex_offset: u64 = 0;
             let mut index_offset: u64 = 0;
             let mut debug_offset: u64 = 0;
+            let mut debug_draw_index: u32 = 0;
 
             for (sprite_index, id) in self.sprite_render_order.iter().enumerate() {
                 let sprite = &self.sprites[id];
@@ -1261,8 +1270,22 @@ impl State {
                                     MAX_SPRITE_INDEX_BUFFER_SIZE,
                                 ));
                             }
+                            if debug_draw_index as usize >= MAX_DEBUG_DRAWS {
+                                return Err(Error::IndexOverflow(
+                                    *id,
+                                    debug_draw_index as u64 + 1,
+                                    MAX_DEBUG_DRAWS as u64,
+                                ));
+                            }
 
-                            render_pass.set_bind_group(2, &self.debug_triangle_bind_group, &[]);
+                            let debug_uniform_offset =
+                                debug_draw_index as u64 * self.debug_uniform_stride;
+
+                            render_pass.set_bind_group(
+                                2,
+                                &self.debug_triangle_bind_group,
+                                &[debug_uniform_offset as u32],
+                            );
 
                             self.queue.write_buffer(
                                 self.debug_triangle_buffer.as_ref().unwrap(),
@@ -1272,7 +1295,7 @@ impl State {
 
                             self.queue.write_buffer(
                                 self.debug_triangle_uniform_buffer.as_ref().unwrap(),
-                                0,
+                                debug_uniform_offset,
                                 bytemuck::bytes_of(&DebugUniform {
                                     triangle_offset: (debug_offset
                                         / std::mem::size_of::<DebugTriangle>() as u64)
@@ -1282,6 +1305,7 @@ impl State {
                             );
 
                             debug_offset += debug_bytes as u64;
+                            debug_draw_index += 1;
                         }
 
                         render_pass.set_vertex_buffer(
@@ -1305,9 +1329,10 @@ impl State {
                 }
             }
 
-            vertex_offset = 0;
-            index_offset = 0;
-            debug_offset = 0;
+            // `vertex_offset` / `index_offset` keep accumulating into the UI loop on purpose.
+            // All `queue.write_buffer` calls land before the single submit, so resetting them
+            // here would make UI geometry overwrite the world sprites' geometry before the
+            // GPU ever draws them.
 
             render_pass.set_vertex_buffer(1, self.ui_element_buffer.slice(..));
 
@@ -1414,8 +1439,22 @@ impl State {
                                     MAX_SPRITE_INDEX_BUFFER_SIZE,
                                 ));
                             }
+                            if debug_draw_index as usize >= MAX_DEBUG_DRAWS {
+                                return Err(Error::IndexOverflow(
+                                    *id,
+                                    debug_draw_index as u64 + 1,
+                                    MAX_DEBUG_DRAWS as u64,
+                                ));
+                            }
 
-                            render_pass.set_bind_group(2, &self.debug_triangle_bind_group, &[]);
+                            let debug_uniform_offset =
+                                debug_draw_index as u64 * self.debug_uniform_stride;
+
+                            render_pass.set_bind_group(
+                                2,
+                                &self.debug_triangle_bind_group,
+                                &[debug_uniform_offset as u32],
+                            );
 
                             self.queue.write_buffer(
                                 self.debug_triangle_buffer.as_ref().unwrap(),
@@ -1425,7 +1464,7 @@ impl State {
 
                             self.queue.write_buffer(
                                 self.debug_triangle_uniform_buffer.as_ref().unwrap(),
-                                0,
+                                debug_uniform_offset,
                                 bytemuck::bytes_of(&DebugUniform {
                                     triangle_offset: (debug_offset
                                         / std::mem::size_of::<DebugTriangle>() as u64)
@@ -1435,6 +1474,7 @@ impl State {
                             );
 
                             debug_offset += debug_bytes as u64;
+                            debug_draw_index += 1;
                         }
 
                         render_pass.set_vertex_buffer(

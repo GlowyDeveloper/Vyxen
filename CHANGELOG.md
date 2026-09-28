@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Debug rendering not having the correct amount of triangles rendered
+
 ## v0.2.0 (21/09/2026)
 
 ### New Features

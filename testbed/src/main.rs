@@ -52,47 +52,47 @@ fn main() {
     node3.set_is_static(true);
     scene.add_node(node3);
 
-    let mut texture4 = load_data::<Texture>(include_bytes!("../../docs/Example-2.png")).unwrap();
-    texture4.set_tint(Color::from_rgb(0.0, 1.0, 0.0));
-
-    let mut ui4 = UiElement::with_texture(texture4);
-    ui4.set_shape(Box::new(100.0, 100.0));
-
-    let mut node4 = Node::new("FooBar".to_string());
-    node4.add_component(ui4);
-    node4.move_to(Vector2 { x: 250.0, y: 100.0 });
-    node4.set_is_static(true);
-    scene.add_node(node4);
-
-    let mut text5 = Text::new(
+    let mut text4 = Text::new(
         "Hello World!".to_string(),
         load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
         64.0,
     );
-    text5.set_tint(Color::from_rgb(0.0, 0.0, 1.0));
+    text4.set_tint(Color::from_rgb(0.0, 0.0, 1.0));
 
-    let mut ui5 = Sprite::new();
-    ui5.set_element_type(ElementType::Text(text5));
-    let mut node5 = Node::new("Bar2".to_string());
-    node5.add_component(ui5);
-    node5.move_to(Vector2 { x: 200.0, y: 200.0 });
+    let mut ui4 = Sprite::new();
+    ui4.set_element_type(ElementType::Text(text4));
+    let mut node4 = Node::new("Bar2".to_string());
+    node4.add_component(ui4);
+    node4.move_to(Vector2 { x: 200.0, y: 200.0 });
+    node4.set_is_static(true);
+    scene.add_node(node4);
+
+    let mut sprite5 = Sprite::with_color(CYAN);
+    sprite5.set_shape(Circle::new(10.0));
+    let mut node5 = Node::new("Bar3".to_string());
+    node5.move_to(Vector2 { x: 300.0, y: 100.0 });
+    node5.add_component(sprite5);
     node5.set_is_static(true);
     scene.add_node(node5);
 
-    let mut sprite6 = Sprite::with_color(CYAN);
-    sprite6.set_shape(Circle::new(10.0));
-    let mut node6 = Node::new("Bar3".to_string());
-    node6.move_to(Vector2 { x: 300.0, y: 100.0 });
-    node6.add_component(sprite6);
+    let mut ui6 = UiElement::with_color(GRAY);
+    ui6.set_shape(Circle::new(50.0));
+
+    let mut node6 = Node::new("Bar".to_string());
+    node6.add_component(ui6);
+    node6.move_to(Vector2 { x: 100.0, y: 300.0 });
     node6.set_is_static(true);
     scene.add_node(node6);
 
-    let mut ui7 = UiElement::with_color(GRAY);
-    ui7.set_shape(Circle::new(50.0));
+    let mut texture7 = load_data::<Texture>(include_bytes!("../../docs/Example-2.png")).unwrap();
+    texture7.set_tint(Color::from_rgb(0.0, 1.0, 0.0));
 
-    let mut node7 = Node::new("Bar".to_string());
+    let mut ui7 = UiElement::with_texture(texture7);
+    ui7.set_shape(Box::new(100.0, 100.0));
+
+    let mut node7 = Node::new("FooBar".to_string());
     node7.add_component(ui7);
-    node7.move_to(Vector2 { x: 100.0, y: 300.0 });
+    node7.move_to(Vector2 { x: 250.0, y: 100.0 });
     node7.set_is_static(true);
     scene.add_node(node7);
 
