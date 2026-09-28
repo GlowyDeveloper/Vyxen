@@ -1203,7 +1203,7 @@ impl State {
                         if vertices.is_empty() || indices.is_empty() {
                             continue;
                         }
-                        
+
                         let vertex_bytes = bytemuck::cast_slice(&vertices);
                         let index_bytes = bytemuck::cast_slice(&indices);
 
@@ -1371,7 +1371,7 @@ impl State {
                         if vertices.is_empty() || indices.is_empty() {
                             continue;
                         }
-                        
+
                         let vertex_bytes = bytemuck::cast_slice(&vertices);
                         let index_bytes = bytemuck::cast_slice(&indices);
 
