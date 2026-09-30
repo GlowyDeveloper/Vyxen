@@ -42,6 +42,11 @@ struct DebugUniform {
     _padding: vec3<u32>,
 };
 
+struct TextureSettings {
+    grayscale: f32,
+    invert: f32,
+};
+
 @group(2) @binding(0)
 var<storage, read> debug_triangles: array<DebugTriangle>;
 
@@ -67,6 +72,9 @@ fn vs_main(
 }
 
 // Fragment shader
+@group(0) @binding(2)
+var<uniform> t_texture_settings: TextureSettings;
+
 fn hash_color(triangle: DebugTriangle) -> vec3<f32> {
     let p = triangle.a
         + triangle.b * 2.0
@@ -92,7 +100,19 @@ fn fs_main(
     let triangle =
         debug_triangles[debug.triangle_offset + primitive_index];
 
-    let debug_color = hash_color(triangle);
+    var debug_color = hash_color(triangle);
+
+    if (t_texture_settings.grayscale > 0.0) {
+        let gray = dot(
+            debug_color,
+            vec3<f32>(0.299, 0.587, 0.114)
+        );
+        debug_color = vec3<f32>(gray);
+    }
+
+    if (t_texture_settings.invert > 0.0) {
+        debug_color = 1.0 - debug_color;
+    }
 
     return vec4<f32>(debug_color, 1.0);
 }

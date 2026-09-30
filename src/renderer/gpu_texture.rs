@@ -1,4 +1,4 @@
-use crate::Texture;
+use crate::{Texture, renderer::raws::TextureSettings};
 
 #[allow(unused)]
 #[derive(Debug, Clone)]
@@ -21,6 +21,8 @@ impl GpuTexture {
         let dimensions = texture.get_dimensions();
         let id = id.to_string();
         let label = id.as_str();
+        let grayscale = texture.grayscale;
+        let invert = texture.invert;
 
         let size = wgpu::Extent3d {
             width: dimensions.x as u32,
@@ -66,6 +68,26 @@ impl GpuTexture {
             ..Default::default()
         });
 
+        let texture_settings = TextureSettings {
+            grayscale: if grayscale { 1.0 } else { 0.0 },
+            invert: if invert { 1.0 } else { 0.0 },
+            _padding: [0.0; 2],
+            _data: [0.0; 4],
+        };
+
+        let texture_settings_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("texture_settings"),
+            size: std::mem::size_of::<TextureSettings>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        queue.write_buffer(
+            &texture_settings_buffer,
+            0,
+            bytemuck::bytes_of(&texture_settings),
+        );
+
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,
             entries: &[
@@ -76,6 +98,14 @@ impl GpuTexture {
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer: &texture_settings_buffer,
+                        offset: 0,
+                        size: None,
+                    }),
                 },
             ],
             label: Some(label),

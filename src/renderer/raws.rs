@@ -61,11 +61,9 @@ impl SpriteRaw {
 
     pub fn gen_raw(sprite: &Sprite, pos: Vector2, rot: f32) -> SpriteRaw {
         let color: [f32; 4] = match &sprite.get_element_type() {
-            ElementType::Texture(texture) if texture.get_tint().is_some() => {
-                texture.get_tint().unwrap().into()
-            }
+            ElementType::Texture(texture) if texture.tint.is_some() => texture.tint.unwrap().into(),
             ElementType::Color(color) => (*color).into(),
-            ElementType::Text(text) if text.get_tint().is_some() => text.get_tint().unwrap().into(),
+            ElementType::Text(text) if text.tint.is_some() => text.tint.unwrap().into(),
             _ => [1.0, 1.0, 1.0, 1.0],
         };
 
@@ -210,10 +208,8 @@ impl UiRaw {
 
     pub fn gen_raw(ui: &UiElement, pos: Vector2, rot: f32) -> UiRaw {
         let color: [f32; 4] = match ui.get_element_type() {
-            ElementType::Texture(texture) if texture.get_tint().is_some() => {
-                texture.get_tint().unwrap().into()
-            }
-            ElementType::Text(text) if text.get_tint().is_some() => text.get_tint().unwrap().into(),
+            ElementType::Texture(texture) if texture.tint.is_some() => texture.tint.unwrap().into(),
+            ElementType::Text(text) if text.tint.is_some() => text.tint.unwrap().into(),
             ElementType::Color(color) => (*color).into(),
             _ => [1.0, 1.0, 1.0, 1.0],
         };
@@ -288,4 +284,13 @@ pub fn debug_triangles(vertices: &[Vertex], indices: &[u16]) -> Vec<DebugTriangl
 pub struct DebugUniform {
     pub triangle_offset: u32,
     pub _padding: [u32; 7],
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct TextureSettings {
+    pub grayscale: f32,
+    pub invert: f32,
+    pub _padding: [f32; 2],
+    pub _data: [f32; 4],
 }

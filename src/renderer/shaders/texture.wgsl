@@ -24,6 +24,11 @@ struct InstanceInput {
     @location(9) color: vec4<f32>,
 };
 
+struct TextureSettings {
+    grayscale: f32,
+    invert: f32,
+};
+
 @vertex
 fn vs_main(
     model: VertexInput,
@@ -48,8 +53,21 @@ fn vs_main(
 var t_diffuse: texture_2d<f32>;
 @group(0) @binding(1)
 var s_diffuse: sampler;
+@group(0) @binding(2)
+var<uniform> t_texture_settings: TextureSettings;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(t_diffuse, s_diffuse, in.tex_coords) * in.color;
+    var color = textureSample(t_diffuse, s_diffuse, in.tex_coords) * in.color;
+
+    if (t_texture_settings.grayscale > 0.0) {
+        let gray = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+        color = vec4<f32>(vec3<f32>(gray), color.a);
+    }
+
+    if (t_texture_settings.invert > 0.0) {
+        color = vec4<f32>(1.0 - color.rgb, color.a);
+    }
+
+    return color;
 }

@@ -38,7 +38,9 @@ use zune_jpeg::{
 pub struct Texture {
     dim: Vector2,
     rgba: Vec<u8>,
-    tint: Option<Color>,
+    pub(crate) tint: Option<Color>,
+    pub(crate) grayscale: bool,
+    pub(crate) invert: bool,
 }
 
 impl Resource for Texture {
@@ -128,6 +130,8 @@ impl Resource for Texture {
                 },
                 rgba,
                 tint: None,
+                grayscale: false,
+                invert: false,
             })
         } else if data.starts_with(b"\xff\xd8\xff") {
             let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGBA);
@@ -152,6 +156,8 @@ impl Resource for Texture {
                 },
                 rgba: pixels,
                 tint: None,
+                grayscale: false,
+                invert: false,
             })
         } else {
             Err(Error::UnsupportedFileFormat)
@@ -181,6 +187,8 @@ impl Texture {
             dim,
             rgba,
             tint: None,
+            grayscale: false,
+            invert: false,
         }
     }
 
@@ -199,9 +207,14 @@ impl Texture {
         self.tint = Some(color);
     }
 
-    /// Returns the texture's tint color.
-    pub fn get_tint(&self) -> Option<Color> {
-        self.tint
+    /// Sets whether the texture is grayscale.
+    pub fn set_grayscale(&mut self, grayscale: bool) {
+        self.grayscale = grayscale;
+    }
+
+    /// Sets whether the texture is inverted.
+    pub fn set_invert(&mut self, invert: bool) {
+        self.invert = invert;
     }
 }
 

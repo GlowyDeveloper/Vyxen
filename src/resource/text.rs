@@ -13,8 +13,8 @@ pub struct Text {
     text: String,
     font: Font,
     size: f32,
-    tint: Option<Color>,
-    anchor: TextAnchor,
+    pub(crate) tint: Option<Color>,
+    pub(crate) anchor: TextAnchor,
 }
 
 impl Text {
@@ -51,11 +51,6 @@ impl Text {
         self.size
     }
 
-    /// Returns the tint of this `Text`.
-    pub fn get_tint(&self) -> Option<Color> {
-        self.tint
-    }
-
     /// Sets the tint of this `Text`.
     pub fn set_tint(&mut self, tint: Color) {
         self.tint = Some(tint);
@@ -79,11 +74,6 @@ impl Text {
     /// Sets the anchor type of this `Text`.
     pub fn set_anchor(&mut self, anchor: TextAnchor) {
         self.anchor = anchor;
-    }
-
-    /// Gets the anchor of this `Text`.
-    pub fn get_anchor(&self) -> &TextAnchor {
-        &self.anchor
     }
 }
 
