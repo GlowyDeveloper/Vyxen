@@ -4,5 +4,5 @@
 *.jpg binary
 *.jpeg binary
 *.gif binary
-*.ico binary
 *.ttf binary
+*.wav binary

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### New features
+
+- Texture inverting and grayscaling.
+- Audio playback
+
+### Fixes
+
+- Textures not on a multiple of 16 bytes, causing wasm builds to panic.
+- PNG alpha channel being ignored and being colored as black
+
+## v0.2.1 (28/09/2026)
+
 ### Fixes
 
 - Debug rendering not having the correct amount of triangles rendered
@@ -45,7 +57,7 @@
 - Updated crates to latest versions
 - Removed `RigidBody` and `SoftBody` is_static arguments
 - Rewrote bash scripts to use python
-- Changed empty nodes to be not affected bby gravity
+- Changed empty nodes to be not affected by gravity
 
 ## v0.1.0 (24/07/2026)
 

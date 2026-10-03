@@ -15,6 +15,19 @@ cargo run -p ball-pit
 
 Or, you can also play it [here](./ball_pit.html)
 
+## Radio
+
+Plays the portal 1 radio.
+
+Run it with `cargo run`:
+```bash
+cargo run -p radio
+```
+
+View the [source code](https://github.com/GlowyDeveloper/Vyxen/tree/master/examples/radio)
+
+Or, you can also play it [here](https://glowydeveloper.github.io/Vyxen/examples/radio.html)
+
 ## Counter
 
 A text that counts how many time you've clicked.

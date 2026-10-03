@@ -377,7 +377,8 @@ impl Scene {
     ///     Context {
     ///         inputs: Inputs::new(),
     ///         cursor_pos: Vector2::zero(),
-    ///         config: WindowConfig::new()
+    ///         config: WindowConfig::new(),
+    ///         audio: None
     ///     }
     /// );
     /// ```

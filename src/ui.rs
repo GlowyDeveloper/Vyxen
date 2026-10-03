@@ -6,7 +6,7 @@ use crate::{
 };
 use std::any::Any;
 
-/// The type of a `UIElement or `Sprite`.
+/// The type of a `UIElement` or `Sprite`.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ElementType {
     Color(Color),

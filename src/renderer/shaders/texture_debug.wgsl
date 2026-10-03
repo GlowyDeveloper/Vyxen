@@ -45,6 +45,8 @@ struct DebugUniform {
 struct TextureSettings {
     grayscale: f32,
     invert: f32,
+    _padding: vec2<f32>,
+    _data: vec4<f32>,
 };
 
 @group(2) @binding(0)

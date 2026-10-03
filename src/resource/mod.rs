@@ -2,6 +2,7 @@ use std::{any::Any, path::Path};
 
 use crate::error::Error;
 
+pub mod audio;
 pub mod color;
 pub mod font;
 pub mod text;

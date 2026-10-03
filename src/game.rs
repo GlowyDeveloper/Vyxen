@@ -1,5 +1,6 @@
 use crate::{
-    Camera, FrameCap, Scene, Vector2, WindowConfig,
+    Audio, AudioEngine, AudioHandle, AudioSource, Camera, FrameCap, Scene, SoundHandle, Vector2,
+    WindowConfig,
     error::Error,
     inputs::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase},
     renderer::state::State,
@@ -53,7 +54,10 @@ pub struct Game {
     last_redraw: Instant,
     dt: f32,
     next_frame_time: Instant,
+    audio: Option<AudioEngine>,
 
+    #[cfg(target_arch = "wasm32")]
+    audio_resumed: bool,
     #[cfg(target_arch = "wasm32")]
     proxy: Option<winit::event_loop::EventLoopProxy<GameEvent>>,
 }
@@ -78,20 +82,27 @@ impl Game {
     /// game.load_scene(scene);
     /// ```
     pub fn new() -> Self {
+        let engine = AudioEngine::new().unwrap();
+        let handle = engine.handle();
+
         Self {
             loaded_scene: None,
             state: None,
             callback: None,
             on_error: None,
+            audio: Some(engine),
             ctx: Context {
                 inputs: Inputs::new(),
                 cursor_pos: Vector2::zero(),
                 config: WindowConfig::new(),
+                audio: Some(handle),
             },
             last_redraw: Instant::now(),
             dt: 0.0,
             next_frame_time: Instant::now(),
 
+            #[cfg(target_arch = "wasm32")]
+            audio_resumed: false,
             #[cfg(target_arch = "wasm32")]
             proxy: None,
         }
@@ -597,6 +608,72 @@ impl Game {
             None
         }
     }
+
+    /// Lists all available audio devices.
+    pub fn list_audio_devices() -> Vec<String> {
+        AudioEngine::list_output_devices()
+    }
+
+    /// Sets the audio device to use.
+    ///
+    /// If `name` is `None`, the default device is used.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the device cannot be set.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use vyxen::Game;
+    ///
+    /// let mut game = Game::new(); // Using default device
+    ///
+    /// game.set_audio_device(Some("My Device")); // Plays audio on "My Device"
+    ///
+    /// game.set_audio_device(None); // Plays audio on default device
+    /// ```
+    pub fn set_audio_device(&mut self, name: Option<&str>) -> Result<(), Error> {
+        match &mut self.audio {
+            Some(engine) => engine.set_device(name),
+            None => Ok(()),
+        }
+    }
+
+    /// Plays a sound using default settings.
+    ///
+    /// This is equivalent to calling `play_sound_with` with `volume = 1.0` and `looping = false`.
+    pub fn play_sound(&self, audio: &Audio) {
+        if let Some(engine) = &self.audio {
+            engine.handle().play(audio);
+        }
+    }
+
+    /// Plays a sound with custom volume and looping settings.
+    pub fn play_sound_with(
+        &self,
+        audio: &Audio,
+        volume: f32,
+        looping: bool,
+    ) -> Option<SoundHandle> {
+        self.audio
+            .as_ref()
+            .map(|e| e.handle().start_sound(audio, volume, looping))
+    }
+
+    /// Sets the master volume of the audio engine.
+    pub fn set_master_volume(&self, v: f32) {
+        if let Some(engine) = &self.audio {
+            engine.set_master_volume(v);
+        }
+    }
+
+    /// Stops all currently playing sounds.
+    pub fn stop_all_sounds(&self) {
+        if let Some(engine) = &self.audio {
+            engine.stop_all();
+        }
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -633,6 +710,34 @@ impl ApplicationHandler<GameEvent> for Game {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        if !self.audio_resumed {
+            let is_gesture = matches!(
+                event,
+                WindowEvent::MouseInput {
+                    state: ElementState::Pressed,
+                    ..
+                } | WindowEvent::KeyboardInput {
+                    event: winit::event::KeyEvent {
+                        state: ElementState::Pressed,
+                        ..
+                    },
+                    ..
+                } | WindowEvent::Touch(winit::event::Touch {
+                    phase: winit::event::TouchPhase::Ended,
+                    ..
+                })
+            );
+
+            if is_gesture {
+                if let Some(engine) = &self.audio {
+                    match engine.resume() {
+                        Ok(()) => self.audio_resumed = true,
+                        Err(e) => log::error!("failed to resume audio: {e:?}"),
+                    }
+                }
+            }
+        }
+
         if let Some(mut callback) = self.callback.take() {
             let into: Event = match event {
                 WindowEvent::MouseInput { state, button, .. } => {
@@ -641,8 +746,6 @@ impl ApplicationHandler<GameEvent> for Game {
                 _ => event.clone().into(),
             };
             if into != Event::Unknown {
-                self.ctx.inputs.begin_frame();
-
                 let ctx = self.ctx.clone();
                 callback(self, &ctx, into, self.dt);
             }
@@ -667,6 +770,17 @@ impl ApplicationHandler<GameEvent> for Game {
                 self.dt = dt;
 
                 self.step(dt);
+
+                self.ctx.inputs.begin_frame();
+
+                if let (Some(engine), Some(scene)) = (&self.audio, &mut self.loaded_scene) {
+                    let handle = engine.handle();
+                    for node in scene.get_nodes_mut().values_mut() {
+                        if let Some(src) = node.get_component_mut::<AudioSource>() {
+                            src.sync(&handle);
+                        }
+                    }
+                }
 
                 if let Some(state) = &mut self.state {
                     if let Some(scene) = &self.loaded_scene {
@@ -804,8 +918,6 @@ impl ApplicationHandler<State> for Game {
                 _ => event.clone().into(),
             };
             if into != Event::Unknown {
-                self.ctx.inputs.begin_frame();
-
                 let ctx = self.ctx.clone();
                 callback(self, &ctx, into, self.dt);
             }
@@ -830,6 +942,17 @@ impl ApplicationHandler<State> for Game {
                 self.dt = dt;
 
                 self.step(dt);
+
+                self.ctx.inputs.begin_frame();
+
+                if let (Some(engine), Some(scene)) = (&self.audio, &mut self.loaded_scene) {
+                    let handle = engine.handle();
+                    for node in scene.get_nodes_mut().values_mut() {
+                        if let Some(src) = node.get_component_mut::<AudioSource>() {
+                            src.sync(&handle);
+                        }
+                    }
+                }
 
                 if let Some(state) = &mut self.state {
                     if let Some(scene) = &self.loaded_scene {
@@ -910,6 +1033,7 @@ pub struct Context {
     pub inputs: Inputs,
     pub cursor_pos: Vector2,
     pub config: WindowConfig,
+    pub audio: Option<AudioHandle>,
 }
 
 impl Context {
@@ -926,6 +1050,27 @@ impl Context {
     /// If a key has been released between the current frame and the last.
     pub fn is_just_released(&self, keycode: KeyCode) -> bool {
         self.inputs.just_released(keycode)
+    }
+
+    /// Plays a sound using default settings.
+    ///
+    /// This is equivalent to calling `play_sound_with` with `volume = 1.0` and `looping = false`.
+    pub fn play_sound(&self, audio: &Arc<Audio>) {
+        if let Some(a) = &self.audio {
+            a.play(audio);
+        }
+    }
+
+    /// Plays a sound with custom volume and looping settings.
+    pub fn play_sound_with(
+        &self,
+        audio: &Arc<Audio>,
+        volume: f32,
+        looping: bool,
+    ) -> Option<SoundHandle> {
+        self.audio
+            .as_ref()
+            .map(|a| a.start_sound(audio, volume, looping))
     }
 }
 

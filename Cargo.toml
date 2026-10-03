@@ -23,6 +23,7 @@ members = [
     "examples/ball-pit",
     "examples/counter",
     "examples/readme",
+    "examples/radio",
 ]
 
 [dependencies]
@@ -37,11 +38,16 @@ png = { version = "0.18.1", default-features = false, features = ["zlib-rs"] }
 
 log = "0.4.34"
 
+symphonia = { version = "0.6.1", default-features = false, features = ["ogg", "wav", "aac", "alac", "flac", "mp3", "pcm", "vorbis"] }
+cpal = "0.18.2"
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.128"
 wasm-bindgen-futures = "0.4.78"
 web-time = "1.1.0"
+web-sys = { version = "0.3", features = ["Window", "Document", "EventTarget", "AddEventListenerOptions"] }
 wgpu = { version = "30.0.1", features = ["webgl", "webgpu"] }
+cpal = { version = "0.18.2", features = ["wasm-bindgen"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "1.0.1"

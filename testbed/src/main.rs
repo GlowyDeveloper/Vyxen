@@ -178,6 +178,18 @@ fn main() {
             }
         }
 
+        if game.is_just_pressed(KeyCode::KeyI) {
+            game.stop_all_sounds();
+        }
+
+        if game.is_just_pressed(KeyCode::KeyO) {
+            game.play_sound(&load_data(include_bytes!("sound.wav")).unwrap());
+        }
+
+        if game.is_just_pressed(KeyCode::KeyU) {
+            game.play_sound_with(&load_data(include_bytes!("sound.wav")).unwrap(), 1.0, true);
+        }
+
         let fps = game.get_fps().unwrap_or_default().round();
         if let Some(element) = game
             .get_scene_mut()

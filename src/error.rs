@@ -25,6 +25,14 @@ pub enum Error {
     RequestingDevice(String),
     SurfaceCreation(String),
 
+    NoAudioTrack,
+    NoAudioCodec,
+    NoAudioDecoded,
+    FailedAudioProbe(String),
+    FailedToCreateAudioDecoder(String),
+    FailedToDecodeAudio(String),
+    FailedToOpenAudioDevice(String),
+
     IoError(ErrorKind),
 }
 
@@ -103,6 +111,27 @@ impl std::fmt::Display for Error {
             }
             Error::SurfaceCreation(str) => {
                 write!(f, "Failed creating surface: {}", str)
+            }
+            Error::NoAudioTrack => {
+                write!(f, "No audio track found")
+            }
+            Error::NoAudioCodec => {
+                write!(f, "No audio codec found")
+            }
+            Error::NoAudioDecoded => {
+                write!(f, "No audio decoded")
+            }
+            Error::FailedAudioProbe(str) => {
+                write!(f, "Failed audio probe: {}", str)
+            }
+            Error::FailedToCreateAudioDecoder(str) => {
+                write!(f, "Failed to create audio decoder: {}", str)
+            }
+            Error::FailedToDecodeAudio(str) => {
+                write!(f, "Failed to decode audio: {}", str)
+            }
+            Error::FailedToOpenAudioDevice(str) => {
+                write!(f, "Failed to open audio device: {}", str)
             }
             Error::IoError(kind) => {
                 write!(f, "I/O error: {kind}")

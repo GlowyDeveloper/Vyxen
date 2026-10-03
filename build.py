@@ -29,6 +29,7 @@ EXAMPLES = [
     "ball-pit",
     "counter",
     "readme",
+    "radio",
 ]
 
 def help():
@@ -533,49 +534,6 @@ def book():
                 print(e)
                 return 1
         return 0
-
-def test():
-    if sys.argv.count("--help") >= 1 or sys.argv.count("-h") >= 1:
-        print()
-        print(f"{HEADER}usage:{ENDC} build.py test <testname> <flags>")
-        print()
-        print(f"{HEADER}flags:{ENDC}")
-        print(f"{OKGREEN} -v --verbose{ENDC} enables verbose output")
-        print(f"{OKGREEN} -h --help{ENDC}    prints help message")
-        print(f"{OKGREEN} -r --release{ENDC}               builds in release mode")
-        print(f"{OKGREEN} -f --features [FEATURE]{ENDC}    builds with the features seperated with a comma or space")
-        print(f"{OKGREEN}    --all-features{ENDC}          builds with all features")
-        print(f"{OKGREEN} -j --jobs [NUMBER OF JOBS]{ENDC} amount of parallel jobs.")
-        print(f"{OKGREEN}    --doc{ENDC}     runs only the doc tests")
-        print()
-    
-    command = sys.argv[2:]
-
-    if "-j" not in command and "--jobs" not in command:
-        command.append("-j")
-        cores = os.cpu_count()
-        if cores is not None:
-            command.append(str(int(cores // 1.5)))
-
-    print(command)
-
-    command.insert(0, "cargo")
-    command.insert(1, "test")
-
-    try:
-        print(f"{HEADER}{command}{ENDC}")
-        subprocess.run(
-            command,
-            check=True,
-            text=True,
-        )
-    except subprocess.CalledProcessError as e:
-        error = e.stderr or ""
-        print(e)
-        print(error)
-        return 1
-
-    return 0
 
 def main():
     if len(sys.argv) < 2:
