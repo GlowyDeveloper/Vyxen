@@ -9,35 +9,13 @@ on:
       - master
 
 jobs:
-  test:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-          - os: macos-latest
-            target: aarch64-apple-darwin
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - run: cargo test --all-features --target ${{ matrix.target }}
-
   check:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: windows-latest
             target: x86_64-pc-windows-gnu
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
           - os: macos-latest
             target: x86_64-apple-darwin
@@ -54,6 +32,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Install ALSA
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -66,6 +48,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Install ALSA
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -76,6 +61,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Install ALSA
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -88,10 +76,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Install ALSA
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
 
       - uses: dtolnay/rust-toolchain@stable
 
       - run: RUSTDOCFLAGS="-D warnings" cargo doc --all-features --no-deps
+  
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install ALSA
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - run: cargo test --all-features
 
   examples:
     strategy:
@@ -105,7 +109,7 @@ jobs:
             target: aarch64-apple-darwin
           - os: macos-latest
             target: aarch64-apple-ios-sim
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             target: aarch64-linux-android
           - os: ubuntu-latest
             target: wasm32-unknown-unknown
@@ -114,11 +118,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Install ALSA
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
 
       - name: Install Android NDK
         if: matrix.target == 'aarch64-linux-android'
