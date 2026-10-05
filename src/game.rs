@@ -92,7 +92,7 @@ impl Game {
                 (None, None)
             }
         };
-    
+
         Self {
             loaded_scene: None,
             state: None,
@@ -108,7 +108,7 @@ impl Game {
             dt: 0.0,
             next_frame_time: Instant::now(),
             audio,
-    
+
             #[cfg(target_arch = "wasm32")]
             audio_resumed: false,
             #[cfg(target_arch = "wasm32")]
