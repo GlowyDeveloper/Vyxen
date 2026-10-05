@@ -82,25 +82,33 @@ impl Game {
     /// game.load_scene(scene);
     /// ```
     pub fn new() -> Self {
-        let engine = AudioEngine::new().unwrap();
-        let handle = engine.handle();
-
+        let (audio, audio_handle) = match AudioEngine::new() {
+            Ok(engine) => {
+                let handle = engine.handle();
+                (Some(engine), Some(handle))
+            }
+            Err(e) => {
+                log::warn!("Audio initialization failed: {e}");
+                (None, None)
+            }
+        };
+    
         Self {
             loaded_scene: None,
             state: None,
             callback: None,
             on_error: None,
-            audio: Some(engine),
             ctx: Context {
                 inputs: Inputs::new(),
                 cursor_pos: Vector2::zero(),
                 config: WindowConfig::new(),
-                audio: Some(handle),
+                audio: audio_handle,
             },
             last_redraw: Instant::now(),
             dt: 0.0,
             next_frame_time: Instant::now(),
-
+            audio,
+    
             #[cfg(target_arch = "wasm32")]
             audio_resumed: false,
             #[cfg(target_arch = "wasm32")]
