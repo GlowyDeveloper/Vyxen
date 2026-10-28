@@ -1,5 +1,5 @@
 use crate::{
-    Color, Font, Text, Texture,
+    Color, Font, Text, Texture, Video,
     geometry::Shape,
     node::Component,
     shape_type::{ShapeType, shape_type_from_shape},
@@ -12,6 +12,7 @@ pub enum ElementType {
     Color(Color),
     Text(Text),
     Texture(Texture),
+    Video(Video),
     None,
 }
 
@@ -118,6 +119,23 @@ impl UiElement {
     pub fn with_color(color: Color) -> Self {
         Self {
             element_type: ElementType::Color(color),
+            vertices: None,
+            z: 0.0,
+        }
+    }
+
+    /// Short for `UiElement::new().set_element_type(ElementType::Video(..))`
+    ///
+    /// # Examples
+    /// ```rust, ignore
+    /// use vyxen::{Box, UiElement, Video};
+    ///
+    /// let mut element = UiElement::with_video(Video::new(Video::rgb(1.0, 0.0, 0.0)));
+    /// element.set_shape(Box::new(100.0, 20.0));
+    /// ```
+    pub fn with_video(video: Video) -> Self {
+        Self {
+            element_type: ElementType::Video(video),
             vertices: None,
             z: 0.0,
         }

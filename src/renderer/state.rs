@@ -936,6 +936,25 @@ impl State {
                         self.glyph_atlas_cache
                             .insert(key, (glyph_map, gpu_tex, first, count));
                     }
+                    ElementType::Video(video) => {
+                        if let Some(frame) = video.current_frame() {
+                            let tex = Texture::from_raw(
+                                Vector2 {
+                                    x: frame.width as f32,
+                                    y: frame.height as f32,
+                                },
+                                frame.bytes,
+                            );
+                            let gpu_tex = GpuTexture::from_image(
+                                &self.device,
+                                &self.queue,
+                                &self.texture_bind_group_layout,
+                                &tex,
+                                *node_id,
+                            );
+                            self.texture_cache.insert(*node_id, gpu_tex);
+                        }
+                    }
                     _ => {}
                 }
 
@@ -995,6 +1014,25 @@ impl State {
                         self.raw_glyph_instances.extend(glyphs);
                         self.glyph_atlas_cache
                             .insert(key, (glyph_map, gpu_tex, first, count));
+                    }
+                    ElementType::Video(video) => {
+                        if let Some(frame) = video.current_frame() {
+                            let tex = Texture::from_raw(
+                                Vector2 {
+                                    x: frame.width as f32,
+                                    y: frame.height as f32,
+                                },
+                                frame.bytes,
+                            );
+                            let gpu_tex = GpuTexture::from_image(
+                                &self.device,
+                                &self.queue,
+                                &self.texture_bind_group_layout,
+                                &tex,
+                                *node_id,
+                            );
+                            self.texture_cache.insert(*node_id, gpu_tex);
+                        }
                     }
                     _ => {}
                 }
@@ -1253,7 +1291,9 @@ impl State {
                             index_bytes,
                         );
 
-                        if let ElementType::Texture(_) = &sprite.element_type {
+                        if let ElementType::Texture(_) | ElementType::Video(_) =
+                            &sprite.element_type
+                        {
                             let gpu_texture = match self.texture_cache.get(id) {
                                 Some(g) => g,
                                 None => {
@@ -1421,7 +1461,9 @@ impl State {
                             index_bytes,
                         );
 
-                        if let ElementType::Texture(_) = &ui.get_element_type() {
+                        if let ElementType::Texture(_) | ElementType::Video(_) =
+                            &ui.get_element_type()
+                        {
                             let gpu_texture = match self.texture_cache.get(id) {
                                 Some(g) => g,
                                 None => {

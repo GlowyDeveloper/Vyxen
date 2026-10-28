@@ -4,7 +4,9 @@ use crate::{
     error::Error,
     inputs::{Inputs, KeyCode, KeyState, MouseInput, TouchPhase},
     renderer::state::State,
+    video_engine::VideoEngine,
 };
+use crate::{ElementType, Sprite, UiElement};
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use winit::{
@@ -55,6 +57,7 @@ pub struct Game {
     dt: f32,
     next_frame_time: Instant,
     audio: Option<AudioEngine>,
+    video: Option<VideoEngine>,
 
     #[cfg(target_arch = "wasm32")]
     audio_resumed: bool,
@@ -93,6 +96,14 @@ impl Game {
             }
         };
 
+        let video = match VideoEngine::new() {
+            Ok(engine) => Some(engine),
+            Err(e) => {
+                log::warn!("Video initialization failed: {e}");
+                None
+            }
+        };
+
         Self {
             loaded_scene: None,
             state: None,
@@ -108,6 +119,7 @@ impl Game {
             dt: 0.0,
             next_frame_time: Instant::now(),
             audio,
+            video,
 
             #[cfg(target_arch = "wasm32")]
             audio_resumed: false,
@@ -789,6 +801,22 @@ impl ApplicationHandler<GameEvent> for Game {
                         }
                     }
                 }
+                
+                if let (Some(engine), Some(scene)) = (&self.video, &self.loaded_scene) {
+                    let handle = engine.handle();
+                    for node in scene.get_nodes().values() {
+                        if let Some(sprite) = node.get_component::<Sprite>() {
+                            if let ElementType::Video(video) = sprite.get_element_type() {
+                                handle.sync_video(video);
+                            }
+                        }
+                        if let Some(ui) = node.get_component::<UiElement>() {
+                            if let ElementType::Video(video) = ui.get_element_type() {
+                                handle.sync_video(video);
+                            }
+                        }
+                    }
+                }
 
                 if let Some(state) = &mut self.state {
                     if let Some(scene) = &self.loaded_scene {
@@ -958,6 +986,22 @@ impl ApplicationHandler<State> for Game {
                     for node in scene.get_nodes_mut().values_mut() {
                         if let Some(src) = node.get_component_mut::<AudioSource>() {
                             src.sync(&handle);
+                        }
+                    }
+                }
+
+                if let (Some(engine), Some(scene)) = (&self.video, &self.loaded_scene) {
+                    let handle = engine.handle();
+                    for node in scene.get_nodes().values() {
+                        if let Some(sprite) = node.get_component::<Sprite>() {
+                            if let ElementType::Video(video) = sprite.get_element_type() {
+                                handle.sync_video(video);
+                            }
+                        }
+                        if let Some(ui) = node.get_component::<UiElement>() {
+                            if let ElementType::Video(video) = ui.get_element_type() {
+                                handle.sync_video(video);
+                            }
                         }
                     }
                 }

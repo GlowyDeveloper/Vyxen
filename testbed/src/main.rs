@@ -120,6 +120,19 @@ fn main() {
     node9.set_is_static(true);
     scene.add_node(node9);
 
+    let video10 = load_data::<Video>(include_bytes!("video.mp4")).unwrap();
+    video10.play();
+    video10.set_looping(true);
+
+    let mut ui10 = UiElement::with_video(video10);
+    ui10.set_shape(Box::new(100.0, 100.0));
+
+    let mut node10 = Node::new("Foo10".to_string());
+    node10.add_component(ui10);
+    node10.move_to(Vector2 { x: 100.0, y: 400.0 });
+    node10.set_is_static(true);
+    scene.add_node(node10);
+
     let ui_fps = UiElement::with_text(
         format!("FPS: {}", game.get_fps().unwrap_or_default().round()),
         load_data(include_bytes!("Roboto-Bold.ttf")).unwrap(),
@@ -136,11 +149,12 @@ fn main() {
 
     let mut window_config = WindowConfig::new();
     window_config.set_debug(false);
+    window_config.set_frame_cap(FrameCap::Uncapped);
 
     game.set_config(window_config);
 
     game.on_error(|_, err| {
-        println!("{:?}", err);
+        eprintln!("{:?}", err);
     });
 
     let _ = game.run(move |game, _, _, dt| {

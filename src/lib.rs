@@ -18,6 +18,7 @@ pub(crate) mod geometry;
 pub(crate) mod node;
 pub(crate) mod renderer;
 pub(crate) mod resource;
+pub(crate) mod video_engine;
 
 mod audio_engine;
 mod game;
@@ -38,6 +39,8 @@ pub use resource::{
     load_data, load_path,
     text::{Text, TextAnchor},
     texture::Texture,
+    video::Video,
 };
 pub use scene::Scene;
 pub use ui::{ElementType, UiElement};
+pub use video_engine::{VideoEngine, VideoEngineHandle};

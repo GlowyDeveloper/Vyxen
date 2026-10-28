@@ -1,5 +1,5 @@
 use crate::{
-    Color, ElementType, Font, Text, Texture, Vector2,
+    Color, ElementType, Font, Text, Texture, Vector2, Video,
     geometry::Shape,
     load_data,
     node::Component,
@@ -137,6 +137,26 @@ impl Sprite {
     pub fn with_font(text: String, font: Font, size: f32) -> Self {
         Sprite {
             element_type: ElementType::Text(Text::new(text, font, size)),
+            vertices: None,
+            z: 0.0,
+        }
+    }
+
+    /// Short for `Sprite::new().set_element_type(ElementType::Video(..))`
+    ///
+    /// # Examples
+    /// ```rust, ignore
+    /// use vyxen::{Sprite, Video, load_path};
+    ///
+    /// let mut sprite = Sprite::with_video(
+    ///     "Hello, World!".to_string(),
+    ///     load_path::<Video>("path/to/video.ttf").unwrap(),
+    ///     24.0,
+    /// );
+    /// ```
+    pub fn with_video(video: Video) -> Self {
+        Sprite {
+            element_type: ElementType::Video(video),
             vertices: None,
             z: 0.0,
         }

@@ -156,6 +156,12 @@ impl AudioEngine {
         Self::open(None)
     }
 
+    /// Creates a new audio engine with the specified output device.
+    pub fn with_device(name: &str) -> Result<Self, Error> {
+        Self::open(Some(name))
+    }
+
+    /// Continues all sounds
     pub fn resume(&self) -> Result<(), Error> {
         if let Some(s) = &self.stream {
             s.play()
@@ -173,11 +179,6 @@ impl AudioEngine {
                     .collect()
             })
             .unwrap_or_default()
-    }
-
-    /// Creates a new audio engine with the specified output device.
-    pub fn with_device(name: &str) -> Result<Self, Error> {
-        Self::open(Some(name))
     }
 
     fn open(name: Option<&str>) -> Result<Self, Error> {

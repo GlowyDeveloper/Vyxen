@@ -1,2 +1,5 @@
 [env]
 PKG_CONFIG_ALLOW_CROSS = "1"
+
+[build]
+rustdocflags = ["-D", "warnings"]

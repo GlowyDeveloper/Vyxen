@@ -7,6 +7,7 @@ pub mod color;
 pub mod font;
 pub mod text;
 pub mod texture;
+pub mod video;
 
 /// Represents a resource that can be loaded.
 pub trait Resource: Sized {

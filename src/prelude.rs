@@ -4,6 +4,6 @@ pub use crate::physics2d::*;
 pub use crate::{
     AABB, Audio, AudioEngine, AudioHandle, AudioSource, Box, Camera, Circle, Collider, Color,
     Context, ElementType, Event, Font, FrameCap, Game, Matrix4, Node, Polygon, Random, RenderMode,
-    Scene, SoundHandle, Sprite, Text, TextAnchor, Texture, Transform, UiElement, Vector2,
-    WindowConfig, is_nearly_equal, load_data, load_path,
+    Scene, SoundHandle, Sprite, Text, TextAnchor, Texture, Transform, UiElement, Vector2, Video,
+    VideoEngine, VideoEngineHandle, WindowConfig, is_nearly_equal, load_data, load_path,
 };
