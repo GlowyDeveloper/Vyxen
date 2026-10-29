@@ -36,13 +36,22 @@ jobs:
       - name: Install ALSA
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
-      
+
       - name: Install GStreamer
         if: runner.os == 'Linux'
-        run: sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-              gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-              gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-              gstreamer1.0-libav libgstrtspserver-1.0-dev libges-1.0-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer-plugins-bad1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav \
+            libgstrtspserver-1.0-dev \
+            libges-1.0-dev
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -60,10 +69,19 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
       
       - name: Install GStreamer
-        run: sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-              gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-              gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-              gstreamer1.0-libav libgstrtspserver-1.0-dev libges-1.0-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer-plugins-bad1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav \
+            libgstrtspserver-1.0-dev \
+            libges-1.0-dev
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -79,10 +97,19 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
       
       - name: Install GStreamer
-        run: sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-              gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-              gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-              gstreamer1.0-libav libgstrtspserver-1.0-dev libges-1.0-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer-plugins-bad1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav \
+            libgstrtspserver-1.0-dev \
+            libges-1.0-dev
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -100,10 +127,19 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
       
       - name: Install GStreamer
-        run: sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-              gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-              gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-              gstreamer1.0-libav libgstrtspserver-1.0-dev libges-1.0-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer-plugins-bad1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav \
+            libgstrtspserver-1.0-dev \
+            libges-1.0-dev
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -119,10 +155,19 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
       
       - name: Install GStreamer
-        run: sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-              gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-              gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-              gstreamer1.0-libav libgstrtspserver-1.0-dev libges-1.0-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer-plugins-bad1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav \
+            libgstrtspserver-1.0-dev \
+            libges-1.0-dev
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -156,10 +201,19 @@ jobs:
       
       - name: Install GStreamer
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-              gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-              gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-              gstreamer1.0-libav libgstrtspserver-1.0-dev libges-1.0-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer-plugins-bad1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav \
+            libgstrtspserver-1.0-dev \
+            libges-1.0-dev
 
       - uses: dtolnay/rust-toolchain@stable
         with:
