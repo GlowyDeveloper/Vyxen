@@ -287,7 +287,7 @@ jobs:
           brew install gstreamer pkgconf
           echo "PKG_CONFIG_PATH=$(brew --prefix gstreamer)/lib/pkgconfig" >> "$GITHUB_ENV"
 
-      - name: Install GStreamer (Windows MSVC)
+      - name: Install GStreamer (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
@@ -302,15 +302,30 @@ jobs:
           Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\$runtime`" /quiet /norestart INSTALLDIR=C:\gstreamer\1.0\msvc_x86_64 ADDLOCAL=ALL" -Wait
           Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\$devel`" /quiet /norestart INSTALLDIR=C:\gstreamer\1.0\msvc_x86_64 ADDLOCAL=ALL" -Wait
 
-      - name: Fix GStreamer Paths (Windows MSVC)
-        if: matrix.os == 'windows-latest'
+      - name: Fix GStreamer Paths (Windows)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
           $gst = "C:\gstreamer\1.0\msvc_x86_64"
-          "PKG_CONFIG=$gst\bin\pkg-config.exe" >> $env:GITHUB_ENV
+          $pkg = "$gst\bin\pkg-config.exe"
+
+          if (!(Test-Path $pkg)) {
+            throw "pkg-config.exe does not exist at $pkg"
+          }
+
+          if (!(Test-Path "$gst\lib\pkgconfig\glib-2.0.pc")) {
+            throw "glib-2.0.pc not found"
+          }
+
+          "PKG_CONFIG=$pkg" >> $env:GITHUB_ENV
           "PKG_CONFIG_PATH=$gst\lib\pkgconfig" >> $env:GITHUB_ENV
           "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gst\" >> $env:GITHUB_ENV
           "$gst\bin" >> $env:GITHUB_PATH
+
+          & $pkg --modversion glib-2.0
+          if ($LASTEXITCODE -ne 0) {
+            throw "pkg-config cannot locate GLib"
+          }
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -323,6 +338,19 @@ jobs:
           NDK="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
           echo "ANDROID_NDK_HOME=$NDK" >> "$GITHUB_ENV"
           echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang" >> "$GITHUB_ENV"
+
+      - name: Debug GStreamer (Windows)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        run: |
+          Write-Host "PKG_CONFIG=$env:PKG_CONFIG"
+          Write-Host "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
+
+          Test-Path $env:PKG_CONFIG
+          Get-ChildItem C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig
+
+          & $env:PKG_CONFIG --modversion glib-2.0
+          & $env:PKG_CONFIG --modversion gobject-2.0
 
       - name: Build
         run: |
