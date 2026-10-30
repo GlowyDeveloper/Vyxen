@@ -38,7 +38,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
 
       - name: Install GStreamer (Linux)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.target != 'aarch64-linux-android'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -52,7 +52,18 @@ jobs:
             gstreamer1.0-libav \
             libgstrtspserver-1.0-dev \
             libges-1.0-dev
-      
+
+      - name: Install GStreamer (Android)
+        if: matrix.target == 'aarch64-linux-android'
+        run: |
+          GST_VERSION=1.26.10
+          curl -fL "https://gstreamer.freedesktop.org/data/pkg/android/${GST_VERSION}/gstreamer-1.0-android-universal-${GST_VERSION}.tar.xz" -o /tmp/gstreamer-android.tar.xz
+          mkdir -p "$HOME/gstreamer-android"
+          tar xf /tmp/gstreamer-android.tar.xz -C "$HOME/gstreamer-android"
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_LIBDIR=$HOME/gstreamer-android/arm64/lib/pkgconfig" >> "$GITHUB_ENV"
+          echo "GSTREAMER_1_0_ROOT_ANDROID=$HOME/gstreamer-android/" >> "$GITHUB_ENV"
+
       - name: Install GStreamer (macOS)
         if: matrix.os == 'macos-latest'
         run: |
@@ -244,7 +255,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libasound2-dev
       
       - name: Install GStreamer (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.target != 'aarch64-linux-android'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -258,7 +269,18 @@ jobs:
             gstreamer1.0-libav \
             libgstrtspserver-1.0-dev \
             libges-1.0-dev
-      
+
+      - name: Install GStreamer (Android)
+        if: matrix.target == 'aarch64-linux-android'
+        run: |
+          GST_VERSION=1.26.10
+          curl -fL "https://gstreamer.freedesktop.org/data/pkg/android/${GST_VERSION}/gstreamer-1.0-android-universal-${GST_VERSION}.tar.xz" -o /tmp/gstreamer-android.tar.xz
+          mkdir -p "$HOME/gstreamer-android"
+          tar xf /tmp/gstreamer-android.tar.xz -C "$HOME/gstreamer-android"
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_LIBDIR=$HOME/gstreamer-android/arm64/lib/pkgconfig" >> "$GITHUB_ENV"
+          echo "GSTREAMER_1_0_ROOT_ANDROID=$HOME/gstreamer-android/" >> "$GITHUB_ENV"
+
       - name: Install GStreamer (macOS)
         if: matrix.os == 'macos-latest'
         run: |
