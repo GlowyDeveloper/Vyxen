@@ -269,7 +269,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          $version = "1.24.9"
+          $version = "1.26.10"
           $base = "https://gstreamer.freedesktop.org/data/pkg/windows/$version/msvc"
           $runtime = "gstreamer-1.0-msvc-x86_64-$version.msi"
           $devel = "gstreamer-1.0-devel-msvc-x86_64-$version.msi"
