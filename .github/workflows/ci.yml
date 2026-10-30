@@ -269,9 +269,16 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          $url = "https://gstreamer.freedesktop.org/data/pkg/windows/1.0.0/msvc/"
-          Write-Host "Download the matching GStreamer MSVC runtime and development installers from:"
-          Write-Host $url
+          $version = "1.24.9"
+          $base = "https://gstreamer.freedesktop.org/data/pkg/windows/$version/msvc"
+          $runtime = "gstreamer-1.0-msvc-x86_64-$version.msi"
+          $devel = "gstreamer-1.0-devel-msvc-x86_64-$version.msi"
+
+          Invoke-WebRequest -Uri "$base/$runtime" -OutFile "$env:TEMP\$runtime"
+          Invoke-WebRequest -Uri "$base/$devel" -OutFile "$env:TEMP\$devel"
+
+          Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\$runtime`" /quiet /norestart INSTALLDIR=C:\gstreamer\1.0\msvc_x86_64 ADDLOCAL=ALL" -Wait
+          Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\$devel`" /quiet /norestart INSTALLDIR=C:\gstreamer\1.0\msvc_x86_64 ADDLOCAL=ALL" -Wait
 
       - name: Fix GStreamer Paths (Windows MSVC)
         if: matrix.os == 'windows-latest'
@@ -280,6 +287,7 @@ jobs:
           $gst = "C:\gstreamer\1.0\msvc_x86_64"
           "PKG_CONFIG=$gst\bin\pkg-config.exe" >> $env:GITHUB_ENV
           "PKG_CONFIG_PATH=$gst\lib\pkgconfig" >> $env:GITHUB_ENV
+          "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gst\" >> $env:GITHUB_ENV
           "$gst\bin" >> $env:GITHUB_PATH
 
       - uses: dtolnay/rust-toolchain@stable

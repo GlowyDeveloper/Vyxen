@@ -36,11 +36,11 @@ impl Default for VideoPlayback {
 }
 
 /// An encoded video resource (.mp4, .mkv, .webm).
-/// 
+///
 /// # Example
 /// ```rust,ignore
 /// use vyxen::{load_path, Video};
-/// 
+///
 /// let video = load_data::<Video>("path/to/file.mp4").unwrap();
 /// video.play();
 /// ```

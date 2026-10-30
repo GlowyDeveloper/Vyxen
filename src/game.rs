@@ -801,7 +801,7 @@ impl ApplicationHandler<GameEvent> for Game {
                         }
                     }
                 }
-                
+
                 if let (Some(engine), Some(scene)) = (&self.video, &self.loaded_scene) {
                     let handle = engine.handle();
                     for node in scene.get_nodes().values() {

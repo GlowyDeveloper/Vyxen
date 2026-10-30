@@ -45,7 +45,20 @@ cpal = "0.18.2"
 wasm-bindgen = "0.2.128"
 wasm-bindgen-futures = "0.4.78"
 web-time = "1.1.0"
-web-sys = { version = "0.3", features = ["Window", "Document", "EventTarget", "AddEventListenerOptions"] }
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "Blob",
+    "BlobPropertyBag",
+    "Document",
+    "Element",
+    "HtmlVideoElement",
+    "ImageData",
+    "OffscreenCanvas",
+    "OffscreenCanvasRenderingContext2d",
+    "Url",
+    "Window",
+    "MediaError",
+] }
 wgpu = { version = "30.0.1", features = ["webgl", "webgpu"] }
 cpal = { version = "0.18.2", features = ["wasm-bindgen"] }
 

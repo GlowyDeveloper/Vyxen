@@ -1,7 +1,8 @@
 use crate::{Video, error::Error, resource::video::RawFrame};
 use gstreamer::prelude::*;
 use std::{
-    collections::HashMap, sync::{
+    collections::HashMap,
+    sync::{
         Arc, Mutex,
         atomic::{AtomicUsize, Ordering::Relaxed},
     },
@@ -30,7 +31,7 @@ pub struct VideoEngine {
 impl VideoEngine {
     /// Creates a new video engine
     pub fn new() -> Result<Self, Error> {
-        gstreamer::init().map_err(|e| Error::FailedToCreateAudioDecoder(e.to_string()))?;
+        gstreamer::init().map_err(|e| Error::FailedToInitVideoDecoder(e.to_string()))?;
         Ok(Self {
             pipelines: Arc::new(Mutex::new(HashMap::new())),
         })
@@ -64,7 +65,7 @@ impl VideoEngineHandle {
             if let Some(old) = pipelines.remove(&key) {
                 let _ = old.pipeline.set_state(gstreamer::State::Null);
             }
-            
+
             playback.stopped.store(false, Relaxed);
             *playback.current_frame.lock().unwrap() = None;
 
@@ -97,7 +98,7 @@ impl VideoEngineHandle {
                 .field("format", "RGBA")
                 .build();
             appsink.set_caps(Some(&caps));
-            
+
             let inner_shared = playback.clone();
             appsink.set_callbacks(
                 gstreamer_app::AppSinkCallbacks::builder()
@@ -127,7 +128,7 @@ impl VideoEngineHandle {
                     })
                     .build(),
             );
-            
+
             let appsrc = src.dynamic_cast::<gstreamer_app::AppSrc>().unwrap();
             appsrc.set_stream_type(gstreamer_app::AppStreamType::RandomAccess);
             appsrc.set_format(gstreamer::Format::Bytes);
@@ -158,7 +159,7 @@ impl VideoEngineHandle {
                         let Ok(mut buffer) = gstreamer::Buffer::with_size(slice.len()) else {
                             return;
                         };
-                        
+
                         {
                             let buffer_mut = buffer.get_mut().unwrap();
                             buffer_mut.set_offset(pos as u64);
@@ -200,7 +201,6 @@ impl VideoEngineHandle {
             );
         }
 
-        
         let mut should_remove = false;
 
         if let Some(state) = pipelines.get(&key) {
@@ -221,9 +221,7 @@ impl VideoEngineHandle {
                                     )
                                     .is_err()
                                 {
-                                    log::error!(
-                                        "video: failed to seek back to start for looping"
-                                    );
+                                    log::error!("video: failed to seek back to start for looping");
                                     playback.stopped.store(true, Relaxed);
                                     should_remove = true;
                                 }

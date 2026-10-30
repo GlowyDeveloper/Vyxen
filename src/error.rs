@@ -33,6 +33,9 @@ pub enum Error {
     FailedToDecodeAudio(String),
     FailedToOpenAudioDevice(String),
 
+    FailedToInitVideoDecoder(String),
+    FailedToSanitizeVideo(String),
+
     IoError(ErrorKind),
 }
 
@@ -132,6 +135,12 @@ impl std::fmt::Display for Error {
             }
             Error::FailedToOpenAudioDevice(str) => {
                 write!(f, "Failed to open audio device: {}", str)
+            }
+            Error::FailedToInitVideoDecoder(str) => {
+                write!(f, "Failed to initilize GStreamer (Video Decoder): {}", str)
+            }
+            Error::FailedToSanitizeVideo(str) => {
+                write!(f, "Failed to remove metadata from mp4: {}", str)
             }
             Error::IoError(kind) => {
                 write!(f, "I/O error: {kind}")
