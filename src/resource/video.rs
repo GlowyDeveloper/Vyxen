@@ -5,6 +5,7 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering::Relaxed},
     },
+    time::Duration,
 };
 
 #[derive(Debug, Clone)]
@@ -21,6 +22,7 @@ pub(crate) struct VideoPlayback {
     pub stopped: AtomicBool,
     pub looping: AtomicBool,
     pub current_frame: Mutex<Option<RawFrame>>,
+    pub resume_position: Mutex<Option<Duration>>,
 }
 
 impl Default for VideoPlayback {
@@ -31,6 +33,7 @@ impl Default for VideoPlayback {
             stopped: AtomicBool::new(false),
             looping: AtomicBool::new(false),
             current_frame: Mutex::new(None),
+            resume_position: Mutex::new(None),
         }
     }
 }
@@ -78,7 +81,7 @@ impl Video {
         }
     }
 
-    /// Starts (or restarts) playback.
+    /// Starts playback, or resumes it from the position where it was stopped.
     pub fn play(&self) {
         self.playback.stop_requested.store(false, Relaxed);
         self.playback.play_requested.store(true, Relaxed);
@@ -88,6 +91,13 @@ impl Video {
     pub fn stop(&self) {
         self.playback.play_requested.store(false, Relaxed);
         self.playback.stop_requested.store(true, Relaxed);
+    }
+
+    /// Restarts playback from the very beginning.
+    pub fn restart(&self) {
+        *self.playback.resume_position.lock().unwrap() = None;
+        self.playback.stop_requested.store(false, Relaxed);
+        self.playback.play_requested.store(true, Relaxed);
     }
 
     /// Sets if the video should loop
@@ -102,5 +112,25 @@ impl Video {
 
     pub(crate) fn current_frame(&self) -> Option<RawFrame> {
         self.playback.current_frame.lock().unwrap().clone()
+    }
+
+    /// Returns the width of the video.
+    pub fn get_width(&self) -> Option<u32> {
+        self.playback
+            .current_frame
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|frame| frame.width)
+    }
+
+    /// Returns the height of the video.
+    pub fn get_height(&self) -> Option<u32> {
+        self.playback
+            .current_frame
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|frame| frame.height)
     }
 }

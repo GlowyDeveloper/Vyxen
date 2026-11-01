@@ -101,34 +101,32 @@ fn main() {
                     scene.add_node(circle_node);
                 }
             }
-            Event::MouseInput(input, state, pos) => {
-                if state == KeyState::Released {
-                    let pos = game.screen_to_world(pos).unwrap();
-                    let scene = game.get_scene_mut().unwrap();
+            Event::MouseInput(input, KeyState::Released, pos) => {
+                let pos = game.screen_to_world(pos).unwrap();
+                let scene = game.get_scene_mut().unwrap();
 
-                    if input == MouseInput::Left {
-                        let circle = Circle::new(20.0);
-                        let mut circle_sprite = Sprite::with_color(BLUE);
-                        circle_sprite.set_shape(circle);
-                        let mut circle_node = Node::new("circle".to_string());
-                        circle_node.add_component(circle_sprite);
-                        circle_node.add_component(Collider::new(circle));
-                        circle_node.add_component(RigidBody::new(1.0, 0.7, circle, 0.2, 0.5));
-                        circle_node.move_to(pos);
+                if input == MouseInput::Left {
+                    let circle = Circle::new(20.0);
+                    let mut circle_sprite = Sprite::with_color(BLUE);
+                    circle_sprite.set_shape(circle);
+                    let mut circle_node = Node::new("circle".to_string());
+                    circle_node.add_component(circle_sprite);
+                    circle_node.add_component(Collider::new(circle));
+                    circle_node.add_component(RigidBody::new(1.0, 0.7, circle, 0.2, 0.5));
+                    circle_node.move_to(pos);
 
-                        scene.add_node(circle_node);
-                    } else if input == MouseInput::Right {
-                        let circle = Circle::new(20.0);
-                        let mut circle_sprite = Sprite::with_color(GREEN);
-                        circle_sprite.set_shape(circle);
-                        let mut circle_node = Node::new("circle".to_string());
-                        circle_node.add_component(circle_sprite);
-                        circle_node.add_component(Collider::new(circle));
-                        circle_node.add_component(SoftBody::new(1.0, 0.7, circle, 0.2, 0.5));
-                        circle_node.move_to(pos);
+                    scene.add_node(circle_node);
+                } else if input == MouseInput::Right {
+                    let circle = Circle::new(20.0);
+                    let mut circle_sprite = Sprite::with_color(GREEN);
+                    circle_sprite.set_shape(circle);
+                    let mut circle_node = Node::new("circle".to_string());
+                    circle_node.add_component(circle_sprite);
+                    circle_node.add_component(Collider::new(circle));
+                    circle_node.add_component(SoftBody::new(1.0, 0.7, circle, 0.2, 0.5));
+                    circle_node.move_to(pos);
 
-                        scene.add_node(circle_node);
-                    }
+                    scene.add_node(circle_node);
                 }
             }
             _ => {}

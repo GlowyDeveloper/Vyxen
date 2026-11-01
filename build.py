@@ -30,6 +30,7 @@ EXAMPLES = [
     "counter",
     "readme",
     "radio",
+    "video-player",
 ]
 
 def help():

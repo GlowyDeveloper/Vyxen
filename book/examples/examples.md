@@ -28,6 +28,19 @@ View the [source code](https://github.com/GlowyDeveloper/Vyxen/tree/master/examp
 
 Or, you can also play it [here](https://glowydeveloper.github.io/Vyxen/examples/radio.html)
 
+## Video Player
+
+Loads the user's selected video and plays the video.
+
+Run it with `cargo run`:
+```bash
+cargo run -p video-player
+```
+
+View the [source code](https://github.com/GlowyDeveloper/Vyxen/tree/master/examples/video-player)
+
+Or, you can also play it [here](https://glowydeveloper.github.io/Vyxen/examples/video-player.html)
+
 ## Counter
 
 A text that counts how many time you've clicked.

@@ -24,6 +24,7 @@ members = [
     "examples/counter",
     "examples/readme",
     "examples/radio",
+    "examples/video-player",
 ]
 
 [dependencies]

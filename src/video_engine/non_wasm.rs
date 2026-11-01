@@ -6,12 +6,14 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicUsize, Ordering::Relaxed},
     },
+    time::Duration,
 };
 
 struct PipelineState {
     pipeline: gstreamer::Pipeline,
     bus: gstreamer::Bus,
     cursor: Arc<AtomicUsize>,
+    pending_seek: Option<gstreamer::ClockTime>,
 }
 
 impl Drop for PipelineState {
@@ -58,6 +60,14 @@ impl VideoEngineHandle {
         let mut pipelines = self.pipelines.lock().unwrap();
 
         if playback.stop_requested.swap(false, Relaxed) {
+            // Remember where we were so a following `play()` can resume
+            // instead of starting over from byte/time zero.
+            if let Some(state) = pipelines.get(&key) {
+                if let Some(pos) = state.pipeline.query_position::<gstreamer::ClockTime>() {
+                    *playback.resume_position.lock().unwrap() =
+                        Some(Duration::from_nanos(pos.nseconds()));
+                }
+            }
             playback.stopped.store(true, Relaxed);
         }
 
@@ -68,6 +78,11 @@ impl VideoEngineHandle {
 
             playback.stopped.store(false, Relaxed);
             *playback.current_frame.lock().unwrap() = None;
+
+            // Take (and clear) any remembered position. `restart()` clears
+            // this ahead of time, so this is `None` whenever the caller
+            // wants to start from the beginning.
+            let resume_at = playback.resume_position.lock().unwrap().take();
 
             let pipeline = gstreamer::Pipeline::with_name("video-stream-pipeline");
             let src = gstreamer::ElementFactory::make("appsrc").build().unwrap();
@@ -190,6 +205,8 @@ impl VideoEngineHandle {
             }
 
             let bus = pipeline.bus().unwrap();
+            let pending_seek =
+                resume_at.map(|dur| gstreamer::ClockTime::from_nseconds(dur.as_nanos() as u64));
 
             pipelines.insert(
                 key,
@@ -197,18 +214,34 @@ impl VideoEngineHandle {
                     pipeline,
                     bus,
                     cursor,
+                    pending_seek,
                 },
             );
         }
 
         let mut should_remove = false;
 
-        if let Some(state) = pipelines.get(&key) {
+        if let Some(state) = pipelines.get_mut(&key) {
             if playback.stopped.load(Relaxed) {
                 should_remove = true;
             } else {
                 while let Some(msg) = state.bus.pop() {
                     match msg.view() {
+                        gstreamer::MessageView::AsyncDone(_) => {
+                            // The pipeline has prerolled and can now accept
+                            // a seek; apply the resume position if we have
+                            // one queued.
+                            if let Some(target) = state.pending_seek.take() {
+                                if state
+                                    .pipeline
+                                    .seek_simple(gstreamer::SeekFlags::FLUSH, target)
+                                    .is_err()
+                                {
+                                    log::error!("video: failed to seek to resume position");
+                                }
+                            }
+                        }
+
                         gstreamer::MessageView::Eos(_) => {
                             if playback.looping.load(Relaxed) {
                                 state.cursor.store(0, Relaxed);
@@ -228,6 +261,10 @@ impl VideoEngineHandle {
                             } else {
                                 playback.stopped.store(true, Relaxed);
                                 should_remove = true;
+                                // The video finished on its own; a later
+                                // `play()` should start over, not resume
+                                // from the end.
+                                *playback.resume_position.lock().unwrap() = None;
                             }
                         }
 
@@ -241,6 +278,7 @@ impl VideoEngineHandle {
 
                             playback.stopped.store(true, Relaxed);
                             should_remove = true;
+                            *playback.resume_position.lock().unwrap() = None;
                         }
 
                         _ => {}

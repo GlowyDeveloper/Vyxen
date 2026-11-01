@@ -234,8 +234,15 @@ impl Sprite {
     }
 
     /// Returns the current element type of this sprite.
+    ///
+    /// If you require a mutable reference, refer to `get_element_type_mut`
     pub fn get_element_type(&self) -> &ElementType {
         &self.element_type
+    }
+
+    /// Returns the current element type of this sprite mutably.
+    pub fn get_element_type_mut(&mut self) -> &mut ElementType {
+        &mut self.element_type
     }
 
     /// Sets the z-index of this sprite.

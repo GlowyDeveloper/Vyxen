@@ -73,7 +73,7 @@ radio_sprite.set_shape(Box::new(200.0, 328.0));
 ```
 
 > [!CAUTION]
-> The use of `Box::new` here is Vyxen's `vyxen::geometry::Box` type, not the standard library's `std::boxed::Box` type. If you are using the standard library's box type in the same file, instead import it one of them with an alias. For example: `use std::boxed::Box as StdBox;`.
+> The use of `Box::new` here is Vyxen's `vyxen::Box` type, not the standard library's `std::boxed::Box` type. If you are using the standard library's box type in the same file, instead import it one of them with an alias. For example: `use std::boxed::Box as StdBox;`.
 
 Then it creates a `Node` for the radio and adds the `Sprite` to it.
 

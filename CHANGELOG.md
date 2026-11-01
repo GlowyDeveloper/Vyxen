@@ -6,6 +6,8 @@
 
 - Texture inverting and grayscaling.
 - Audio playback
+- Video playback
+- New examples
 
 ### Fixes
 
