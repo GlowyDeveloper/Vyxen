@@ -238,8 +238,6 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - os: macos-latest
             target: aarch64-apple-darwin
-          - os: macos-latest
-            target: aarch64-apple-ios-sim
           - os: ubuntu-latest
             target: aarch64-linux-android
           - os: ubuntu-latest
@@ -282,20 +280,10 @@ jobs:
           echo "GSTREAMER_1_0_ROOT_ANDROID=$HOME/gstreamer-android/" >> "$GITHUB_ENV"
 
       - name: Install GStreamer (macOS)
-        if: matrix.os == 'macos-latest' && matrix.target == 'aarch64-apple-darwin'
+        if: matrix.os == 'macos-latest'
         run: |
           brew install gstreamer pkgconf
           echo "PKG_CONFIG_PATH=$(brew --prefix gstreamer)/lib/pkgconfig" >> "$GITHUB_ENV"
-      
-      - name: Install GStreamer (iOS Simulator)
-        if: matrix.target == 'aarch64-apple-ios-sim'
-        run: |
-          GST_VERSION=1.26.10
-          curl -fL "https://gstreamer.freedesktop.org/data/pkg/ios/${GST_VERSION}/gstreamer-1.0-${GST_VERSION}-ios-universal.pkg" -o /tmp/gstreamer-ios.pkg
-          sudo installer -pkg /tmp/gstreamer-ios.pkg -target /
-          SDK_PATH="/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig"
-          echo "PKG_CONFIG_PATH=$SDK_PATH" >> "$GITHUB_ENV"
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> "$GITHUB_ENV"
 
       - name: Install GStreamer (Windows)
         if: matrix.os == 'windows-latest'

@@ -126,7 +126,7 @@ fn main() {
     game.load_scene(scene);
 
     set_control_tint(&mut game, TRANSPARENT);
-    
+
     let mut window = WindowConfig::new();
     window.set_title("Video Player".to_string());
 
