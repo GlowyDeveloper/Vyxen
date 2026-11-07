@@ -321,173 +321,7 @@ def book():
             
     print(f"{HEADER}wasm-bindgen-cli is installed{ENDC}")
 
-    if sys.argv.count("--serve") >= 1 or sys.argv.count("-s") >= 1:
-        def run_server():
-            handler = partial(
-                SimpleHTTPRequestHandler,
-                directory="target/book"
-            )
-        
-            server = HTTPServer(("0.0.0.0", 8000), handler)
-        
-            print("Serving on http://0.0.0.0:8000")
-        
-            server.serve_forever()
-
-        def watch_files():
-            def book_changed():
-                if os.path.isdir('target/book/wasm'):
-                    print(f"{HEADER}moving target/book/wasm to target/wasm{ENDC}")
-                    shutil.move("target/book/wasm", "target/wasm")
-                
-                print(f"{HEADER}mdbook build{ENDC}")
-                subprocess.run(
-                    ["mdbook", "build"],
-                    check=True,
-                    text=True,
-                )
-
-                if os.path.isdir('target/wasm'):
-                    print(f"{HEADER}moving target/wasm to target/book/wasm{ENDC}")
-                    shutil.move("target/wasm", "target/book/wasm")
-
-            def examples_changed():
-                print(f"{HEADER}removing target/book/wasm{ENDC}")
-                
-                try:
-                    shutil.rmtree("target/book/wasm", ignore_errors=True)
-                except FileNotFoundError:
-                    pass
-                except OSError as e:
-                    print("Failed to remove target/book/wasm")
-                    print(e)
-                    
-                    return 1
-            
-                for example in EXAMPLES:
-                    try:
-                        print(f"{HEADER}cargo build --target wasm32-unknown-unknown -p {example} -r -v{ENDC}")
-                        subprocess.run(
-                            ["cargo", "build", "--target", "wasm32-unknown-unknown", "-p", example, "-r"] + (["-v"] if sys.argv.count("-v") >= 1 or sys.argv.count("--verbose") >= 1 else []),
-                            check=True,
-                            text=True,
-                        )
-                    except subprocess.CalledProcessError as e:
-                        print(f"Failed to build {example}")
-                        print(e)
-                        return 1
-                    try:
-                        print(f"{HEADER}wasm-bindgen --target web --out-dir target/book/wasm/{example} target/wasm32-unknown-unknown/release/{example}.wasm{ENDC}")
-                        subprocess.run(
-                            ["wasm-bindgen", "--target", "web", "--out-dir", f"target/book/wasm/{example}", f"target/wasm32-unknown-unknown/release/{example}.wasm", "--no-typescript"],
-                            check=True,
-                            text=True,
-                        )
-                    except subprocess.CalledProcessError as e:
-                        print(f"Failed to generate wasm bindings for {example}")
-                        error = e.stderr or ""
-                        print(e)
-                        print(error)
-                        return 1
-
-            book_changed()
-            examples_changed()
-            
-            book = Path("./book")
-            examples = Path("./examples")
-            src = Path("./src")
-        
-            previous_book = {
-                path: path.stat().st_mtime
-                for path in book.rglob("*")
-                if path.is_file()
-            }
-            previous_example = {
-                path: path.stat().st_mtime
-                for path in examples.rglob("*")
-                if path.is_file()
-            }
-            previous_src = {
-                path: path.stat().st_mtime
-                for path in src.rglob("*")
-                if path.is_file()
-            }
-        
-            while True:
-                current_book = {
-                    path: path.stat().st_mtime
-                    for path in book.rglob("*")
-                    if path.is_file()
-                }
-        
-                for path, mtime in current_book.items():
-                    if path not in previous_book:
-                        print(f"New file: {path}")
-                        book_changed()
-                    elif mtime != previous_book[path]:
-                        print(f"File changed: {path}")
-                        book_changed()
-        
-                for path in previous_book:
-                    if path not in current_book:
-                        print(f"File deleted: {path}")
-                        book_changed()
-        
-                previous_book = current_book
-
-                current_example = {
-                    path: path.stat().st_mtime
-                    for path in examples.rglob("*")
-                    if path.is_file()
-                }
-
-                for path, mtime in current_example.items():
-                    if path not in previous_example:
-                        print(f"New file: {path}")
-                        examples_changed()
-                    elif mtime != previous_example[path]:
-                        print(f"File changed: {path}")
-                        examples_changed()
-
-                for path in previous_example:
-                    if path not in current_example:
-                        print(f"File deleted: {path}")
-                        examples_changed()
-
-                previous_example = current_example
-
-                current_src = {
-                    path: path.stat().st_mtime
-                    for path in src.rglob("*")
-                    if path.is_file()
-                }
-
-                for path, mtime in current_src.items():
-                    if path not in previous_src:
-                        print(f"New file: {path}")
-                        examples_changed()
-                    elif mtime != previous_src[path]:
-                        print(f"File changed: {path}")
-                        examples_changed()
-
-                for path in previous_src:
-                    if path not in current_src:
-                        print(f"File deleted: {path}")
-                        examples_changed()
-
-                previous_src = current_src
-
-                time.sleep(0.5)
-
-        server_thread = threading.Thread(target=run_server)
-        watcher_thread = threading.Thread(target=watch_files)
-        
-        server_thread.start()
-        watcher_thread.start()
-        
-        server_thread.join()
-        watcher_thread.join()
-    else:
+    def build_book():
         try:
             print(f"{HEADER}mdbook build{ENDC}")
             subprocess.run(
@@ -501,17 +335,17 @@ def book():
             print(e)
             print(error)
             return 1
-    
-        try:
-            shutil.rmtree("target/book/wasm", ignore_errors=True)
-        except FileNotFoundError:
-            pass
-        except OSError as e:
-            print("Failed to remove target/book/wasm")
-            print(e)
-            return 1
-    
-        for example in EXAMPLES:
+
+    def build_examples():
+        examples = []
+        examples_dir = os.path.join(os.getcwd(), "examples")
+        for f in os.listdir(examples_dir):
+            if os.path.isdir(os.path.join(examples_dir, f)):
+                examples.append(f)
+
+        print(f"Examples: {examples}")
+        
+        for example in examples:
             try:
                 print(f"{HEADER}cargo build --target wasm32-unknown-unknown -p {example} -r -v{ENDC}")
                 subprocess.run(
@@ -535,6 +369,121 @@ def book():
                 print(e)
                 return 1
         return 0
+    
+    def get_file_state(directory):
+        return {
+            path: path.stat().st_mtime
+            for path in directory.rglob("*")
+            if path.is_file()
+        }
+    
+    def find_changes(previous, current):
+        changes = []
+    
+        for path in current:
+            if path not in previous:
+                changes.append(("New file", path))
+            elif current[path] != previous[path]:
+                changes.append(("File changed", path))
+    
+        for path in previous:
+            if path not in current:
+                changes.append(("File deleted", path))
+    
+        return changes
+    
+    def book_changed():
+        wasm = Path("target/wasm")
+        book_wasm = Path("target/book/wasm")
+    
+        if book_wasm.exists():
+            print(f"{HEADER}Moving book/wasm to target/wasm{ENDC}")
+            shutil.move(str(book_wasm), str(wasm))
+    
+        result = build_book()
+    
+        if wasm.exists():
+            print(f"{HEADER}Moving target/wasm to book/wasm{ENDC}")
+            shutil.move(str(wasm), str(book_wasm))
+    
+        return result
+    
+    def examples_changed():
+        print(f"{HEADER}Removing target/book/wasm{ENDC}")
+    
+        shutil.rmtree("target/book/wasm", ignore_errors=True)
+    
+        return build_examples()
+    
+    def run_server():
+        handler = partial(
+            SimpleHTTPRequestHandler,
+            directory="target/book"
+        )
+    
+        server = HTTPServer(("0.0.0.0", 8000), handler)
+    
+        print("Serving on http://0.0.0.0:8000")
+    
+        server.serve_forever()
+    
+    def watch_files():
+        directories = {
+            Path("./book"): book_changed,
+            Path("./examples"): examples_changed,
+            Path("./src"): examples_changed,
+        }
+    
+        book_changed()
+        examples_changed()
+    
+        previous = {
+            directory: get_file_state(directory)
+            for directory in directories
+        }
+    
+        while True:
+            for directory, rebuild in directories.items():
+                current = get_file_state(directory)
+                changes = find_changes(previous[directory], current)
+    
+                if changes:
+                    for change, path in changes:
+                        print(f"{change}: {path}")
+    
+                    rebuild()
+    
+                previous[directory] = current
+    
+            time.sleep(0.5)
+    
+    
+    if sys.argv.count("--serve") >= 1 or sys.argv.count("-s") >= 1:
+        try:
+            server_thread = threading.Thread(target=run_server, daemon=True)
+            watcher_thread = threading.Thread(target=watch_files, daemon=True)
+            
+            server_thread.start()
+            watcher_thread.start()
+        
+            server_thread.join()
+            watcher_thread.join()
+        except KeyboardInterrupt:
+            print()
+            return 0
+    else:
+        if build_book() == 1: return 1
+    
+        try:
+            shutil.rmtree("target/book/wasm", ignore_errors=True)
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            print("Failed to remove target/book/wasm")
+            print(e)
+            return 1
+
+        return build_examples()
 
 def main():
     if len(sys.argv) < 2:
