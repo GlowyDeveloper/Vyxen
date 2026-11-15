@@ -302,7 +302,22 @@ jobs:
         run: |
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> "$GITHUB_ENV"
           echo "PKG_CONFIG_LIBDIR=$HOME/gstreamer-android/arm64/lib/pkgconfig" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_ALL_STATIC=1" >> "$GITHUB_ENV"
           echo "GSTREAMER_1_0_ROOT_ANDROID=$HOME/gstreamer-android/" >> "$GITHUB_ENV"
+
+      - name: Verify Android GStreamer dependencies
+        if: matrix.target == 'aarch64-linux-android'
+        run: |
+          export PKG_CONFIG_PATH="$PKG_CONFIG_LIBDIR"
+
+          echo "=== GLib dependencies ==="
+          pkg-config --static --libs glib-2.0
+
+          echo "=== PCRE2 availability ==="
+          pkg-config --modversion libpcre2-8
+
+          echo "=== PCRE2 library ==="
+          find "$HOME/gstreamer-android/arm64" -iname '*pcre2*'
 
       - name: Install GStreamer (macOS)
         if: matrix.os == 'macos-latest'
