@@ -315,49 +315,49 @@ jobs:
         run: choco install pkgconfiglite -y --no-progress
         shell: pwsh
 
-      - name: Install GStreamer (Windows)
+      - name: Install GStreamer (Windows, via Chocolatey)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
-          $version = "${{ env.GST_VERSION }}"
-          $base = "https://gstreamer.freedesktop.org/data/pkg/windows/$version/msvc"
-          $gst = "C:\gstreamer\1.0\msvc_x86_64"
+          choco install gstreamer --version=1.26.9 -y --no-progress
+          choco install gstreamer-devel --version=1.26.9 -y --no-progress
 
-          $packages = @(
-            "gstreamer-1.0-msvc-x86_64-$version.msi",
-            "gstreamer-1.0-devel-msvc-x86_64-$version.msi"
+          $roots = @(
+            "C:\gstreamer",
+            "C:\Program Files\gstreamer",
+            "C:\Program Files (x86)\gstreamer",
+            "C:\Program Files\GStreamer",
+            "C:\Program Files (x86)\GStreamer"
           )
 
-          foreach ($pkg in $packages) {
-            $msiPath = "$env:TEMP\$pkg"
-            $logPath = "$env:TEMP\$pkg.log"
-
-            Write-Host "Downloading $pkg..."
-            Invoke-WebRequest -Uri "$base/$pkg" -OutFile $msiPath
-
-            Write-Host "Installing $pkg..."
-            $proc = Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" ADDLOCAL=ALL /qn /norestart /l*v `"$logPath`" INSTALLDIR=`"$gst`"" -Wait -PassThru
-
-            if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
-              Write-Host "---- msiexec log tail for $pkg ----"
-              if (Test-Path $logPath) {
-                Get-Content $logPath -Tail 80
+          $pc = $null
+          foreach ($root in $roots) {
+            if (Test-Path $root) {
+              $found = Get-ChildItem -Path $root -Filter 'glib-2.0.pc' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($found) {
+                $pc = $found
+                break
               }
-              throw "msiexec failed for $pkg with exit code $($proc.ExitCode)"
             }
           }
 
-          if (!(Test-Path "$gst\lib\pkgconfig\glib-2.0.pc")) {
-            Write-Host "Contents of ${gst}:"
-            if (Test-Path $gst) {
-              Get-ChildItem -Recurse $gst | Select-Object -First 100 | Format-Table FullName
-            } else {
-              Write-Host "$gst does not exist"
+          if (-not $pc) {
+            Write-Host "glib-2.0.pc not found. Searched: $($roots -join ', ')"
+            foreach ($root in $roots) {
+              if (Test-Path $root) {
+                Write-Host "---- $root ----"
+                Get-ChildItem -Recurse $root -ErrorAction SilentlyContinue | Select-Object -First 50 | Format-Table FullName
+              }
             }
-            throw "glib-2.0.pc not found after install"
+            throw "glib-2.0.pc not found under any expected GStreamer install root"
           }
 
-          "PKG_CONFIG_PATH=$gst\lib\pkgconfig" >> $env:GITHUB_ENV
+          $pkgconfigDir = $pc.DirectoryName
+          $gst = Split-Path (Split-Path $pkgconfigDir -Parent) -Parent
+
+          Write-Host "Found GStreamer install at: $gst"
+
+          "PKG_CONFIG_PATH=$pkgconfigDir" >> $env:GITHUB_ENV
           "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gst\" >> $env:GITHUB_ENV
           "$gst\bin" >> $env:GITHUB_PATH
 
