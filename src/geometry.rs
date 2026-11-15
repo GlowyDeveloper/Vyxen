@@ -508,14 +508,10 @@ impl AABB {
     /// assert!(AABB::intersect_aabb(a, b));
     /// ```
     pub fn intersect_aabb(aabb_a: AABB, aabb_b: AABB) -> bool {
-        if aabb_a.get_max().x <= aabb_b.get_min().x
+        !(aabb_a.get_max().x <= aabb_b.get_min().x
             || aabb_b.get_max().x <= aabb_a.get_min().x
             || aabb_a.get_max().y <= aabb_b.get_min().y
-            || aabb_b.get_max().y <= aabb_a.get_min().y
-        {
-            return false;
-        }
-        true
+            || aabb_b.get_max().y <= aabb_a.get_min().y)
     }
 }
 

@@ -28,26 +28,27 @@ members = [
 ]
 
 [dependencies]
+wgpu = "30.0.2"
 winit = { version = "0.30.13", default-features = false, features = ["rwh_06"] }
 bytemuck = { version = "1.25.2", features = ["derive"] }
 
-skrifa = "0.47.0"
+skrifa = "0.50.0"
 zeno = "0.3.3"
 
 zune-jpeg = { version = "0.5.15", default-features = false }
 png = { version = "0.18.1", default-features = false, features = ["zlib-rs"] }
 
-log = "0.4.34"
+log = "0.4.35"
 
 symphonia = { version = "0.6.1", default-features = false, features = ["ogg", "wav", "aac", "alac", "flac", "mp3", "pcm", "vorbis"] }
 cpal = "0.18.2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "0.2.128"
-wasm-bindgen-futures = "0.4.78"
+wasm-bindgen = "0.2.130"
+wasm-bindgen-futures = "0.4.80"
 web-time = "1.1.0"
-js-sys = "0.3"
-web-sys = { version = "0.3", features = [
+js-sys = "0.3.107"
+web-sys = { version = "0.3.107", features = [
     "Blob",
     "BlobPropertyBag",
     "Document",
@@ -60,16 +61,15 @@ web-sys = { version = "0.3", features = [
     "Window",
     "MediaError",
 ] }
-wgpu = { version = "30.0.1", features = ["webgl", "webgpu"] }
+wgpu = { version = "30.0.2", features = ["webgl", "webgpu"] }
 cpal = { version = "0.18.2", features = ["wasm-bindgen"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "1.0.1"
-wgpu = "30.0.1"
 
-gstreamer = "0.24.4"
-gstreamer-video = "0.24.4"
-gstreamer-app = "0.24.4"
+gstreamer = "0.24.5"
+gstreamer-video = "0.24.5"
+gstreamer-app = "0.24.5"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 winit = { version = "0.30.13" }

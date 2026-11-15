@@ -19,7 +19,6 @@ struct PipelineState {
 
 impl Drop for PipelineState {
     fn drop(&mut self) {
-        // stop the element so it's not still buffering/decoding in the background
         self.video_el.pause().ok();
         self.video_el.set_src("");
         let _ = Url::revoke_object_url(&self.object_url);
@@ -63,8 +62,6 @@ impl VideoEngineHandle {
         let mut pipelines = self.pipelines.lock().unwrap();
 
         if playback.stop_requested.swap(false, Relaxed) {
-            // Remember where we were so a following `play()` can resume
-            // instead of starting over from the first frame.
             if let Some(state) = pipelines.get(&key) {
                 let secs = state.video_el.current_time();
                 *playback.resume_position.lock().unwrap() = Some(Duration::from_secs_f64(secs));
@@ -78,9 +75,6 @@ impl VideoEngineHandle {
             playback.stopped.store(false, Relaxed);
             *playback.current_frame.lock().unwrap() = None;
 
-            // Take (and clear) any remembered position. `restart()` clears
-            // this ahead of time, so this is `None` whenever the caller
-            // wants to start from the beginning.
             let resume_at = playback.resume_position.lock().unwrap().take();
 
             if let Err(e) = Self::start_pipeline(video, &mut pipelines, key, resume_at) {
@@ -98,6 +92,7 @@ impl VideoEngineHandle {
                 let video_el = &state.video_el;
 
                 video_el.set_loop(playback.looping.load(Relaxed));
+                video_el.set_volume(f32::from_bits(playback.volume.load(Relaxed)) as f64);
 
                 if video_el.ready_state() >= 2 {
                     let w = video_el.video_width();
@@ -136,8 +131,6 @@ impl VideoEngineHandle {
                     } else {
                         playback.stopped.store(true, Relaxed);
                         should_remove = true;
-                        // The video finished on its own; a later `play()`
-                        // should start over, not resume from the end.
                         *playback.resume_position.lock().unwrap() = None;
                     }
                 }
@@ -182,16 +175,14 @@ impl VideoEngineHandle {
         video_el.set_onerror(Some(on_error.as_ref().unchecked_ref()));
         on_error.forget();
         video_el.set_src(&object_url);
-        video_el.set_muted(true);
         video_el.set_loop(video.playback.looping.load(Relaxed));
+        video_el.set_volume(f32::from_bits(video.playback.volume.load(Relaxed)) as f64);
         video_el.set_cross_origin(None);
 
         if let Some(pos) = resume_at {
             let seconds = pos.as_secs_f64();
             video_el.set_current_time(seconds);
 
-            // Some browsers drop a `currentTime` set before metadata has
-            // loaded, so reapply it once it becomes available.
             let video_el_for_seek = video_el.clone();
             let on_loaded = Closure::<dyn FnMut(Event)>::new(move |_evt: Event| {
                 video_el_for_seek.set_current_time(seconds);
@@ -200,7 +191,16 @@ impl VideoEngineHandle {
             on_loaded.forget();
         }
 
-        let _ = video_el.play();
+        if let Ok(promise) = video_el.play() {
+            let video_el_for_fallback = video_el.clone();
+            let on_play_rejected = Closure::<dyn FnMut(JsValue)>::new(move |_err: JsValue| {
+                log::warn!("Autoplay with audio was blocked; retrying muted");
+                video_el_for_fallback.set_muted(true);
+                let _ = video_el_for_fallback.play();
+            });
+            let _ = promise.catch(&on_play_rejected);
+            on_play_rejected.forget();
+        }
 
         let canvas = OffscreenCanvas::new(1, 1)?;
         let ctx = canvas

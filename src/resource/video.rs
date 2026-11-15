@@ -3,7 +3,7 @@ use std::{
     any::Any,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, Ordering::Relaxed},
+        atomic::{AtomicBool, AtomicU32, Ordering::Relaxed},
     },
     time::Duration,
 };
@@ -21,6 +21,7 @@ pub(crate) struct VideoPlayback {
     pub stop_requested: AtomicBool,
     pub stopped: AtomicBool,
     pub looping: AtomicBool,
+    pub volume: AtomicU32,
     pub current_frame: Mutex<Option<RawFrame>>,
     pub resume_position: Mutex<Option<Duration>>,
 }
@@ -32,6 +33,7 @@ impl Default for VideoPlayback {
             stop_requested: AtomicBool::new(false),
             stopped: AtomicBool::new(false),
             looping: AtomicBool::new(false),
+            volume: AtomicU32::new(1.0f32.to_bits()),
             current_frame: Mutex::new(None),
             resume_position: Mutex::new(None),
         }
@@ -132,5 +134,15 @@ impl Video {
             .unwrap()
             .as_ref()
             .map(|frame| frame.height)
+    }
+
+    /// Sets the volume of the video's audio track(s).
+    pub fn set_volume(&self, volume: f32) {
+        self.playback.volume.store(volume.to_bits(), Relaxed);
+    }
+
+    /// Returns the current volume of the video's audio track(s).
+    pub fn get_volume(&self) -> f32 {
+        f32::from_bits(self.playback.volume.load(Relaxed))
     }
 }

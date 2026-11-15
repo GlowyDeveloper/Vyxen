@@ -351,7 +351,10 @@ jobs:
         shell: bash
         run: |
           for dir in examples/*/; do
-            package="${dir##*/}"
+            [ -d "$dir" ] || continue
+            package="${dir%/}"
+            package="${package##*/}"
+        
             echo "Building $package..."
             cargo build -p "$package" --target ${{ matrix.target }}
           done

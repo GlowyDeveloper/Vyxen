@@ -25,6 +25,7 @@ mod game;
 mod math;
 mod scene;
 mod ui;
+mod utils;
 
 pub use audio_engine::{AudioEngine, AudioHandle, AudioSource, SoundHandle};
 pub use game::{Context, Event, Game};
@@ -43,4 +44,5 @@ pub use resource::{
 };
 pub use scene::Scene;
 pub use ui::{ElementType, UiElement};
+pub use utils::{block_on, spawn_future};
 pub use video_engine::{VideoEngine, VideoEngineHandle};

@@ -4,16 +4,6 @@ use vyxen::prelude::*;
 
 const ROBOTO: &[u8; 159900] = include_bytes!("Roboto-Bold.ttf");
 
-#[cfg(not(target_arch = "wasm32"))]
-fn spawn_future(fut: impl std::future::Future<Output = ()> + Send + 'static) {
-    std::thread::spawn(move || pollster::block_on(fut));
-}
-
-#[cfg(target_arch = "wasm32")]
-fn spawn_future(fut: impl std::future::Future<Output = ()> + 'static) {
-    wasm_bindgen_futures::spawn_local(fut);
-}
-
 fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {
     let video_bytes = Arc::clone(video_bytes);
     spawn_future(async move {
@@ -77,6 +67,7 @@ fn main() {
     let mut game = Game::new();
     let mut scene = Scene::new();
     let mut picker_visible = true;
+    let mut closing_video = false;
     let video_bytes: Arc<Mutex<Option<Vec<u8>>>> = Arc::new(Mutex::new(None));
 
     let mut picker = Node::new("picker".to_string());
@@ -207,7 +198,13 @@ fn main() {
                         .unwrap()
                         .get_component_mut::<Sprite>()
                     {
-                        sprite.set_element_type(ElementType::Color(TRANSPARENT));
+                        if let ElementType::Video(video) = sprite.get_element_type() {
+                            video.set_volume(0.0);
+                            video.stop();
+                            closing_video = true;
+                        } else {
+                            sprite.set_element_type(ElementType::Color(TRANSPARENT));
+                        }
                     }
                 } else {
                     if let Some(sprite) = game
@@ -225,6 +222,25 @@ fn main() {
                             }
                         }
                     }
+                }
+            }
+        }
+
+        if closing_video {
+            if let Some(sprite) = game
+                .get_scene_mut()
+                .unwrap()
+                .get_node_mut(2)
+                .unwrap()
+                .get_component_mut::<Sprite>()
+            {
+                let done = match sprite.get_element_type() {
+                    ElementType::Video(video) => !video.is_playing(),
+                    _ => true,
+                };
+                if done {
+                    sprite.set_element_type(ElementType::Color(TRANSPARENT));
+                    closing_video = false;
                 }
             }
         }
@@ -254,6 +270,7 @@ fn main() {
             {
                 let video = Video::new(bytes);
                 video.play();
+                video.set_volume(1.0);
                 sprite.set_element_type(ElementType::Video(video));
             }
         }

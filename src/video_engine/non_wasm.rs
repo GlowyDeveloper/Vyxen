@@ -14,6 +14,8 @@ struct PipelineState {
     bus: gstreamer::Bus,
     cursor: Arc<AtomicUsize>,
     pending_seek: Option<gstreamer::ClockTime>,
+    audio_volume: gstreamer::Element,
+    last_volume_bits: u32,
 }
 
 impl Drop for PipelineState {
@@ -60,8 +62,6 @@ impl VideoEngineHandle {
         let mut pipelines = self.pipelines.lock().unwrap();
 
         if playback.stop_requested.swap(false, Relaxed) {
-            // Remember where we were so a following `play()` can resume
-            // instead of starting over from byte/time zero.
             if let Some(state) = pipelines.get(&key) {
                 if let Some(pos) = state.pipeline.query_position::<gstreamer::ClockTime>() {
                     *playback.resume_position.lock().unwrap() =
@@ -79,9 +79,6 @@ impl VideoEngineHandle {
             playback.stopped.store(false, Relaxed);
             *playback.current_frame.lock().unwrap() = None;
 
-            // Take (and clear) any remembered position. `restart()` clears
-            // this ahead of time, so this is `None` whenever the caller
-            // wants to start from the beginning.
             let resume_at = playback.resume_position.lock().unwrap().take();
 
             let pipeline = gstreamer::Pipeline::with_name("video-stream-pipeline");
@@ -94,17 +91,64 @@ impl VideoEngineHandle {
                 .unwrap();
             let sink = gstreamer::ElementFactory::make("appsink").build().unwrap();
 
+            let audio_convert = gstreamer::ElementFactory::make("audioconvert")
+                .build()
+                .unwrap();
+            let audio_resample = gstreamer::ElementFactory::make("audioresample")
+                .build()
+                .unwrap();
+            let audio_volume = gstreamer::ElementFactory::make("volume").build().unwrap();
+            let audio_sink = gstreamer::ElementFactory::make("autoaudiosink")
+                .build()
+                .unwrap();
+
+            let initial_volume_bits = playback.volume.load(Relaxed);
+            audio_volume.set_property("volume", f32::from_bits(initial_volume_bits) as f64);
+
             pipeline
-                .add_many([&src, &decoder, &convert, &sink])
+                .add_many([
+                    &src,
+                    &decoder,
+                    &convert,
+                    &sink,
+                    &audio_convert,
+                    &audio_volume,
+                    &audio_resample,
+                    &audio_sink,
+                ])
                 .unwrap();
             src.link(&decoder).unwrap();
             convert.link(&sink).unwrap();
+            gstreamer::Element::link_many([
+                &audio_convert,
+                &audio_volume,
+                &audio_resample,
+                &audio_sink,
+            ])
+            .unwrap();
 
             let convert_clone = convert.clone();
+            let audio_convert_clone = audio_convert.clone();
             decoder.connect_pad_added(move |_, src_pad| {
-                let sink_pad = convert_clone.static_pad("sink").unwrap();
+                let is_audio = src_pad
+                    .current_caps()
+                    .and_then(|caps| caps.structure(0).map(|s| s.name().starts_with("audio/")))
+                    .unwrap_or(false);
+
+                let sink_pad = if is_audio {
+                    audio_convert_clone.static_pad("sink").unwrap()
+                } else {
+                    convert_clone.static_pad("sink").unwrap()
+                };
+
                 if !sink_pad.is_linked() {
-                    src_pad.link(&sink_pad).unwrap();
+                    if let Err(e) = src_pad.link(&sink_pad) {
+                        log::error!(
+                            "video: failed to link decoded {} pad: {:?}",
+                            if is_audio { "audio" } else { "video" },
+                            e
+                        );
+                    }
                 }
             });
 
@@ -215,6 +259,8 @@ impl VideoEngineHandle {
                     bus,
                     cursor,
                     pending_seek,
+                    audio_volume,
+                    last_volume_bits: initial_volume_bits,
                 },
             );
         }
@@ -222,15 +268,20 @@ impl VideoEngineHandle {
         let mut should_remove = false;
 
         if let Some(state) = pipelines.get_mut(&key) {
+            let volume_bits = playback.volume.load(Relaxed);
+            if volume_bits != state.last_volume_bits {
+                state
+                    .audio_volume
+                    .set_property("volume", f32::from_bits(volume_bits) as f64);
+                state.last_volume_bits = volume_bits;
+            }
+
             if playback.stopped.load(Relaxed) {
                 should_remove = true;
             } else {
                 while let Some(msg) = state.bus.pop() {
                     match msg.view() {
                         gstreamer::MessageView::AsyncDone(_) => {
-                            // The pipeline has prerolled and can now accept
-                            // a seek; apply the resume position if we have
-                            // one queued.
                             if let Some(target) = state.pending_seek.take() {
                                 if state
                                     .pipeline
@@ -261,9 +312,6 @@ impl VideoEngineHandle {
                             } else {
                                 playback.stopped.store(true, Relaxed);
                                 should_remove = true;
-                                // The video finished on its own; a later
-                                // `play()` should start over, not resume
-                                // from the end.
                                 *playback.resume_position.lock().unwrap() = None;
                             }
                         }

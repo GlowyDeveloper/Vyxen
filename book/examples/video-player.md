@@ -36,23 +36,7 @@ const ROBOTO: &[u8; 159900] = include_bytes!("Roboto-Bold.ttf");
 
 Following that, it has some helper functions for later.
 
-It has two `spawn_future` functions, one for wasm and another for native.
-
-This is due to wasm not being able to be blocked on its main thread.
-
-```rust
-#[cfg(not(target_arch = "wasm32"))]
-fn spawn_future(fut: impl std::future::Future<Output = ()> + Send + 'static) {
-    std::thread::spawn(move || pollster::block_on(fut));
-}
-
-#[cfg(target_arch = "wasm32")]
-fn spawn_future(fut: impl std::future::Future<Output = ()> + 'static) {
-    wasm_bindgen_futures::spawn_local(fut);
-}
-```
-
-Another function written makes the file picker pop up using `AsyncFileDialog`.
+It has a function where it makes the file picker pop up using `AsyncFileDialog`.
 
 ```rust
 fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {
@@ -70,7 +54,7 @@ fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {
 }
 ```
 
-Final function written gets all the control nodes and sets them to a tint.
+Another function written gets all the control nodes and sets them to a tint.
 
 ```rust
 fn set_control_tint(game: &mut Game, tint: Color) {
@@ -116,6 +100,7 @@ Then it creates a new `Game` and `Scene` and some data.
 let mut game = Game::new();
 let mut scene = Scene::new();
 let mut picker_visible = true;
+let mut closing_video = false;
 let video_bytes: Arc<Mutex<Option<Vec<u8>>>> = Arc::new(Mutex::new(None));
 ```
 
@@ -330,7 +315,7 @@ if let Some(sprite) = game
 }
 ```
 
-Lastly makes video node invisible.
+Lastly makes video node invisible and sets `closing_video` to true.
 
 ```rust
 if let Some(sprite) = game
@@ -340,7 +325,13 @@ if let Some(sprite) = game
     .unwrap()
     .get_component_mut::<Sprite>()
 {
-    sprite.set_element_type(ElementType::Color(TRANSPARENT));
+    if let ElementType::Video(video) = sprite.get_element_type() {
+        video.set_volume(0.0);
+        video.stop();
+        closing_video = true;
+    } else {
+        sprite.set_element_type(ElementType::Color(TRANSPARENT));
+    }
 }
 ```
 
@@ -364,7 +355,34 @@ if let Some(sprite) = game
 }
 ```
 
-Outside of the `handle_input` statement, it checks if video_bytes has been set.
+Outside of the `handle_input` statement, it sees if `closing_video` has been enabled, and if so, it gets the node containing the video.
+
+```rust
+if closing_video {
+    if let Some(sprite) = game
+        .get_scene_mut()
+        .unwrap()
+        .get_node_mut(2)
+        .unwrap()
+        .get_component_mut::<Sprite>()
+    { .. }
+}
+```
+
+Lastly it checks if the video has been managed correctly.
+
+```rust
+let done = match sprite.get_element_type() {
+    ElementType::Video(video) => !video.is_playing(),
+    _ => true,
+};
+if done {
+    sprite.set_element_type(ElementType::Color(TRANSPARENT));
+    closing_video = false;
+}
+```
+
+Outside of the `closing_video` if statement, it checks if video_bytes has been set.
 
 ```rust
 if let Some(bytes) = video_bytes.lock().unwrap().take() { .. }
@@ -405,6 +423,7 @@ if let Some(sprite) = game
 {
     let video = Video::new(bytes);
     video.play();
+    video.set_volume(1.0);
     sprite.set_element_type(ElementType::Video(video));
 }
 ```
