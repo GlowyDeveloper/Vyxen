@@ -8,6 +8,9 @@ on:
     branches:
       - master
 
+env:
+  GST_VERSION: "1.26.10"
+
 jobs:
   check:
     strategy:
@@ -53,13 +56,24 @@ jobs:
             libgstrtspserver-1.0-dev \
             libges-1.0-dev
 
-      - name: Install GStreamer (Android)
+      - name: Cache GStreamer Android SDK
         if: matrix.target == 'aarch64-linux-android'
+        id: cache-gst-android
+        uses: actions/cache@v4
+        with:
+          path: ~/gstreamer-android
+          key: gstreamer-android-${{ env.GST_VERSION }}
+
+      - name: Install GStreamer (Android)
+        if: matrix.target == 'aarch64-linux-android' && steps.cache-gst-android.outputs.cache-hit != 'true'
         run: |
-          GST_VERSION=1.26.10
-          curl -fL "https://gstreamer.freedesktop.org/data/pkg/android/${GST_VERSION}/gstreamer-1.0-android-universal-${GST_VERSION}.tar.xz" -o /tmp/gstreamer-android.tar.xz
+          curl -fL "https://gstreamer.freedesktop.org/data/pkg/android/${{ env.GST_VERSION }}/gstreamer-1.0-android-universal-${{ env.GST_VERSION }}.tar.xz" -o /tmp/gstreamer-android.tar.xz
           mkdir -p "$HOME/gstreamer-android"
           tar xf /tmp/gstreamer-android.tar.xz -C "$HOME/gstreamer-android"
+
+      - name: Set GStreamer Android env
+        if: matrix.target == 'aarch64-linux-android'
+        run: |
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> "$GITHUB_ENV"
           echo "PKG_CONFIG_LIBDIR=$HOME/gstreamer-android/arm64/lib/pkgconfig" >> "$GITHUB_ENV"
           echo "GSTREAMER_1_0_ROOT_ANDROID=$HOME/gstreamer-android/" >> "$GITHUB_ENV"
@@ -268,13 +282,24 @@ jobs:
             libgstrtspserver-1.0-dev \
             libges-1.0-dev
 
-      - name: Install GStreamer (Android)
+      - name: Cache GStreamer Android SDK
         if: matrix.target == 'aarch64-linux-android'
+        id: cache-gst-android
+        uses: actions/cache@v4
+        with:
+          path: ~/gstreamer-android
+          key: gstreamer-android-${{ env.GST_VERSION }}
+
+      - name: Install GStreamer (Android)
+        if: matrix.target == 'aarch64-linux-android' && steps.cache-gst-android.outputs.cache-hit != 'true'
         run: |
-          GST_VERSION=1.26.10
-          curl -fL "https://gstreamer.freedesktop.org/data/pkg/android/${GST_VERSION}/gstreamer-1.0-android-universal-${GST_VERSION}.tar.xz" -o /tmp/gstreamer-android.tar.xz
+          curl -fL "https://gstreamer.freedesktop.org/data/pkg/android/${{ env.GST_VERSION }}/gstreamer-1.0-android-universal-${{ env.GST_VERSION }}.tar.xz" -o /tmp/gstreamer-android.tar.xz
           mkdir -p "$HOME/gstreamer-android"
           tar xf /tmp/gstreamer-android.tar.xz -C "$HOME/gstreamer-android"
+
+      - name: Set GStreamer Android env
+        if: matrix.target == 'aarch64-linux-android'
+        run: |
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> "$GITHUB_ENV"
           echo "PKG_CONFIG_LIBDIR=$HOME/gstreamer-android/arm64/lib/pkgconfig" >> "$GITHUB_ENV"
           echo "GSTREAMER_1_0_ROOT_ANDROID=$HOME/gstreamer-android/" >> "$GITHUB_ENV"
@@ -291,37 +316,62 @@ jobs:
         shell: pwsh
 
       - name: Install GStreamer (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          $version = "1.26.10"
-          $base = "https://gstreamer.freedesktop.org/data/pkg/windows/$version/msvc"
-          $runtime = "gstreamer-1.0-msvc-x86_64-$version.msi"
-          $devel = "gstreamer-1.0-devel-msvc-x86_64-$version.msi"
-
-          Invoke-WebRequest -Uri "$base/$runtime" -OutFile "$env:TEMP\$runtime"
-          Invoke-WebRequest -Uri "$base/$devel" -OutFile "$env:TEMP\$devel"
-
-          Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\$runtime`" /quiet /norestart INSTALLDIR=C:\gstreamer\1.0\msvc_x86_64 ADDLOCAL=ALL" -Wait
-          Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\$devel`" /quiet /norestart INSTALLDIR=C:\gstreamer\1.0\msvc_x86_64 ADDLOCAL=ALL" -Wait
-
-      - name: Configure pkg-config for GStreamer (Windows)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
+          $version = "${{ env.GST_VERSION }}"
+          $base = "https://gstreamer.freedesktop.org/data/pkg/windows/$version/msvc"
           $gst = "C:\gstreamer\1.0\msvc_x86_64"
-      
-          if (!(Test-Path "$gst\lib\pkgconfig\glib-2.0.pc")) {
-            throw "glib-2.0.pc not found"
+
+          $packages = @(
+            "gstreamer-1.0-msvc-x86_64-$version.msi",
+            "gstreamer-1.0-devel-msvc-x86_64-$version.msi"
+          )
+
+          foreach ($pkg in $packages) {
+            $msiPath = "$env:TEMP\$pkg"
+            $logPath = "$env:TEMP\$pkg.log"
+
+            Write-Host "Downloading $pkg..."
+            Invoke-WebRequest -Uri "$base/$pkg" -OutFile $msiPath
+
+            Write-Host "Installing $pkg..."
+            $proc = Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" ADDLOCAL=ALL /qn /norestart /l*v `"$logPath`" INSTALLDIR=`"$gst`"" -Wait -PassThru
+
+            if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
+              Write-Host "---- msiexec log tail for $pkg ----"
+              if (Test-Path $logPath) {
+                Get-Content $logPath -Tail 80
+              }
+              throw "msiexec failed for $pkg with exit code $($proc.ExitCode)"
+            }
           }
-      
+
+          if (!(Test-Path "$gst\lib\pkgconfig\glib-2.0.pc")) {
+            Write-Host "Contents of ${gst}:"
+            if (Test-Path $gst) {
+              Get-ChildItem -Recurse $gst | Select-Object -First 100 | Format-Table FullName
+            } else {
+              Write-Host "$gst does not exist"
+            }
+            throw "glib-2.0.pc not found after install"
+          }
+
           "PKG_CONFIG_PATH=$gst\lib\pkgconfig" >> $env:GITHUB_ENV
           "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gst\" >> $env:GITHUB_ENV
           "$gst\bin" >> $env:GITHUB_PATH
-      
+
+      - name: Verify pkg-config can see GStreamer (Windows)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        run: |
           pkg-config --modversion glib-2.0
           if ($LASTEXITCODE -ne 0) {
             throw "pkg-config cannot locate GLib"
+          }
+          pkg-config --modversion gstreamer-1.0
+          if ($LASTEXITCODE -ne 0) {
+            throw "pkg-config cannot locate GStreamer"
           }
 
       - uses: dtolnay/rust-toolchain@stable
@@ -335,17 +385,6 @@ jobs:
           NDK="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
           echo "ANDROID_NDK_HOME=$NDK" >> "$GITHUB_ENV"
           echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang" >> "$GITHUB_ENV"
-
-      - name: Debug GStreamer (Windows)
-        if: matrix.target == 'x86_64-pc-windows-msvc'
-        shell: pwsh
-        run: |
-          Write-Host "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
-      
-          Get-ChildItem C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig
-      
-          pkg-config --modversion glib-2.0
-          pkg-config --modversion gobject-2.0
 
       - name: Build
         shell: bash
