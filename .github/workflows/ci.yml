@@ -317,7 +317,10 @@ jobs:
           pkg-config --modversion libpcre2-8
 
           echo "=== PCRE2 library ==="
-          find "$HOME/gstreamer-android/arm64" -iname '*pcre2*'
+          find "$HOME/gstreamer-android/arm64" -name 'libpcre2-8.a'
+          
+          PKG_CONFIG_PATH="$GST/lib/pkgconfig" \
+            pkg-config --static --libs glib-2.0
 
       - name: Install GStreamer (macOS)
         if: matrix.os == 'macos-latest'
@@ -399,7 +402,7 @@ jobs:
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018"
           NDK="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
           echo "ANDROID_NDK_HOME=$NDK" >> "$GITHUB_ENV"
-          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang" >> "$GITHUB_ENV"
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=aarch64-linux-android26-clang" >> "$GITHUB_ENV"
 
       - name: Build
         shell: bash
