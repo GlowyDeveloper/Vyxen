@@ -10,4 +10,6 @@ vyxen = { path = "../.." }
 console_error_panic_hook = "0.1"
 console_log = "1"
 log = "0.4.34"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 rfd = "0.17.2"

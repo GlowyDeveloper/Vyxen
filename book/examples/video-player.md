@@ -39,10 +39,11 @@ Following that, it has some helper functions for later.
 It has a function where it makes the file picker pop up using `AsyncFileDialog`.
 
 ```rust
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {
     let video_bytes = Arc::clone(video_bytes);
     spawn_future(async move {
-        let file = AsyncFileDialog::new()
+        let file = rfd::AsyncFileDialog::new()
             .add_filter("Video Files", &["mp4"])
             .pick_file()
             .await;
@@ -52,6 +53,10 @@ fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {
         }
     });
 }
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {}
+// This is here to avoid errors when building for ios or android.
 ```
 
 Another function written gets all the control nodes and sets them to a tint.

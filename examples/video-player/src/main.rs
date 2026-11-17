@@ -1,5 +1,3 @@
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
-use rfd::AsyncFileDialog;
 use std::sync::{Arc, Mutex};
 use vyxen::prelude::*;
 
@@ -9,7 +7,7 @@ const ROBOTO: &[u8; 159900] = include_bytes!("Roboto-Bold.ttf");
 fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {
     let video_bytes = Arc::clone(video_bytes);
     spawn_future(async move {
-        let file = AsyncFileDialog::new()
+        let file = rfd::AsyncFileDialog::new()
             .add_filter("Video Files", &["mp4"])
             .pick_file()
             .await;
@@ -19,6 +17,9 @@ fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {
         }
     });
 }
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {}
 
 fn set_control_tint(game: &mut Game, tint: Color) {
     if let Some(ui) = game
