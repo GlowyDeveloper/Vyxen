@@ -1,9 +1,11 @@
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 use rfd::AsyncFileDialog;
 use std::sync::{Arc, Mutex};
 use vyxen::prelude::*;
 
 const ROBOTO: &[u8; 159900] = include_bytes!("Roboto-Bold.ttf");
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn pick_video(video_bytes: &Arc<Mutex<Option<Vec<u8>>>>) {
     let video_bytes = Arc::clone(video_bytes);
     spawn_future(async move {
