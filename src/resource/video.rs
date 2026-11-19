@@ -3,7 +3,7 @@ use std::{
     any::Any,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, AtomicU32, Ordering::Relaxed},
+        atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering::Relaxed},
     },
     time::Duration,
 };
@@ -24,6 +24,7 @@ pub(crate) struct VideoPlayback {
     pub volume: AtomicU32,
     pub current_frame: Mutex<Option<RawFrame>>,
     pub resume_position: Mutex<Option<Duration>>,
+    pub frame_generation: AtomicU64,
 }
 
 impl Default for VideoPlayback {
@@ -36,6 +37,7 @@ impl Default for VideoPlayback {
             volume: AtomicU32::new(1.0f32.to_bits()),
             current_frame: Mutex::new(None),
             resume_position: Mutex::new(None),
+            frame_generation: AtomicU64::new(0),
         }
     }
 }
@@ -112,8 +114,18 @@ impl Video {
         !self.playback.stopped.load(Relaxed)
     }
 
-    pub(crate) fn current_frame(&self) -> Option<RawFrame> {
-        self.playback.current_frame.lock().unwrap().clone()
+    pub(crate) fn current_frame(&self, last_seen: u64) -> Option<(u64, RawFrame)> {
+        let generation = self.playback.frame_generation.load(Relaxed);
+        if generation == last_seen {
+            return None;
+        }
+
+        self.playback
+            .current_frame
+            .lock()
+            .unwrap()
+            .clone()
+            .map(|frame| (generation, frame))
     }
 
     /// Returns the width of the video.

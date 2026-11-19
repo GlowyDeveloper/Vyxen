@@ -2,7 +2,7 @@ use crate::{
     Camera, ElementType, FrameCap, Node, Sprite, Texture, UiElement, Vector2, WindowConfig,
     error::Error,
     renderer::{
-        gpu_texture::GpuTexture,
+        gpu_texture::{self, GpuTexture},
         raws::{
             CameraUniform, DebugTriangle, DebugUniform, GlyphRaw, MAX_DEBUG_DRAWS,
             MAX_GLYPH_INSTANCES, MAX_SPRITE_INDEX_BUFFER_SIZE, MAX_SPRITE_VERTEX_BUFFER_SIZE,
@@ -78,6 +78,7 @@ pub struct State {
     sprite_render_order: Vec<u64>,
     text_uniform_index: HashMap<u64, u32>,
     debug_uniform_stride: u64,
+    video_frame_generations: HashMap<u64, u64>,
 }
 
 impl State {
@@ -843,6 +844,7 @@ impl State {
             sprite_render_order: Vec::new(),
             text_uniform_index: HashMap::new(),
             debug_uniform_stride,
+            video_frame_generations: HashMap::new(),
         })
     }
 
@@ -937,23 +939,7 @@ impl State {
                             .insert(key, (glyph_map, gpu_tex, first, count));
                     }
                     ElementType::Video(video) => {
-                        if let Some(frame) = video.current_frame() {
-                            let tex = Texture::from_raw(
-                                Vector2 {
-                                    x: frame.width as f32,
-                                    y: frame.height as f32,
-                                },
-                                frame.bytes,
-                            );
-                            let gpu_tex = GpuTexture::from_image(
-                                &self.device,
-                                &self.queue,
-                                &self.texture_bind_group_layout,
-                                &tex,
-                                *node_id,
-                            );
-                            self.texture_cache.insert(*node_id, gpu_tex);
-                        }
+                        self.upload_video_frame(*node_id, video);
                     }
                     _ => {}
                 }
@@ -1016,23 +1002,7 @@ impl State {
                             .insert(key, (glyph_map, gpu_tex, first, count));
                     }
                     ElementType::Video(video) => {
-                        if let Some(frame) = video.current_frame() {
-                            let tex = Texture::from_raw(
-                                Vector2 {
-                                    x: frame.width as f32,
-                                    y: frame.height as f32,
-                                },
-                                frame.bytes,
-                            );
-                            let gpu_tex = GpuTexture::from_image(
-                                &self.device,
-                                &self.queue,
-                                &self.texture_bind_group_layout,
-                                &tex,
-                                *node_id,
-                            );
-                            self.texture_cache.insert(*node_id, gpu_tex);
-                        }
+                        self.upload_video_frame(*node_id, video);
                     }
                     _ => {}
                 }
@@ -1051,6 +1021,8 @@ impl State {
         self.raw_ui_elements.retain(|id, _| nodes.contains_key(id));
 
         self.texture_cache.retain(|id, _| nodes.contains_key(id));
+        self.video_frame_generations
+            .retain(|id, _| nodes.contains_key(id));
 
         self.glyph_atlas_cache
             .retain(|(node_id, _), _| nodes.contains_key(node_id));
@@ -1138,6 +1110,51 @@ impl State {
             .write_buffer(&self.text_uniform_buffer, 0, &padded);
 
         Ok(())
+    }
+
+    fn upload_video_frame(&mut self, node_id: u64, video: &crate::Video) {
+        let last_seen = self
+            .video_frame_generations
+            .get(&node_id)
+            .copied()
+            .unwrap_or(0);
+
+        let Some((generation, frame)) = video.current_frame(last_seen) else {
+            return;
+        };
+        self.video_frame_generations.insert(node_id, generation);
+
+        let (rgba, width, height) = gpu_texture::fit_to_device_limits(
+            &self.device,
+            &frame.bytes,
+            frame.width,
+            frame.height,
+        );
+
+        let needs_new_texture = match self.texture_cache.get(&node_id) {
+            Some(existing) => existing.width != width || existing.height != height,
+            None => true,
+        };
+
+        if needs_new_texture {
+            let tex = Texture::from_raw(
+                Vector2 {
+                    x: width as f32,
+                    y: height as f32,
+                },
+                rgba.into_owned(),
+            );
+            let gpu_tex = GpuTexture::from_image(
+                &self.device,
+                &self.queue,
+                &self.texture_bind_group_layout,
+                &tex,
+                node_id,
+            );
+            self.texture_cache.insert(node_id, gpu_tex);
+        } else if let Some(existing) = self.texture_cache.get(&node_id) {
+            existing.write_frame(&self.queue, rgba.as_ref(), width, height);
+        }
     }
 
     pub fn render(&mut self) -> Result<(), Error> {
@@ -1591,6 +1608,10 @@ impl State {
         new_state.resize(size.width, size.height);
 
         Ok(new_state)
+    }
+    
+    pub fn max_video_texture_dim(&self) -> u32 {
+        self.device.limits().max_texture_dimension_2d
     }
 }
 

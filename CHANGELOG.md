@@ -13,6 +13,11 @@
 
 - Textures not on a multiple of 16 bytes, causing wasm builds to panic.
 - PNG alpha channel being ignored and being colored as black
+- Android builds not linking correctly
+
+### Other
+
+- Limited WASM to only draw at 2K for performance
 
 ## v0.2.1 (28/09/2026)
 

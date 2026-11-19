@@ -1,4 +1,5 @@
 use crate::{Texture, renderer::raws::TextureSettings};
+use std::borrow::Cow;
 
 #[allow(unused)]
 #[derive(Debug, Clone)]
@@ -7,6 +8,8 @@ pub struct GpuTexture {
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
     pub bind_group: wgpu::BindGroup,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl GpuTexture {
@@ -116,6 +119,67 @@ impl GpuTexture {
             view,
             sampler,
             bind_group,
+            width: dimensions.x as u32,
+            height: dimensions.y as u32,
         }
     }
+
+    pub fn write_frame(&self, queue: &wgpu::Queue, rgba: &[u8], width: u32, height: u32) {
+        debug_assert_eq!(
+            (width, height),
+            (self.width, self.height),
+            "write_frame called with a size that doesn't match the existing texture; \
+             recreate via from_image instead"
+        );
+
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                aspect: wgpu::TextureAspect::All,
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            rgba,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
+            },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+        );
+    }
+}
+
+pub fn fit_to_device_limits<'a>(
+    device: &wgpu::Device,
+    rgba: &'a [u8],
+    width: u32,
+    height: u32,
+) -> (Cow<'a, [u8]>, u32, u32) {
+    let max_dim = device.limits().max_texture_dimension_2d;
+
+    if width <= max_dim && height <= max_dim {
+        return (Cow::Borrowed(rgba), width, height);
+    }
+
+    let scale = (max_dim as f32 / width as f32).min(max_dim as f32 / height as f32);
+    let new_width = ((width as f32 * scale).floor() as u32).max(1);
+    let new_height = ((height as f32 * scale).floor() as u32).max(1);
+
+    let mut out = vec![0u8; (new_width * new_height * 4) as usize];
+    for y in 0..new_height {
+        let src_y = (y as u64 * height as u64 / new_height as u64) as u32;
+        for x in 0..new_width {
+            let src_x = (x as u64 * width as u64 / new_width as u64) as u32;
+            let src_idx = ((src_y * width + src_x) * 4) as usize;
+            let dst_idx = ((y * new_width + x) * 4) as usize;
+            out[dst_idx..dst_idx + 4].copy_from_slice(&rgba[src_idx..src_idx + 4]);
+        }
+    }
+
+    (Cow::Owned(out), new_width, new_height)
 }

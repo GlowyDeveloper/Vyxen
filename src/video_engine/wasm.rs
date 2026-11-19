@@ -56,7 +56,7 @@ pub struct VideoEngineHandle {
 }
 
 impl VideoEngineHandle {
-    pub(crate) fn sync_video(&self, video: &Video) {
+    pub(crate) fn sync_video(&self, video: &Video, max_texture_dim: u32) {
         let key = Arc::as_ptr(&video.playback) as usize;
         let playback = video.playback.clone();
         let mut pipelines = self.pipelines.lock().unwrap();
@@ -95,10 +95,16 @@ impl VideoEngineHandle {
                 video_el.set_volume(f32::from_bits(playback.volume.load(Relaxed)) as f64);
 
                 if video_el.ready_state() >= 2 {
-                    let w = video_el.video_width();
-                    let h = video_el.video_height();
+                    let native_w = video_el.video_width();
+                    let native_h = video_el.video_height();
 
-                    if w > 0 && h > 0 {
+                    if native_w > 0 && native_h > 0 {
+                        let scale = (max_texture_dim as f64 / native_w as f64)
+                            .min(max_texture_dim as f64 / native_h as f64)
+                            .min(1.0);
+                        let w = ((native_w as f64 * scale).floor() as u32).max(1);
+                        let h = ((native_h as f64 * scale).floor() as u32).max(1);
+
                         if state.canvas.width() != w {
                             state.canvas.set_width(w);
                         }
@@ -108,7 +114,9 @@ impl VideoEngineHandle {
 
                         if state
                             .ctx
-                            .draw_image_with_html_video_element(video_el, 0.0, 0.0)
+                            .draw_image_with_html_video_element_and_dw_and_dh(
+                                video_el, 0.0, 0.0, w as f64, h as f64,
+                            )
                             .is_ok()
                         {
                             if let Ok(image_data) =
@@ -119,6 +127,7 @@ impl VideoEngineHandle {
                                     width: w,
                                     height: h,
                                 });
+                                playback.frame_generation.fetch_add(1, Relaxed);
                             }
                         }
                     }

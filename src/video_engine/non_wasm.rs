@@ -56,7 +56,7 @@ pub struct VideoEngineHandle {
 }
 
 impl VideoEngineHandle {
-    pub(crate) fn sync_video(&self, video: &Video) {
+    pub(crate) fn sync_video(&self, video: &Video, _max_texture_dim: u32) {
         let key = Arc::as_ptr(&video.playback) as usize;
         let playback = video.playback.clone();
         let mut pipelines = self.pipelines.lock().unwrap();
@@ -178,6 +178,7 @@ impl VideoEngineHandle {
                                                     width: video_info.width(),
                                                     height: video_info.height(),
                                                 });
+                                            inner_shared.frame_generation.fetch_add(1, Relaxed);
                                         }
                                     }
                                 }

@@ -804,15 +804,21 @@ impl ApplicationHandler<GameEvent> for Game {
 
                 if let (Some(engine), Some(scene)) = (&self.video, &self.loaded_scene) {
                     let handle = engine.handle();
+                    let max_video_dim = self
+                        .state
+                        .as_ref()
+                        .map(|s| s.max_video_texture_dim())
+                        .unwrap_or(2048);
+
                     for node in scene.get_nodes().values() {
                         if let Some(sprite) = node.get_component::<Sprite>() {
                             if let ElementType::Video(video) = sprite.get_element_type() {
-                                handle.sync_video(video);
+                                handle.sync_video(video, max_video_dim);
                             }
                         }
                         if let Some(ui) = node.get_component::<UiElement>() {
                             if let ElementType::Video(video) = ui.get_element_type() {
-                                handle.sync_video(video);
+                                handle.sync_video(video, max_video_dim);
                             }
                         }
                     }
@@ -992,15 +998,21 @@ impl ApplicationHandler<State> for Game {
 
                 if let (Some(engine), Some(scene)) = (&self.video, &self.loaded_scene) {
                     let handle = engine.handle();
+                    let max_video_dim = self
+                        .state
+                        .as_ref()
+                        .map(|s| s.max_video_texture_dim())
+                        .unwrap_or(2048);
+
                     for node in scene.get_nodes().values() {
                         if let Some(sprite) = node.get_component::<Sprite>() {
                             if let ElementType::Video(video) = sprite.get_element_type() {
-                                handle.sync_video(video);
+                                handle.sync_video(video, max_video_dim);
                             }
                         }
                         if let Some(ui) = node.get_component::<UiElement>() {
                             if let ElementType::Video(video) = ui.get_element_type() {
-                                handle.sync_video(video);
+                                handle.sync_video(video, max_video_dim);
                             }
                         }
                     }
